@@ -9,20 +9,26 @@ final class SwiftOnigTests: XCTestCase {
     }
     
     func testValidPattern() {
-        XCTAssertNotNil(Regex(pattern: ".*", option: .none, syntax: .default))
-        XCTAssertNotNil(Regex(pattern: #"a \w+ word"#))
+        var reg = try? Regex(".*")
+        XCTAssertNotNil(reg)
+        reg = try? Regex(#"a \w+ word"#)
+        XCTAssertNotNil(reg)
     }
     
     func testInValidPattern() {
-        let reg = Regex(pattern: #"\\p{foo}"#)
+        let reg = try? Regex(#"\\p{foo}"#)
         XCTAssertNotNil(reg)
     }
     
     func testMatch() {
-        if let reg = Regex(pattern: "foo") {
-            let res = reg.match(str: "bar", at: 0, options: .none, region: nil)
-            XCTAssertEqual(res, 0)
-        }
+        let reg = try! Regex("foo")
+        XCTAssertTrue(try! reg.match("foo"))
+        XCTAssertFalse(try! reg.match("bar"))
+
+        try! reg.reset(#"a(.*)b|[e-f]+"#)
+        XCTAssertTrue(try! reg.match("affffffffb"))
+        XCTAssertTrue(try! reg.match("efefefefef"))
+        XCTAssertFalse(try! reg.match("zzzzaffffffffb"))
     }
 
     static var allTests = [

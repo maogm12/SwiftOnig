@@ -9,27 +9,44 @@ import COnig
 
 public class MatchParam {
     var rawValue: OpaquePointer
-    
-    init?() {
+
+    init() throws {
         if let matchParam = onig_new_match_param() {
-            onig_initialize_match_param(matchParam)
             self.rawValue = matchParam
         } else {
-            return nil
+            throw OnigError.memory
         }
     }
-    
+
     deinit {
         onig_free_match_param(self.rawValue)
     }
 
-    /// Set the match stack limit
-    public func setMatchStackLimitSize(limit: UInt32) {
-        onig_set_match_stack_limit_size_of_match_param(self.rawValue, limit)
+    /**
+     Set a maximum number of match-stack depth. 0 means unlimited.
+     - Parameters:
+        - limit: number of limit
+     - Throws: `OnigError`
+        if `onig_set_match_stack_limit_size_of_match_param` doesn't return `ONIG_NORMAL`
+     */
+    public func setMatchStackLimitSize(limit: UInt32) throws {
+        let result = onig_set_match_stack_limit_size_of_match_param(self.rawValue, limit)
+        if result != ONIG_NORMAL {
+            throw OnigError(result)
+        }
     }
 
-    /// Set the retry limit in match
-    public func setRetryLimitInMatch(limit: UInt) {
-        onig_set_retry_limit_in_match_of_match_param(self.rawValue, limit)
+    /**
+    Set a retry limit count of a match process.
+     - Parameters:
+        - limit: number of limit
+     - Throws: `OnigError`
+        if `onig_set_retry_limit_in_match_of_match_param` doesn't return `ONIG_NORMAL`
+     */
+    public func setRetryLimitInMatch(limit: UInt) throws {
+        let result = onig_set_retry_limit_in_match_of_match_param(self.rawValue, limit)
+        if result != ONIG_NORMAL {
+            throw OnigError(result)
+        }
     }
 }
