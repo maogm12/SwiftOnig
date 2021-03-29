@@ -74,19 +74,41 @@ public class Regex {
 
     /// Match String
     public func match<T: StringProtocol>(_ str: T) throws -> Bool {
-        try self.match(str, at: 0, options: .none, region: nil)
+        let matchParam = try MatchParam()
+        return try self.match(str, at: 0, options: .none, region: nil, matchParam: matchParam)
     }
     
-    public func match<T: StringProtocol>(_ str: T, at: Int, options: SearchOptions, region: Region?) throws -> Bool {
+    /**
+     Match string and return result and matching region. Do not pass invalid byte string in the regex character encoding.
+     - Parameters:
+        - str: Target string to match against
+        - at: The byte index in the passed buffer to start matching
+        - option: The regex match options.
+        - region: Address for return group match range info
+        - matchParam: Match parameter values (match_stack_limit, retry_limit_in_match, retry_limit_in_search)
+     - Returns:
+       `true` if the match succeeds, otherwise `false`
+     - Throws: `OnigError`
+     */
+    public func match<T: StringProtocol>(_ str: T, at: Int, options: SearchOptions, region: Region?, matchParam: MatchParam) throws -> Bool {
         let byteCount = str.utf8.count
+        if at > byteCount {
+            throw OnigError.invalidArgument
+        }
+
         let result = str.withCString { (cstr: UnsafePointer<Int8>) -> Int32 in
             cstr.withMemoryRebound(to: OnigUChar.self, capacity: byteCount) { start -> Int32 in
-                return onig_match(self.rawValue,
-                                  start,
-                                  start.advanced(by: byteCount),
-                                  start.advanced(by: at),
-                                  nil,
-                                  options.rawValue)
+                let onigRegion: UnsafeMutablePointer<OnigRegion>! = nil
+                if region != nil {
+                    onigRegion.pointee = region!.rawValue
+                }
+                return onig_match_with_param(self.rawValue,
+                                             start,
+                                             start.advanced(by: byteCount),
+                                             start.advanced(by: at),
+                                             onigRegion,
+                                             options.rawValue,
+                                             matchParam.rawValue)
             }
         }
         

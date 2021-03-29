@@ -59,9 +59,18 @@ public struct SearchOptions: OptionSet {
     /// Default options.
     public static let none = SearchOptions(rawValue: ONIG_OPTION_NONE);
     
-    /// String head isn't considered as begin of line.
+    /// Do not regard the beginning of the (str) as the beginning of the line and the beginning of the string
     public static let notBol = SearchOptions(rawValue: ONIG_OPTION_NOTBOL);
 
-    /// String end isn't considered as end of line.
+    /// Do not regard the (end) as the end of a line and the end of a string
     public static let notEol = SearchOptions(rawValue: ONIG_OPTION_NOTEOL);
+    
+    /// Do not regard the beginning of the (str) as the beginning of a string  (* fail \A)
+    public static let notBeginString = SearchOptions(rawValue: ONIG_OPTION_NOT_BEGIN_STRING)
+    
+    /// Do not regard the (end) as a string endpoint  (* fail \z, \Z)
+    public static let notEndString = SearchOptions(rawValue: ONIG_OPTION_NOT_END_STRING)
+    
+    /// Do not regard the (start) as start position of search  (* fail \G)
+    public static let notBeginPosition = SearchOptions(rawValue: ONIG_OPTION_NOT_BEGIN_POSITION)
 }

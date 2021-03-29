@@ -23,7 +23,7 @@ public class MatchParam {
     }
 
     /**
-     Set a maximum number of match-stack depth. 0 means unlimited.
+     Set a maximum number of match-stack depth. `0` means unlimited.
      - Parameters:
         - limit: number of limit
      - Throws: `OnigError`
@@ -45,6 +45,20 @@ public class MatchParam {
      */
     public func setRetryLimitInMatch(limit: UInt) throws {
         let result = onig_set_retry_limit_in_match_of_match_param(self.rawValue, limit)
+        if result != ONIG_NORMAL {
+            throw OnigError(result)
+        }
+    }
+    
+    /**
+     Set a retry limit count of a search process. `0` means unlimited.
+     - Parameters:
+        - limit: number of limit
+     - Throws: `OnigError`
+        if `onig_set_retry_limit_in_search_of_match_param` doesn't return `ONIG_NORMAL`
+     */
+    public func setRetryLimitInSearch(limit: UInt) throws {
+        let result = onig_set_retry_limit_in_search_of_match_param(self.rawValue, limit)
         if result != ONIG_NORMAL {
             throw OnigError(result)
         }
