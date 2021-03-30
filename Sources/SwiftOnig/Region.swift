@@ -6,6 +6,7 @@
 //
 
 import COnig
+import Foundation
 
 public class Region {
     var rawValue: OnigRegion
@@ -72,7 +73,7 @@ public class Region {
      Get the position range of the Nth capture group.
      - Returns: `nil` if `group` is not a valid capture group or if the capture group did not match anything. The range returned are always byte indices with respect to the original string matched.
      */
-    public func range(group: Int) -> Range<Int>? {
+    public func utf8BytesRange(group: Int) -> Range<Int>? {
         if group >= self.count {
             return nil
         }
@@ -96,5 +97,19 @@ public class Region {
         }
         
         return nil
+    }
+}
+
+extension StringProtocol {
+    public subscript(utf8BytesRange: Range<Int>) -> String? {
+        if utf8BytesRange != utf8BytesRange.clamped(to: 0 ..< self.utf8.count) {
+            return nil
+        }
+
+        return self.withCString { ptr -> String? in
+            String(data: Data(bytes: ptr.advanced(by: utf8BytesRange.lowerBound),
+                              count: utf8BytesRange.count),
+                   encoding: .utf8)
+        }
     }
 }

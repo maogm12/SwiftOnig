@@ -22,7 +22,7 @@ public struct CaptureTreeNode {
     /**
      The extent of this capture.
      */
-    public var range: Range<Int> {
+    public var utf8BytesRange: Range<Int> {
         get {
             return Int(self.rawValue.beg) ..< Int(self.rawValue.end)
         }

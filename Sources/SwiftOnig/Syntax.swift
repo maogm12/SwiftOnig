@@ -61,5 +61,44 @@ public struct Syntax {
         }
     }
     
+    /**
+     Get or set the operators for this syntax.
+     */
+    public var operators: SyntaxOperator {
+        get {
+            var onigSyntax = self.rawValue
+            let op = onig_get_syntax_op(&onigSyntax)
+            let op2 = onig_get_syntax_op2(&onigSyntax)
+            return SyntaxOperator(onigSyntaxOp: op, onigSyntaxOp2: op2)
+        }
+        
+        set {
+            var onigSyntax = self.rawValue
+            onig_set_syntax_op(&onigSyntax, newValue.onigSyntaxOp)
+            onig_set_syntax_op2(&onigSyntax, newValue.onigSyntaxOp2)
+            self.rawValue = onigSyntax
+        }
+    }
     
+    /**
+     Enable operators for this syntax.
+     - Parameters:
+        - operators: operators to be enabled.
+     */
+    public mutating func enableOperators(operators: SyntaxOperator) {
+        var currentOperators = self.operators
+        currentOperators.insert(operators)
+        self.operators = currentOperators
+    }
+    
+    /**
+     Disable operators for this syntax.
+     - Parameters:
+        - operators: operators to be disabled.
+     */
+    public mutating func disableOperators(operators: SyntaxOperator) {
+        var currentOperators = self.operators
+        currentOperators.remove(operators)
+        self.operators = currentOperators
+    }
 }

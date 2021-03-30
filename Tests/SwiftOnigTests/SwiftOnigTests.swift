@@ -49,12 +49,28 @@ final class SwiftOnigTests: XCTestCase {
     }
     
     func testRegionTree() {
-        let reg = try! Regex("(a+(b+))|(c+(d+))")
+        var syntax = Syntax.ruby
+        syntax.enableOperators(operators: .atmarkCaptureHistory)
+        let reg = try! Regex(#"(?@a+(?@b+))|(?@c+(?@d+))"#, option: .none, syntax: syntax)
         let region = Region()
-        let result = try! reg.search("- cd aaabbb -", options: .none, region: region, matchParam: MatchParam())
+        let str = "- cd aaabbb -"
+        let result = try! reg.search(str, options: .none, region: region, matchParam: MatchParam())
         
         XCTAssertEqual(result, 2)
         XCTAssertEqual(region.count, 5)
+        
+        let tree = region.tree!
+        XCTAssertEqual(tree.count, 1)
+        XCTAssertEqual(tree.group, 0)
+        XCTAssertEqual(tree.utf8BytesRange, 2..<4)
+
+        XCTAssertEqual(tree[0].count, 1)
+        XCTAssertEqual(tree[0].group, 3)
+        XCTAssertEqual(tree[0].utf8BytesRange, 2..<4)
+        
+        XCTAssertEqual(tree[0][0].count, 0)
+        XCTAssertEqual(tree[0][0].group, 4)
+        XCTAssertEqual(tree[0][0].utf8BytesRange, 3..<4)
     }
 
     static var allTests = [

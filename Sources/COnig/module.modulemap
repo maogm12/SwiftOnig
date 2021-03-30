@@ -1,5 +1,6 @@
 module COnig [system] {
-    umbrella header "conig.h"
+//    umbrella header "conig.h"
+    umbrella header "/usr/local/include/oniguruma.h"
     link "onig"
     export *
 }
