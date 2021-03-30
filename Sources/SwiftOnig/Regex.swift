@@ -116,17 +116,22 @@ public class Regex {
         let byteCount = str.utf8.count
         let result = str.withCString { (cstr: UnsafePointer<Int8>) -> Int32 in
             cstr.withMemoryRebound(to: OnigUChar.self, capacity: byteCount) { start -> Int32 in
-                let onigRegion: UnsafeMutablePointer<OnigRegion>! = nil
+                var onigRegion: UnsafeMutablePointer<OnigRegion>! = nil
                 if region != nil {
+                    onigRegion = UnsafeMutablePointer<OnigRegion>.allocate(capacity: 1)
                     onigRegion.pointee = region!.rawValue
                 }
-                return onig_match_with_param(self.rawValue,
+                let r = onig_match_with_param(self.rawValue,
                                              start,
                                              start.advanced(by: byteCount),
                                              start,
                                              onigRegion,
                                              options.rawValue,
                                              matchParam.rawValue)
+                if region != nil {
+                    region?.rawValue = onigRegion.pointee
+                }
+                return r
             }
         }
         
@@ -165,11 +170,13 @@ public class Regex {
         let byteCount = str.utf8.count
         let result = str.withCString { (cstr: UnsafePointer<Int8>) -> Int32 in
             cstr.withMemoryRebound(to: OnigUChar.self, capacity: byteCount) { start -> Int32 in
-                let onigRegion: UnsafeMutablePointer<OnigRegion>! = nil
+                var onigRegion: UnsafeMutablePointer<OnigRegion>! = nil
                 if region != nil {
+                    onigRegion = UnsafeMutablePointer<OnigRegion>.allocate(capacity: 1)
                     onigRegion.pointee = region!.rawValue
                 }
-                return onig_search_with_param(self.rawValue,
+                
+                let r = onig_search_with_param(self.rawValue,
                                              start,
                                              start.advanced(by: byteCount),
                                              start,
@@ -177,6 +184,12 @@ public class Regex {
                                              onigRegion,
                                              options.rawValue,
                                              matchParam.rawValue)
+                
+                if region != nil {
+                    region?.rawValue = onigRegion.pointee
+                }
+
+                return r
             }
         }
         

@@ -47,6 +47,15 @@ final class SwiftOnigTests: XCTestCase {
         let result = try! emailReg.search("Naive email: test@example.com. :)")
         XCTAssertEqual(result, 13)
     }
+    
+    func testRegionTree() {
+        let reg = try! Regex("(a+(b+))|(c+(d+))")
+        let region = Region()
+        let result = try! reg.search("- cd aaabbb -", options: .none, region: region, matchParam: MatchParam())
+        
+        XCTAssertEqual(result, 2)
+        XCTAssertEqual(region.count, 5)
+    }
 
     static var allTests = [
         ("testVersion", testVersion),
@@ -54,5 +63,6 @@ final class SwiftOnigTests: XCTestCase {
         ("testInValidPattern", testInValidPattern),
         ("testMatch", testMatch),
         ("testSearch", testSearch),
+        ("testRegionTree", testRegionTree),
     ]
 }
