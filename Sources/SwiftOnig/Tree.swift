@@ -57,27 +57,45 @@ public struct CaptureTreeNode {
         
         fatalError("Null capture tree node child")
     }
+}
+
+extension CaptureTreeNode {
+    public struct ChildrenSequence: Sequence {
+        private let node: CaptureTreeNode
+        
+        public init(node: CaptureTreeNode) {
+            self.node = node
+        }
+        
+        public func makeIterator() -> CaptureTreeNode.Iterator {
+            return CaptureTreeNode.Iterator(node: self.node)
+        }
+    }
     
+    public struct Iterator: IteratorProtocol {
+        private let node: CaptureTreeNode
+        private var index: Int = 0
+        
+        public init(node: CaptureTreeNode) {
+            self.node = node
+        }
+        
+        public mutating func next() -> CaptureTreeNode? {
+            if self.index < self.node.count {
+                self.index = self.index + 1
+                return self.node[self.index - 1]
+            } else {
+                return nil
+            }
+        }
+    }
+
     /**
      An iterator over thie children of this capture group.
      */
-    public var children: CaptureTreeNodeIterator {
+    public var children: ChildrenSequence {
         get {
-            return CaptureTreeNodeIterator(index: 0, node: self)
-        }
-    }
-}
-
-public struct CaptureTreeNodeIterator: IteratorProtocol {
-    var index: Int
-    var node: CaptureTreeNode
-    
-    public mutating func next() -> CaptureTreeNode? {
-        if self.index < self.node.count {
-            self.index = self.index + 1
-            return self.node[self.index - 1]
-        } else {
-            return nil
+            return ChildrenSequence(node: self)
         }
     }
 }

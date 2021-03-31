@@ -24,6 +24,10 @@ public class Region {
         self.reserve(capacity: capacity)
     }
     
+    deinit {
+        onig_region_free(&self.rawValue, 0)
+    }
+    
     public var capacity: Int32 {
         get {
             return self.rawValue.allocated
@@ -73,17 +77,17 @@ public class Region {
      Get the position range of the Nth capture group.
      - Returns: `nil` if `group` is not a valid capture group or if the capture group did not match anything. The range returned are always byte indices with respect to the original string matched.
      */
-    public func utf8BytesRange(group: Int) -> Range<Int>? {
-        if group >= self.count {
+    public func utf8BytesRange(groupIndex: Int) -> Range<Int>? {
+        if groupIndex >= self.count {
             return nil
         }
 
-        let begin = Int(self.rawValue.beg.advanced(by: group).pointee)
+        let begin = Int(self.rawValue.beg.advanced(by: groupIndex).pointee)
         if begin == ONIG_REGION_NOTPOS {
             return nil
         }
 
-        let end = Int(self.rawValue.end.advanced(by: group).pointee)
+        let end = Int(self.rawValue.end.advanced(by: groupIndex).pointee)
         return begin ..< end
     }
     
@@ -97,6 +101,27 @@ public class Region {
         }
         
         return nil
+    }
+}
+
+extension Region: Sequence {
+    public struct Iterator: IteratorProtocol {
+        private let region: Region
+        private var groupIndex: Int = 0
+
+        public init(region: Region) {
+            self.region = region
+        }
+
+        public mutating func next() -> Range<Int>? {
+            let range = self.region.utf8BytesRange(groupIndex: self.groupIndex)
+            self.groupIndex = self.groupIndex + 1
+            return range
+        }
+    }
+
+    public func makeIterator() -> Region.Iterator {
+        return Region.Iterator(region: self)
     }
 }
 
