@@ -24,6 +24,8 @@ final class SwiftOnigTests: XCTestCase {
         let reg = try! Regex("foo")
         XCTAssertTrue(try! reg.isMatch("foo"))
         XCTAssertEqual(try! reg.match("foo"), 3)
+        XCTAssertNil(try! reg.match("bar foo"))
+        XCTAssertEqual(try! reg.match("foo bar"), 3)
 
         XCTAssertFalse(try! reg.isMatch("bar"))
         XCTAssertNil(try! reg.match("bar"))
@@ -49,7 +51,7 @@ final class SwiftOnigTests: XCTestCase {
     }
     
     func testRegionTree() {
-        var syntax = Syntax.ruby
+        let syntax = Syntax.ruby
         syntax.enableOperators(operators: .atmarkCaptureHistory)
         let reg = try! Regex(#"(?@a+(?@b+))|(?@c+(?@d+))"#, option: .none, syntax: syntax)
         let region = Region()
@@ -58,7 +60,7 @@ final class SwiftOnigTests: XCTestCase {
         
         XCTAssertEqual(result, 2)
         XCTAssertEqual(region.count, 5)
-        
+
         let tree = region.tree!
         XCTAssertEqual(tree.count, 1)
         XCTAssertEqual(tree.group, 0)
