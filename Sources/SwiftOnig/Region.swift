@@ -9,7 +9,7 @@ import COnig
 import Foundation
 
 public class Region {
-    var rawValue: OnigRegion
+    internal var rawValue: OnigRegion
     
     init() {
         self.rawValue = OnigRegion(allocated: 0,
@@ -39,9 +39,7 @@ public class Region {
      - Returns: the number of registers in the region.
      */
     public var count: Int32 {
-        get {
-            return self.rawValue.num_regs
-        }
+        return self.rawValue.num_regs
     }
     
     /**
@@ -49,9 +47,7 @@ public class Region {
      - Returns: `true` if there are no registers in the region.
      */
     public var isEmpty: Bool {
-        get {
-            return self.count == 0
-        }
+        return self.count == 0
     }
     
     /**
@@ -126,7 +122,7 @@ extension Region: Sequence {
 }
 
 extension StringProtocol {
-    public subscript(utf8BytesRange: Range<Int>) -> String? {
+    public func subString(with utf8BytesRange: Range<Int>) -> String? {
         if utf8BytesRange != utf8BytesRange.clamped(to: 0 ..< self.utf8.count) {
             return nil
         }
