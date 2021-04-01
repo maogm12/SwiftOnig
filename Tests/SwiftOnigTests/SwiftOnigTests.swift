@@ -23,42 +23,42 @@ final class SwiftOnigTests: XCTestCase {
     func testMatch() {
         let reg = try! Regex("foo")
         XCTAssertTrue(try! reg.isMatch("foo"))
-        XCTAssertEqual(try! reg.match("foo"), 3)
-        XCTAssertNil(try! reg.match("bar foo"))
-        XCTAssertEqual(try! reg.match("foo bar"), 3)
+        XCTAssertEqual(try! reg.matchedByteCount(in: "foo"), 3)
+        XCTAssertNil(try! reg.match(in: "bar foo"))
+        XCTAssertEqual(try! reg.matchedByteCount(in: "foo bar"), 3)
 
         XCTAssertFalse(try! reg.isMatch("bar"))
-        XCTAssertNil(try! reg.match("bar"))
+        XCTAssertNil(try! reg.match(in: "bar"))
 
         try! reg.reset(#"a(.*)b|[e-f]+"#)
         XCTAssertTrue(try! reg.isMatch("affffffffb"))
-        XCTAssertEqual(try! reg.match("affffffffb"), 10)
+        XCTAssertEqual(try! reg.matchedByteCount(in: "affffffffb"), 10)
 
         XCTAssertTrue(try! reg.isMatch("efefefefef"))
-        XCTAssertEqual(try! reg.match("efefefefef"), 10)
+        XCTAssertEqual(try! reg.matchedByteCount(in: "efefefefef"), 10)
 
         XCTAssertFalse(try! reg.isMatch("zzzzaffffffffb"))
-        XCTAssertNil(try! reg.match("zzzzaffffffffb"))
+        XCTAssertNil(try! reg.match(in: "zzzzaffffffffb"))
         
         try! reg.reset(#"\w"#)
-        XCTAssertEqual(try! reg.match("a"), 1)
+        XCTAssertEqual(try! reg.matchedByteCount(in: "a"), 1)
     }
     
     func testSearch() {
         let emailReg = try! Regex(#"\w+@\w+\.com"#)
-        let result = try! emailReg.search("Naive email: test@example.com. :)")
-        XCTAssertEqual(result, 13)
+        XCTAssertEqual(try! emailReg.firstIndex(in: "Naive email: test@example.com. :)"), 13)
     }
-    
+
     func testRegionTree() {
         let syntax = Syntax.ruby
         syntax.enableOperators(operators: .atmarkCaptureHistory)
         let reg = try! Regex(#"(?@a+(?@b+))|(?@c+(?@d+))"#, option: .none, syntax: syntax)
-        let region = Region()
-        let str = "- cd aaabbb -"
-        let result = try! reg.search(str, options: .none, region: region, matchParam: MatchParam())
-        
-        XCTAssertEqual(result, 2)
+        guard let (firstIndex, region) = try! reg.search(in: "- cd aaabbb -") else {
+            XCTFail("Should match")
+            return
+        }
+
+        XCTAssertEqual(firstIndex, 2)
         XCTAssertEqual(region.count, 5)
 
         let tree = region.tree!

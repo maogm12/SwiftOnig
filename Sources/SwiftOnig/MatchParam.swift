@@ -8,14 +8,10 @@
 import COnig
 
 public class MatchParam {
-    var rawValue: OpaquePointer
+    internal private(set) var rawValue: OpaquePointer!
 
-    init() throws {
-        if let matchParam = onig_new_match_param() {
-            self.rawValue = matchParam
-        } else {
-            throw OnigError.memory
-        }
+    public init() {
+        self.rawValue = onig_new_match_param()
     }
 
     deinit {

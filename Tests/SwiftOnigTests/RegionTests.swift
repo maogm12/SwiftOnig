@@ -22,8 +22,7 @@ final class RegionTests: XCTestCase {
     
     func testIterator() {
         let regex = try! Regex("(a+)(b+)(c+)")
-        let region = Region()
-        let _ = try! regex.search("aaaabbbbc", options: .none, region: region, matchParam: MatchParam())
+        let region = try! regex.search(in: "aaaabbbbc")!.region
 
         var ranges = [Range<Int>]()
         for range in region {

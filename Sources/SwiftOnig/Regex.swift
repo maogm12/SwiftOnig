@@ -78,122 +78,96 @@ public class Regex {
         `true` if and only if the regex matches the whole string given, otherwise `false`.
      */
     public func isMatch<T: StringProtocol>(_ str: T) throws -> Bool {
-        let matchParam = try MatchParam()
-        if let matchLen = try self.match(str, at: 0, options: .none, region: nil, matchParam: matchParam) {
-            return matchLen == str.utf8.count
-        } else {
-            return false
-        }
+        try self.matchedByteCount(in: str) == str.utf8.count
     }
 
     /**
-     Match string and return result and matching region. Do not pass invalid byte string in the regex character encoding.
+     Match string and return matched UTF-8 byte count. Do not pass invalid byte string in the regex character encoding.
      - Parameters:
         - str: Target string to match against
      - Returns:
-        The byte-position of the start of the match if the regex matches, `nil` if it doesn't match.
+        Matched UTF-8 byte count from the beginning of the string if the regex matches, `nil` if it doesn't match.
      - Throws: `OnigError`
      */
-    public func match<T: StringProtocol>(_ str: T) throws -> Int? {
-        let matchParam = try MatchParam()
-        return try self.match(str, at: 0, options: .none, region: nil, matchParam: matchParam)
+    public func matchedByteCount<T: StringProtocol>(in str: T, from: Int = 0) throws -> Int? {
+        try self.match(in: str)?.matchedByteCount
     }
 
     /**
-     Match string and return result and matching region. Do not pass invalid byte string in the regex character encoding.
+     Match string and return matched UTF-8 byte count. Do not pass invalid byte string in the regex character encoding.
      - Parameters:
         - str: Target string to match against
-        - at: The position to match against
+        - from: The position to match against
         - option: The regex match options.
-        - region: Address for return group match range info
         - matchParam: Match parameter values (match_stack_limit, retry_limit_in_match, retry_limit_in_search)
      - Returns:
-        The byte-position of the start of the match if the regex matches, `nil` if it doesn't match.
+        A tuple of matched UTF-8 byte count and matching region, `nil` if it doesn't match.
      - Throws: `OnigError`
      */
-    public func match<T: StringProtocol>(_ str: T, at: Int, options: SearchOptions, region: Region?, matchParam: MatchParam) throws -> Int? {
+    public func match<T: StringProtocol>(in str: T, from: Int = 0, options: SearchOptions = .none, matchParam: MatchParam = MatchParam()) throws -> (matchedByteCount: Int, region: Region)? {
+        let region = Region()
         let byteCount = str.utf8.count
         let result = str.withCString { (cstr: UnsafePointer<Int8>) -> Int32 in
             cstr.withMemoryRebound(to: OnigUChar.self, capacity: byteCount) { start -> Int32 in
-                var onigRegion: UnsafeMutablePointer<OnigRegion>! = nil
-                if region != nil {
-                    onigRegion = UnsafeMutablePointer<OnigRegion>.allocate(capacity: 1)
-                    onigRegion.pointee = region!.rawValue
-                }
-                let r = onig_match_with_param(self.rawValue,
-                                             start,
-                                             start.advanced(by: byteCount),
-                                             start.advanced(by: at),
-                                             onigRegion,
-                                             options.rawValue,
-                                             matchParam.rawValue)
-                if region != nil {
-                    region?.rawValue = onigRegion.pointee
-                }
-                return r
+                onig_match_with_param(self.rawValue,
+                                      start,
+                                      start.advanced(by: byteCount),
+                                      start.advanced(by: from),
+                                      &region.rawValue,
+                                      options.rawValue,
+                                      matchParam.rawValue)
             }
         }
         
         if result >= 0 {
-            return Int(result)
+            return (matchedByteCount: Int(result), region: region)
         } else if result == ONIG_MISMATCH {
             return nil
         }
 
         throw OnigError(result)
     }
-    
+
     /**
-     Search string and return search result and matching region. Do not pass invalid byte string in the regex character encoding.
+     Search in the string and return the first index of matched position. Do not pass invalid byte string in the regex character encoding.
      - Parameters:
         - str: Target string to search against
-     - Returns: match position offset, or `nil` if nothing is found.
+     - Returns:
+        First matched UTF-8 byte position offset, or `nil` if no match is found.
      - Throws: `OnigError`
      */
-    public func search<T: StringProtocol>(_ str: T) throws -> Int? {
-        let matchParam = try MatchParam()
-        return try self.search(str, options: .none, region: nil, matchParam: matchParam)
+    public func firstIndex<T: StringProtocol>(in str: T) throws -> Int? {
+        try self.search(in: str)?.firstIndex
     }
-    
+
     /**
      Search string and return search result and matching region. Do not pass invalid byte string in the regex character encoding.
      - Parameters:
         - str: Target string to search against
         - option: The regex search options.
-        - region: Address for return group match range info
         - matchParam: Match parameter values (match_stack_limit, retry_limit_in_match, retry_limit_in_search)
-     - Returns: match position offset, or `nil` if nothing is found.
+     - Returns:
+        Tuple of first matched UTF-8 byte position and matching region, or `nil` if no match is found.
      - Throws: `OnigError`
      */
-    public func search<T: StringProtocol>(_ str: T, options: SearchOptions, region: Region?, matchParam: MatchParam) throws -> Int? {
+    public func search<T: StringProtocol>(in str: T, options: SearchOptions = .none, matchParam: MatchParam = MatchParam()) throws -> (firstIndex: Int, region: Region)? {
+        let region = Region()
         let byteCount = str.utf8.count
         let result = str.withCString { (cstr: UnsafePointer<Int8>) -> Int32 in
             cstr.withMemoryRebound(to: OnigUChar.self, capacity: byteCount) { start -> Int32 in
-                var onigRegion: UnsafeMutablePointer<OnigRegion>! = nil
-                if region != nil {
-                    onigRegion = UnsafeMutablePointer<OnigRegion>.allocate(capacity: 1)
-                    onigRegion.pointee = region!.rawValue
-                }
-                
-                let r = onig_search_with_param(self.rawValue,
+                onig_search_with_param(self.rawValue,
                                              start,
                                              start.advanced(by: byteCount),
                                              start,
                                              start.advanced(by: byteCount),
-                                             onigRegion,
+                                             &region.rawValue,
                                              options.rawValue,
                                              matchParam.rawValue)
-                
-                if region != nil {
-                    region?.rawValue = onigRegion.pointee
-                }
-
-                return r
             }
         }
         
         if result >= 0 {
-            return Int(result)
+            return (firstIndex: Int(result), region: region)
         } else if result == ONIG_MISMATCH {
             return nil
         }
