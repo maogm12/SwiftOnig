@@ -8,6 +8,9 @@
 import COnig
 import Foundation
 
+/**
+ Match result region type.
+ */
 public class Region {
     internal var rawValue: OnigRegion
     
@@ -18,7 +21,7 @@ public class Region {
                                    end: nil,
                                    history_root: nil)
     }
-    
+
     convenience init(with capacity: Int32) {
         self.init()
         self.reserve(capacity: capacity)
@@ -29,9 +32,7 @@ public class Region {
     }
     
     public var capacity: Int32 {
-        get {
-            return self.rawValue.allocated
-        }
+        return self.rawValue.allocated
     }
     
     /**
@@ -84,6 +85,10 @@ public class Region {
         }
 
         let end = Int(self.rawValue.end.advanced(by: groupIndex).pointee)
+        if end == ONIG_REGION_NOTPOS {
+            return nil
+        }
+
         return begin ..< end
     }
     
@@ -118,19 +123,5 @@ extension Region: Sequence {
 
     public func makeIterator() -> Region.Iterator {
         return Region.Iterator(region: self)
-    }
-}
-
-extension StringProtocol {
-    public func subString(with utf8BytesRange: Range<Int>) -> String? {
-        if utf8BytesRange != utf8BytesRange.clamped(to: 0 ..< self.utf8.count) {
-            return nil
-        }
-
-        return self.withCString { ptr -> String? in
-            String(data: Data(bytes: ptr.advanced(by: utf8BytesRange.lowerBound),
-                              count: utf8BytesRange.count),
-                   encoding: .utf8)
-        }
     }
 }

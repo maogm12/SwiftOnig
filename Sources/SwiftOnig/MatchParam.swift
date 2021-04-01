@@ -21,6 +21,13 @@ public class MatchParam {
     deinit {
         onig_free_match_param(self.rawValue)
     }
+    
+    /**
+     Set the fields to default values.
+     */
+    public func reset() {
+        onig_initialize_match_param(self.rawValue)
+    }
 
     /**
      Set a maximum number of match-stack depth. `0` means unlimited.

@@ -7,7 +7,7 @@
 
 import COnig
 
-public enum OnigError: Error {
+public enum OnigError: Error, Equatable {
     /* internal error */
     case memory
     case typeBug
@@ -65,15 +65,15 @@ public enum OnigError: Error {
     case tooManyCaptures
     case tooLongWideCharValue
     case emptyGroupName
-    case invalidGroupName
-    case invalidCharInGroupName
-    case undefinedNameReference
-    case undefinedGroupReference
-    case multiplexDefinedName
-    case multiplexDefinitionNameCall
+    case invalidGroupName(String)
+    case invalidCharInGroupName(String)
+    case undefinedNameReference(String)
+    case undefinedGroupReference(String)
+    case multiplexDefinedName(String)
+    case multiplexDefinitionNameCall(String)
     case neverEndingRecursion
     case groupNumberOverForCaptureHistory
-    case invalidCharPropertyName
+    case invalidCharPropertyName(String)
     case invalidIfElseSyntax
     case invalidAbsentGroupPattern
     case invalidAbsentGroupGeneratorPattern
@@ -94,7 +94,7 @@ public enum OnigError: Error {
 }
 
 extension OnigError {
-    public init(_ onigErrorCode: Int32) {
+    public init(_ onigErrorCode: Int32, onigErrorInfo: OnigErrorInfo? = nil) {
         switch onigErrorCode {
         /* internal error */
         case ONIGERR_MEMORY:
@@ -204,23 +204,23 @@ extension OnigError {
         case ONIGERR_EMPTY_GROUP_NAME:
             self = .emptyGroupName
         case ONIGERR_INVALID_GROUP_NAME:
-            self = .invalidGroupName
+            self = .invalidGroupName(onigErrorInfo?.description ?? "")
         case ONIGERR_INVALID_CHAR_IN_GROUP_NAME:
-            self = .invalidCharInGroupName
+            self = .invalidCharInGroupName(onigErrorInfo?.description ?? "")
         case ONIGERR_UNDEFINED_NAME_REFERENCE:
-            self = .undefinedNameReference
+            self = .undefinedNameReference(onigErrorInfo?.description ?? "")
         case ONIGERR_UNDEFINED_GROUP_REFERENCE:
-            self = .undefinedGroupReference
+            self = .undefinedGroupReference(onigErrorInfo?.description ?? "")
         case ONIGERR_MULTIPLEX_DEFINED_NAME:
-            self = .multiplexDefinedName
+            self = .multiplexDefinedName(onigErrorInfo?.description ?? "")
         case ONIGERR_MULTIPLEX_DEFINITION_NAME_CALL:
-            self = .multiplexDefinitionNameCall
+            self = .multiplexDefinitionNameCall(onigErrorInfo?.description ?? "")
         case ONIGERR_NEVER_ENDING_RECURSION:
             self = .neverEndingRecursion
         case ONIGERR_GROUP_NUMBER_OVER_FOR_CAPTURE_HISTORY:
             self = .groupNumberOverForCaptureHistory
         case ONIGERR_INVALID_CHAR_PROPERTY_NAME:
-            self = .invalidCharPropertyName
+            self = .invalidCharPropertyName(onigErrorInfo?.description ?? "")
         case ONIGERR_INVALID_IF_ELSE_SYNTAX:
             self = .invalidIfElseSyntax
         case ONIGERR_INVALID_ABSENT_GROUP_PATTERN:
@@ -422,5 +422,15 @@ extension OnigError {
         case .libraryIsNotInitialized:
             return ONIGERR_LIBRARY_IS_NOT_INITIALIZED
         }
+    }
+}
+
+extension OnigErrorInfo: CustomStringConvertible {
+    /**
+     Get the string of this `OnigErrorInfo`. Only UTF-8 encoding is considered.
+     - TODO: Support more encodings.
+     */
+    public var description: String {
+        String(utf8String: self.par, end: self.par_end) ?? ""
     }
 }

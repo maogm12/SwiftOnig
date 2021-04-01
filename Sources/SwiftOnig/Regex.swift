@@ -6,36 +6,36 @@
 //
 
 import COnig
+import Foundation
 
 public class Regex {
-    var rawValue: OnigRegex?
+    internal private(set) var rawValue: OnigRegex?
+    private static let regexNewlock = NSLock()
 
     convenience init<T: StringProtocol>(_ pattern: T) throws {
         try self.init(pattern, option: .none, syntax: Syntax.default)
     }
 
     init<T: StringProtocol>(_ pattern: T, option: Options, syntax: Syntax) throws {
-        // We can use this later to get an error message to pass back
-        // if regex creation fails.
-        var error = OnigErrorInfo(enc: nil, par: nil, par_end: nil)
-
-        // TODO add lock
         let byteCount = pattern.utf8.count
-        let result = pattern.withCString { (patternCstr: UnsafePointer<Int8>) -> Int32 in
-            patternCstr.withMemoryRebound(to: OnigUChar.self, capacity: byteCount) { patternStart in
-                var rawSyntax = syntax.rawValue
-                return onig_new(&self.rawValue,
-                                patternStart,
-                                patternStart.advanced(by: byteCount),
-                                option.rawValue,
-                                &OnigEncodingUTF8,
-                                &rawSyntax,
-                                &error)
+        try pattern.withCString { (patternCstr: UnsafePointer<Int8>) throws in
+            try patternCstr.withMemoryRebound(to: OnigUChar.self, capacity: byteCount) { patternStart throws in
+                var error = OnigErrorInfo(enc: nil, par: nil, par_end: nil)
+
+                Regex.regexNewlock.lock()
+                let onigResult = onig_new(&self.rawValue,
+                                          patternStart,
+                                          patternStart.advanced(by: byteCount),
+                                          option.rawValue,
+                                          &OnigEncodingUTF8,
+                                          &syntax.rawValue,
+                                          &error)
+                Regex.regexNewlock.unlock()
+
+                if onigResult != ONIG_NORMAL {
+                    throw OnigError(onigResult, onigErrorInfo: error)
+                }
             }
-        }
-        
-        if result != ONIG_NORMAL {
-            throw OnigError(result)
         }
     }
 
@@ -48,27 +48,25 @@ public class Regex {
     }
     
     public func reset<T: StringProtocol>(_ pattern: T, option: Options, syntax: Syntax) throws {
-        // We can use this later to get an error message to pass back
-        // if regex creation fails.
-        var error = OnigErrorInfo(enc: nil, par: nil, par_end: nil)
-
-        // TODO add lock
         let byteCount = pattern.utf8.count
-        let result = pattern.withCString { (patternCstr: UnsafePointer<Int8>) -> Int32 in
-            patternCstr.withMemoryRebound(to: OnigUChar.self, capacity: byteCount) { patternStart in
-                var rawSyntax = syntax.rawValue
-                return onig_new_without_alloc(self.rawValue,
-                                              patternStart,
-                                              patternStart.advanced(by: byteCount),
-                                              option.rawValue,
-                                              &OnigEncodingUTF8,
-                                              &rawSyntax,
-                                              &error)
+        try pattern.withCString { (patternCstr: UnsafePointer<Int8>) throws in
+            try patternCstr.withMemoryRebound(to: OnigUChar.self, capacity: byteCount) { patternStart throws in
+                var error = OnigErrorInfo(enc: nil, par: nil, par_end: nil)
+
+                Regex.regexNewlock.lock()
+                let onigResult = onig_new_without_alloc(self.rawValue,
+                                                        patternStart,
+                                                        patternStart.advanced(by: byteCount),
+                                                        option.rawValue,
+                                                        &OnigEncodingUTF8,
+                                                        &syntax.rawValue,
+                                                        &error)
+                Regex.regexNewlock.unlock()
+
+                if onigResult != ONIG_NORMAL {
+                    throw OnigError(onigResult, onigErrorInfo: error)
+                }
             }
-        }
-        
-        if result != ONIG_NORMAL {
-            throw OnigError(result)
         }
     }
 
@@ -81,13 +79,13 @@ public class Regex {
      */
     public func isMatch<T: StringProtocol>(_ str: T) throws -> Bool {
         let matchParam = try MatchParam()
-        if let matchLen = try self.match(str, options: .none, region: nil, matchParam: matchParam) {
+        if let matchLen = try self.match(str, at: 0, options: .none, region: nil, matchParam: matchParam) {
             return matchLen == str.utf8.count
         } else {
             return false
         }
     }
-    
+
     /**
      Match string and return result and matching region. Do not pass invalid byte string in the regex character encoding.
      - Parameters:
@@ -98,13 +96,14 @@ public class Regex {
      */
     public func match<T: StringProtocol>(_ str: T) throws -> Int? {
         let matchParam = try MatchParam()
-        return try self.match(str, options: .none, region: nil, matchParam: matchParam)
+        return try self.match(str, at: 0, options: .none, region: nil, matchParam: matchParam)
     }
 
     /**
      Match string and return result and matching region. Do not pass invalid byte string in the regex character encoding.
      - Parameters:
         - str: Target string to match against
+        - at: The position to match against
         - option: The regex match options.
         - region: Address for return group match range info
         - matchParam: Match parameter values (match_stack_limit, retry_limit_in_match, retry_limit_in_search)
@@ -112,7 +111,7 @@ public class Regex {
         The byte-position of the start of the match if the regex matches, `nil` if it doesn't match.
      - Throws: `OnigError`
      */
-    public func match<T: StringProtocol>(_ str: T, options: SearchOptions, region: Region?, matchParam: MatchParam) throws -> Int? {
+    public func match<T: StringProtocol>(_ str: T, at: Int, options: SearchOptions, region: Region?, matchParam: MatchParam) throws -> Int? {
         let byteCount = str.utf8.count
         let result = str.withCString { (cstr: UnsafePointer<Int8>) -> Int32 in
             cstr.withMemoryRebound(to: OnigUChar.self, capacity: byteCount) { start -> Int32 in
@@ -124,7 +123,7 @@ public class Regex {
                 let r = onig_match_with_param(self.rawValue,
                                              start,
                                              start.advanced(by: byteCount),
-                                             start,
+                                             start.advanced(by: at),
                                              onigRegion,
                                              options.rawValue,
                                              matchParam.rawValue)
@@ -278,9 +277,9 @@ extension Regex {
     /**
      The number of named groups into regex.
      */
-    public var captureNameCount: Int {
-        return Int(onig_number_of_names(&self.rawValue))
-    }
+//    public var captureNameCount: Int {
+//        return Int(onig_number_of_names(&self.rawValue))
+//    }
 
     // public func onig_foreach_name(_ reg: OnigRegex!, _ func: (@convention(c) (UnsafePointer<OnigUChar>?, UnsafePointer<OnigUChar>?, Int32, UnsafeMutablePointer<Int32>?, OnigRegex?, UnsafeMutableRawPointer?) -> Int32)!, _ arg: UnsafeMutableRawPointer!) -> Int32
 
