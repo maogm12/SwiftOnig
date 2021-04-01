@@ -90,9 +90,9 @@ public class Syntax {
     /**
      Get or set the syntax options for this syntax.
      */
-    public var options: RegexOptions {
+    public var options: Regex.Options {
         get {
-            return RegexOptions(rawValue: onig_get_syntax_options(&self.rawValue))
+            return Regex.Options(rawValue: onig_get_syntax_options(&self.rawValue))
         }
         
         set {

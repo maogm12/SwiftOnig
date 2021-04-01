@@ -14,7 +14,7 @@ public class Regex {
         try self.init(pattern, option: .none, syntax: Syntax.default)
     }
 
-    init<T: StringProtocol>(_ pattern: T, option: RegexOptions, syntax: Syntax) throws {
+    init<T: StringProtocol>(_ pattern: T, option: Options, syntax: Syntax) throws {
         // We can use this later to get an error message to pass back
         // if regex creation fails.
         var error = OnigErrorInfo(enc: nil, par: nil, par_end: nil)
@@ -47,7 +47,7 @@ public class Regex {
         try self.reset(pattern, option: .none, syntax: Syntax.default)
     }
     
-    public func reset<T: StringProtocol>(_ pattern: T, option: RegexOptions, syntax: Syntax) throws {
+    public func reset<T: StringProtocol>(_ pattern: T, option: Options, syntax: Syntax) throws {
         // We can use this later to get an error message to pass back
         // if regex creation fails.
         var error = OnigErrorInfo(enc: nil, par: nil, par_end: nil)
@@ -201,4 +201,88 @@ public class Regex {
 
         throw OnigError(result)
     }
+}
+
+extension Regex {
+    /// Regex parsing and compilation options.
+    public struct Options: OptionSet {
+        public let rawValue: OnigOptionType
+        
+        public init(rawValue: OnigOptionType) {
+            self.rawValue = rawValue
+        }
+
+        /// Default options.
+        public static let none = Regex.Options(rawValue: ONIG_OPTION_NONE)
+
+        /// Ambiguity match on.
+        public static let ignoreCase = Regex.Options(rawValue: ONIG_OPTION_IGNORECASE)
+        
+        /// Extended pattern form.
+        public static let extend = Regex.Options(rawValue: ONIG_OPTION_EXTEND)
+
+        /// `'.'` match with newline.
+        public static let multiLine = Regex.Options(rawValue: ONIG_OPTION_MULTILINE);
+        
+        /// `'^'` -> `'\A'`, `'$'` -> `'\Z'`.
+        public static let singleLine = Regex.Options(rawValue: ONIG_OPTION_SINGLELINE);
+        
+        /// Find longest match.
+        public static let findLongest = Regex.Options(rawValue: ONIG_OPTION_FIND_LONGEST);
+        
+        /// Ignore empty match.
+        public static let findNotEmpty = Regex.Options(rawValue: ONIG_OPTION_FIND_NOT_EMPTY);
+
+        /// Clear `OPTION_SINGLELINE` which is enabled on
+        /// `SYNTAX_POSIX_BASIC`, `SYNTAX_POSIX_EXTENDED`,
+        /// `SYNTAX_PERL`, `SYNTAX_PERL_NG`, `SYNTAX_JAVA`.
+        public static let negateSingleLine = Regex.Options(rawValue: ONIG_OPTION_NEGATE_SINGLELINE);
+
+        /// Only named group captured.
+        public static let dontCaptureGroup = Regex.Options(rawValue: ONIG_OPTION_DONT_CAPTURE_GROUP);
+
+        /// Named and no-named group captured.
+        public static let captureGroup = Regex.Options(rawValue: ONIG_OPTION_CAPTURE_GROUP);
+    }
+
+    /// Regex evaluation options.
+    public struct SearchOptions: OptionSet {
+        public let rawValue: OnigOptionType
+        
+        public init(rawValue: OnigOptionType) {
+            self.rawValue = rawValue
+        }
+
+        /// Default options.
+        public static let none = SearchOptions(rawValue: ONIG_OPTION_NONE);
+        
+        /// Do not regard the beginning of the (str) as the beginning of the line and the beginning of the string
+        public static let notBol = SearchOptions(rawValue: ONIG_OPTION_NOTBOL);
+
+        /// Do not regard the (end) as the end of a line and the end of a string
+        public static let notEol = SearchOptions(rawValue: ONIG_OPTION_NOTEOL);
+        
+        /// Do not regard the beginning of the (str) as the beginning of a string  (* fail \A)
+        public static let notBeginString = SearchOptions(rawValue: ONIG_OPTION_NOT_BEGIN_STRING)
+        
+        /// Do not regard the (end) as a string endpoint  (* fail \z, \Z)
+        public static let notEndString = SearchOptions(rawValue: ONIG_OPTION_NOT_END_STRING)
+        
+        /// Do not regard the (start) as start position of search  (* fail \G)
+        public static let notBeginPosition = SearchOptions(rawValue: ONIG_OPTION_NOT_BEGIN_POSITION)
+    }
+}
+
+/// Names
+extension Regex {
+    /**
+     The number of named groups into regex.
+     */
+    public var captureNameCount: Int {
+        return Int(onig_number_of_names(&self.rawValue))
+    }
+
+    // public func onig_foreach_name(_ reg: OnigRegex!, _ func: (@convention(c) (UnsafePointer<OnigUChar>?, UnsafePointer<OnigUChar>?, Int32, UnsafeMutablePointer<Int32>?, OnigRegex?, UnsafeMutableRawPointer?) -> Int32)!, _ arg: UnsafeMutableRawPointer!) -> Int32
+
+    
 }
