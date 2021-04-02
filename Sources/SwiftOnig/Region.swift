@@ -13,7 +13,7 @@ import Foundation
  */
 public class Region {
     internal var rawValue: OnigRegion
-    
+
     init() {
         self.rawValue = OnigRegion(allocated: 0,
                                    num_regs: 0,

@@ -7,47 +7,6 @@ final class SwiftOnigTests: XCTestCase {
         XCTAssertFalse(ver.isEmpty)
         print("Oniguruma version is \(ver)")
     }
-    
-    func testValidPattern() {
-        var reg = try? Regex(".*")
-        XCTAssertNotNil(reg)
-        reg = try? Regex(#"a \w+ word"#)
-        XCTAssertNotNil(reg)
-    }
-    
-    func testInValidPattern() {
-        let reg = try? Regex(#"\\p{foo}"#)
-        XCTAssertNotNil(reg)
-    }
-    
-    func testMatch() {
-        let reg = try! Regex("foo")
-        XCTAssertTrue(try! reg.isMatch("foo"))
-        XCTAssertEqual(try! reg.matchedByteCount(in: "foo"), 3)
-        XCTAssertNil(try! reg.match(in: "bar foo"))
-        XCTAssertEqual(try! reg.matchedByteCount(in: "foo bar"), 3)
-
-        XCTAssertFalse(try! reg.isMatch("bar"))
-        XCTAssertNil(try! reg.match(in: "bar"))
-
-        try! reg.reset(#"a(.*)b|[e-f]+"#)
-        XCTAssertTrue(try! reg.isMatch("affffffffb"))
-        XCTAssertEqual(try! reg.matchedByteCount(in: "affffffffb"), 10)
-
-        XCTAssertTrue(try! reg.isMatch("efefefefef"))
-        XCTAssertEqual(try! reg.matchedByteCount(in: "efefefefef"), 10)
-
-        XCTAssertFalse(try! reg.isMatch("zzzzaffffffffb"))
-        XCTAssertNil(try! reg.match(in: "zzzzaffffffffb"))
-        
-        try! reg.reset(#"\w"#)
-        XCTAssertEqual(try! reg.matchedByteCount(in: "a"), 1)
-    }
-    
-    func testSearch() {
-        let emailReg = try! Regex(#"\w+@\w+\.com"#)
-        XCTAssertEqual(try! emailReg.firstIndex(in: "Naive email: test@example.com. :)"), 13)
-    }
 
     func testRegionTree() {
         let syntax = Syntax.ruby
@@ -77,10 +36,6 @@ final class SwiftOnigTests: XCTestCase {
 
     static var allTests = [
         ("testVersion", testVersion),
-        ("testValidPattern", testValidPattern),
-        ("testInValidPattern", testInValidPattern),
-        ("testMatch", testMatch),
-        ("testSearch", testSearch),
         ("testRegionTree", testRegionTree),
     ]
 }

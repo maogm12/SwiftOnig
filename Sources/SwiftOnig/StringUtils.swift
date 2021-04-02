@@ -10,9 +10,9 @@ import Foundation
 
 extension String {
     /**
-     Initialize a string with a part of utf8 bytes
+     Initialize a string with a part of utf8 bytes.
      */
-    internal init?(utf8String start: UnsafePointer<UInt8>!, end: UnsafePointer<UInt8>!) {
+    public init?(utf8String start: UnsafePointer<UInt8>!, end: UnsafePointer<UInt8>!) {
         if start == nil || end == nil {
             return nil
         }

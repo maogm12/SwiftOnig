@@ -10,32 +10,57 @@ import Foundation
 
 public class Regex {
     internal private(set) var rawValue: OnigRegex?
+
+    /**
+     Cached regex pattern in UTF-8 bytes.
+     - Note:
+     Although the default underlying storage of swift `String` use UTF-8, and we could access it with `withCString`,
+     but the lifetime of the pointers are only the scope of `withCString` closures, so keep a copy of the pattern to make sure
+     the addresses used in oniguruma is always valid.
+    */
+    private var patternBytes: ContiguousArray<UInt8>!
+
     private static let regexNewlock = NSLock()
 
+    /**
+     Create a `Regex` with the given pattern.
+     - Parameters:
+        - pattern: Pattern used to create the regex.
+     - Throws:
+        `OnigError`
+     */
     convenience init<T: StringProtocol>(_ pattern: T) throws {
         try self.init(pattern, option: .none, syntax: Syntax.default)
     }
 
+    /**
+     Create a `Regex` with given paattern, option and syntax.
+     - Parameters:
+        - pattern: Pattern used to create the regex.
+        - option: `Options` used to create the regex.
+        - syntax: `Syntax` used to create the regex.
+     - Throws:
+        `OnigError`
+     */
     init<T: StringProtocol>(_ pattern: T, option: Options, syntax: Syntax) throws {
-        let byteCount = pattern.utf8.count
-        try pattern.withCString { (patternCstr: UnsafePointer<Int8>) throws in
-            try patternCstr.withMemoryRebound(to: OnigUChar.self, capacity: byteCount) { patternStart throws in
-                var error = OnigErrorInfo(enc: nil, par: nil, par_end: nil)
+        self.patternBytes = ContiguousArray(pattern.utf8)
+        var error = OnigErrorInfo()
+        let result = self.patternBytes.withUnsafeBufferPointer { bufPtr -> Int32 in
+            // Make sure that `onig_new` isn't called by more than one thread at a time.
+            Regex.regexNewlock.lock()
+            let onigResult = onig_new(&self.rawValue,
+                                      bufPtr.baseAddress,
+                                      bufPtr.baseAddress?.advanced(by: self.patternBytes.count),
+                                      option.rawValue,
+                                      &OnigEncodingUTF8,
+                                      &syntax.rawValue,
+                                      &error)
+            Regex.regexNewlock.unlock()
+            return onigResult
+        }
 
-                Regex.regexNewlock.lock()
-                let onigResult = onig_new(&self.rawValue,
-                                          patternStart,
-                                          patternStart.advanced(by: byteCount),
-                                          option.rawValue,
-                                          &OnigEncodingUTF8,
-                                          &syntax.rawValue,
-                                          &error)
-                Regex.regexNewlock.unlock()
-
-                if onigResult != ONIG_NORMAL {
-                    throw OnigError(onigResult, onigErrorInfo: error)
-                }
-            }
+        if result != ONIG_NORMAL {
+            throw OnigError(result, onigErrorInfo: error)
         }
     }
 
@@ -43,30 +68,51 @@ public class Regex {
         onig_free(self.rawValue)
     }
     
+    /**
+     Reset the regex with the  given pattern.
+     - Parameters:
+        - pattern: Pattern used to recreate the regex.
+     - Throws:
+        `OnigError`
+     - Note:
+        If there are any error thrown while recreating the regex, this regex will become invalid.
+     */
     public func reset<T: StringProtocol>(_ pattern: T) throws {
         try self.reset(pattern, option: .none, syntax: Syntax.default)
     }
     
+    /**
+     Reset the regex with the  given pattern.
+     - Parameters:
+        - pattern: Pattern used to create the regex.
+        - option: `Options` used to create the regex.
+        - syntax: `Syntax` used to create the regex.
+     - Throws:
+        `OnigError`
+     - Note:
+        If there are any error thrown while recreating the regex, this regex will become invalid.
+     */
     public func reset<T: StringProtocol>(_ pattern: T, option: Options, syntax: Syntax) throws {
-        let byteCount = pattern.utf8.count
-        try pattern.withCString { (patternCstr: UnsafePointer<Int8>) throws in
-            try patternCstr.withMemoryRebound(to: OnigUChar.self, capacity: byteCount) { patternStart throws in
-                var error = OnigErrorInfo(enc: nil, par: nil, par_end: nil)
+        self.patternBytes = ContiguousArray(pattern.utf8)
+        var error = OnigErrorInfo()
+        let result = self.patternBytes.withUnsafeBufferPointer { bufPtr -> Int32 in
+            // Make sure that `onig_new` isn't called by more than one thread at a time.
+            Regex.regexNewlock.lock()
+            let onigResult = onig_new_without_alloc(self.rawValue,
+                                                    bufPtr.baseAddress,
+                                                    bufPtr.baseAddress?.advanced(by: self.patternBytes.count),
+                                                    option.rawValue,
+                                                    &OnigEncodingUTF8,
+                                                    &syntax.rawValue,
+                                                    &error)
+            Regex.regexNewlock.unlock()
+            return onigResult
+        }
 
-                Regex.regexNewlock.lock()
-                let onigResult = onig_new_without_alloc(self.rawValue,
-                                                        patternStart,
-                                                        patternStart.advanced(by: byteCount),
-                                                        option.rawValue,
-                                                        &OnigEncodingUTF8,
-                                                        &syntax.rawValue,
-                                                        &error)
-                Regex.regexNewlock.unlock()
-
-                if onigResult != ONIG_NORMAL {
-                    throw OnigError(onigResult, onigErrorInfo: error)
-                }
-            }
+        if result != ONIG_NORMAL {
+            self.rawValue = nil
+            self.patternBytes = nil
+            throw OnigError(result, onigErrorInfo: error)
         }
     }
 
@@ -77,8 +123,8 @@ public class Regex {
      - Returns:
         `true` if and only if the regex matches the whole string given, otherwise `false`.
      */
-    public func isMatch<T: StringProtocol>(_ str: T) throws -> Bool {
-        try self.matchedByteCount(in: str) == str.utf8.count
+    public func isMatch<T: StringProtocol>(_ str: T) -> Bool {
+        self.matchedByteCount(in: str) == str.utf8.count
     }
 
     /**
@@ -87,10 +133,9 @@ public class Regex {
         - str: Target string to match against
      - Returns:
         Matched UTF-8 byte count from the beginning of the string if the regex matches, `nil` if it doesn't match.
-     - Throws: `OnigError`
      */
-    public func matchedByteCount<T: StringProtocol>(in str: T, from: Int = 0) throws -> Int? {
-        try self.match(in: str)?.matchedByteCount
+    public func matchedByteCount<T: StringProtocol>(in str: T, from: Int = 0) -> Int? {
+        try? self.match(in: str)?.matchedByteCount
     }
 
     /**
@@ -105,6 +150,10 @@ public class Regex {
      - Throws: `OnigError`
      */
     public func match<T: StringProtocol>(in str: T, from: Int = 0, options: SearchOptions = .none, matchParam: MatchParam = MatchParam()) throws -> (matchedByteCount: Int, region: Region)? {
+        if self.rawValue == nil {
+            return nil
+        }
+
         let region = Region()
         let byteCount = str.utf8.count
         let result = str.withCString { (cstr: UnsafePointer<Int8>) -> Int32 in
@@ -134,10 +183,9 @@ public class Regex {
         - str: Target string to search against
      - Returns:
         First matched UTF-8 byte position offset, or `nil` if no match is found.
-     - Throws: `OnigError`
      */
-    public func firstIndex<T: StringProtocol>(in str: T) throws -> Int? {
-        try self.search(in: str)?.firstIndex
+    public func firstIndex<T: StringProtocol>(in str: T) -> Int? {
+        try? self.search(in: str)?.firstIndex
     }
 
     /**
@@ -151,6 +199,10 @@ public class Regex {
      - Throws: `OnigError`
      */
     public func search<T: StringProtocol>(in str: T, options: SearchOptions = .none, matchParam: MatchParam = MatchParam()) throws -> (firstIndex: Int, region: Region)? {
+        if self.rawValue == nil {
+            return nil
+        }
+
         let region = Region()
         let byteCount = str.utf8.count
         let result = str.withCString { (cstr: UnsafePointer<Int8>) -> Int32 in
@@ -173,6 +225,20 @@ public class Regex {
         }
 
         throw OnigError(result)
+    }
+    
+    /**
+     Get the count of capture groups of the pattern.
+     */
+    public var captureCount: Int {
+        return Int(onig_number_of_captures(self.rawValue))
+    }
+    
+    /**
+     Get the count of capture hisotries of the pattern.
+     */
+    public var captureHistoryCount: Int {
+        return Int(onig_number_of_capture_histories(self.rawValue))
     }
 }
 
@@ -249,13 +315,19 @@ extension Regex {
 /// Names
 extension Regex {
     /**
-     The number of named groups into regex.
+     Get the count of named groups of the pattern.
      */
-//    public var captureNameCount: Int {
-//        return Int(onig_number_of_names(&self.rawValue))
-//    }
+    public var nameCount: Int {
+        return Int(onig_number_of_names(self.rawValue))
+    }
 
     // public func onig_foreach_name(_ reg: OnigRegex!, _ func: (@convention(c) (UnsafePointer<OnigUChar>?, UnsafePointer<OnigUChar>?, Int32, UnsafeMutablePointer<Int32>?, OnigRegex?, UnsafeMutableRawPointer?) -> Int32)!, _ arg: UnsafeMutableRawPointer!) -> Int32
 
-    
+//    public NameIterator: IteratorProtocol {
+//
+//    }
+//
+//    public NameSequence: Sequence {
+//
+//    }
 }
