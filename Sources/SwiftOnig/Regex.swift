@@ -60,12 +60,13 @@ public class Regex {
         }
 
         if result != ONIG_NORMAL {
+            self.cleanUp()
             throw OnigError(result, onigErrorInfo: error)
         }
     }
 
     deinit {
-        onig_free(self.rawValue)
+        self.cleanUp()
     }
     
     /**
@@ -110,8 +111,7 @@ public class Regex {
         }
 
         if result != ONIG_NORMAL {
-            self.rawValue = nil
-            self.patternBytes = nil
+            self.cleanUp()
             throw OnigError(result, onigErrorInfo: error)
         }
     }
@@ -231,14 +231,28 @@ public class Regex {
      Get the count of capture groups of the pattern.
      */
     public var captureCount: Int {
-        return Int(onig_number_of_captures(self.rawValue))
+        return self.rawValue == nil ? 0 : Int(onig_number_of_captures(self.rawValue))
     }
     
     /**
      Get the count of capture hisotries of the pattern.
      */
     public var captureHistoryCount: Int {
-        return Int(onig_number_of_capture_histories(self.rawValue))
+        return self.rawValue == nil ? 0 : Int(onig_number_of_capture_histories(self.rawValue))
+    }
+    
+    /**
+     Clean up oniguruma regex object and cacahed pattern bytes.
+     */
+    private func cleanUp() {
+        if self.rawValue != nil {
+            onig_free(self.rawValue)
+            self.rawValue = nil
+        }
+        
+        if self.patternBytes != nil {
+            self.patternBytes = nil
+        }
     }
 }
 
@@ -318,16 +332,44 @@ extension Regex {
      Get the count of named groups of the pattern.
      */
     public var nameCount: Int {
-        return Int(onig_number_of_names(self.rawValue))
+        return self.rawValue == nil ? 0 : Int(onig_number_of_names(self.rawValue))
     }
 
     // public func onig_foreach_name(_ reg: OnigRegex!, _ func: (@convention(c) (UnsafePointer<OnigUChar>?, UnsafePointer<OnigUChar>?, Int32, UnsafeMutablePointer<Int32>?, OnigRegex?, UnsafeMutableRawPointer?) -> Int32)!, _ arg: UnsafeMutableRawPointer!) -> Int32
 
-//    public NameIterator: IteratorProtocol {
-//
-//    }
-//
-//    public NameSequence: Sequence {
-//
-//    }
+    public typealias nameCallBackType = @convention(c) (String, [Int]) -> Bool
+
+    /**
+     Calls `callback` for each named group in the regex. Each callback gets the group name and group indices.
+     - TODO:
+        Add iterator for named groups
+     */
+    public func forEachName(_ callback: @escaping nameCallBackType) {
+        if self.rawValue == nil {
+            return
+        }
+
+        onig_foreach_name(self.rawValue, { (namePtr, nameEndPtr, groupCount, groupsPtr, _ /* regex */, context) -> Int32 in
+            guard let name = String(utf8String: namePtr, end: nameEndPtr) else {
+                return ONIG_ABORT
+            }
+            
+            guard let groupsPtr = groupsPtr else {
+                return ONIG_ABORT
+            }
+
+            var groupIndice = [Int]()
+            for i in 0..<Int(groupCount) {
+                groupIndice.append(Int(groupsPtr[i]))
+            }
+
+            let callback = unsafeBitCast(context, to: nameCallBackType.self)
+
+            if callback(name, groupIndice) {
+                return ONIG_NORMAL
+            } else {
+                return ONIG_ABORT
+            }
+        }, unsafeBitCast(callback, to: UnsafeMutableRawPointer.self))
+    }
 }

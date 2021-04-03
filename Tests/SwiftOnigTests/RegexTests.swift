@@ -47,7 +47,7 @@ final class RegexTests: XCTestCase {
         let naiveEmailReg = try! Regex(#"\w+@\w+\.com"#)
         let target = "Naive email: test@example.com. :)"
 
-        XCTAssertEqual(try! naiveEmailReg.firstIndex(in: target), 13)
+        XCTAssertEqual(naiveEmailReg.firstIndex(in: target), 13)
 
         let result = try? naiveEmailReg.search(in: target)
         XCTAssertNotNil(result)
@@ -59,11 +59,21 @@ final class RegexTests: XCTestCase {
                        "test@example.com")
     }
 
+    func testName() {
+        let reg = try! Regex("(?<a>a+)(?<b>b+(?<bc>c+))(?<a>a+)")
+        XCTAssertEqual(reg.nameCount, 3)
+        
+        reg.forEachName { (name, indice) -> Bool in
+            print(name, indice)
+            return true
+        }
+    }
     
     static var allTests = [
         ("testInit", testInit),
         ("testReset", testReset),
         ("testMatch", testMatch),
         ("testSearch", testSearch),
+        ("testName", testName),
     ]
 }
