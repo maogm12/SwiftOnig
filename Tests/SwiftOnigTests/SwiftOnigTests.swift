@@ -3,7 +3,7 @@ import XCTest
 
 final class SwiftOnigTests: XCTestCase {
     func testVersion() {
-        let ver = SwiftOnig.Version()
+        let ver = SwiftOnig.version()
         XCTAssertFalse(ver.isEmpty)
         print("Oniguruma version is \(ver)")
     }
