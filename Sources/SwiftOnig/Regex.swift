@@ -19,19 +19,13 @@ public class Regex {
      the addresses used in oniguruma is always valid.
     */
     private var patternBytes: ContiguousArray<UInt8>!
+    
+    /**
+     Keep a reference to the syntax to make sure the address to the syntax used in oniguruma is always valid.
+     */
+    private var syntax: Syntax!
 
     private static let regexNewlock = NSLock()
-
-    /**
-     Create a `Regex` with the given pattern.
-     - Parameters:
-        - pattern: Pattern used to create the regex.
-     - Throws:
-        `OnigError`
-     */
-    convenience init<T: StringProtocol>(_ pattern: T) throws {
-        try self.init(pattern, option: .none, syntax: Syntax.default)
-    }
 
     /**
      Create a `Regex` with given paattern, option and syntax.
@@ -42,8 +36,10 @@ public class Regex {
      - Throws:
         `OnigError`
      */
-    init<T: StringProtocol>(_ pattern: T, option: Options, syntax: Syntax) throws {
+    init<T: StringProtocol>(_ pattern: T, option: Options = .none, syntax: Syntax = .default) throws {
         self.patternBytes = ContiguousArray(pattern.utf8)
+        self.syntax = syntax
+
         var error = OnigErrorInfo()
         let result = self.patternBytes.withUnsafeBufferPointer { bufPtr -> Int32 in
             // Make sure that `onig_new` isn't called by more than one thread at a time.
@@ -53,7 +49,7 @@ public class Regex {
                                       bufPtr.baseAddress?.advanced(by: self.patternBytes.count),
                                       option.rawValue,
                                       &OnigEncodingUTF8,
-                                      &syntax.rawValue,
+                                      self.syntax.rawValue,
                                       &error)
             Regex.regexNewlock.unlock()
             return onigResult
@@ -95,6 +91,7 @@ public class Regex {
      */
     public func reset<T: StringProtocol>(_ pattern: T, option: Options, syntax: Syntax) throws {
         self.patternBytes = ContiguousArray(pattern.utf8)
+        self.syntax = syntax
         var error = OnigErrorInfo()
         let result = self.patternBytes.withUnsafeBufferPointer { bufPtr -> Int32 in
             // Make sure that `onig_new` isn't called by more than one thread at a time.
@@ -104,7 +101,7 @@ public class Regex {
                                                     bufPtr.baseAddress?.advanced(by: self.patternBytes.count),
                                                     option.rawValue,
                                                     &OnigEncodingUTF8,
-                                                    &syntax.rawValue,
+                                                    self.syntax.rawValue,
                                                     &error)
             Regex.regexNewlock.unlock()
             return onigResult
@@ -258,6 +255,10 @@ public class Regex {
         
         if self.patternBytes != nil {
             self.patternBytes = nil
+        }
+        
+        if self.syntax != nil {
+            self.syntax = nil
         }
     }
 }

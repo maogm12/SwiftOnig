@@ -10,7 +10,7 @@ final class SwiftOnigTests: XCTestCase {
 
     func testRegionTree() {
         let syntax = Syntax.ruby
-        syntax.enableOperators(operators: .atmarkCaptureHistory)
+        syntax.operators.insert(.atmarkCaptureHistory)
         let reg = try! Regex(#"(?@a+(?@b+))|(?@c+(?@d+))"#, option: .none, syntax: syntax)
         guard let (firstIndex, region) = try! reg.search(in: "- cd aaabbb -") else {
             XCTFail("Should match")

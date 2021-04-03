@@ -7,83 +7,93 @@
 
 import COnig
 
-/// Onig Syntax Wrapper
-///
-/// Each syntax dfines a flavour of regex syntax. This type allows
-/// interaction with the built-in syntaxes through the static accessor
-/// (`Syntax.emacs`, `Syntax.default` etc.) and the
-/// creation of custom syntaxes.
+/**
+ Oniguruma syntax wrapper. This type also comes with static wrapper for oniguruma build-in syntaxes, i.e. `Syntax.oniguruma`, `Syntax.default`.
+ */
 public class Syntax {
-    internal var rawValue: OnigSyntaxType
+    internal typealias OnigSyntaxPtr = UnsafeMutablePointer<OnigSyntaxType>
+    internal var rawValue: OnigSyntaxPtr!
 
-    init(rawValue: OnigSyntaxType) {
-        self.rawValue = rawValue
+    /**
+     This `OnigSyntaxType` is owned by this object, for oniguruma built-in syntaxes, we only carry the pointer to them.
+     */
+    private var ownedSyntax: OnigSyntaxType? = nil
+
+    /**
+     Create a empty syntax.
+     */
+    public init() {
+        self.ownedSyntax = OnigSyntaxType()
+        withUnsafeMutablePointer(to: &self.ownedSyntax!) {
+            self.rawValue = $0
+        }
+    }
+
+    /**
+     Copy from other syntax.
+     - Parameter other: other syntax to copy the syntax from.
+     */
+    public convenience init(from other: Syntax) {
+        self.init()
+        onig_copy_syntax(self.rawValue, other.rawValue)
+    }
+
+    /**
+     Create a `Syntax` with a pointer to oniguruma syntax object. If it's `nil`, will create a empty syntax.
+     - Parameter rawValue: The pointer to oniguruma syntax object.
+     */
+    internal init(rawValue: OnigSyntaxPtr?) {
+        if let rawValue = rawValue {
+            self.rawValue = rawValue
+        } else {
+            self.ownedSyntax = OnigSyntaxType()
+            withUnsafeMutablePointer(to: &self.ownedSyntax!) {
+                self.rawValue = $0
+            }
+        }
     }
 
     /// Plain text syntax
-    public static var asis: Syntax {
-        return Syntax(rawValue: OnigSyntaxASIS)
-    }
+    public static let asis = Syntax(rawValue: &OnigSyntaxASIS)
     
     /// POSIX Basic RE syntax
-    public static var posixBasic: Syntax {
-        return Syntax(rawValue: OnigSyntaxPosixBasic)
-    }
+    public static let posixBasic = Syntax(rawValue: &OnigSyntaxPosixBasic)
     
     /// POSIX Extended RE syntax
-    public static var posixExtended: Syntax {
-        return Syntax(rawValue: OnigSyntaxPosixExtended)
-    }
+    public static var posixExtended = Syntax(rawValue: &OnigSyntaxPosixExtended)
 
     /// Emacs syntax
-    public static var emacs: Syntax {
-        return Syntax(rawValue: OnigSyntaxEmacs)
-    }
+    public static var emacs = Syntax(rawValue: &OnigSyntaxEmacs)
     
     /// Grep syntax
-    public static var grep: Syntax {
-        return Syntax(rawValue: OnigSyntaxGrep)
-    }
+    public static var grep = Syntax(rawValue: &OnigSyntaxGrep)
     
     /// GNU regex syntax
-    public static var gnuRegex: Syntax {
-        return Syntax(rawValue: OnigSyntaxGnuRegex)
-    }
+    public static var gnuRegex = Syntax(rawValue: &OnigSyntaxGnuRegex)
     
     /// Java syntax
-    public static var java: Syntax {
-        return Syntax(rawValue: OnigSyntaxJava)
-    }
+    public static var java = Syntax(rawValue: &OnigSyntaxJava)
     
     /// Perl syntax
-    public static var perl: Syntax {
-        return Syntax(rawValue: OnigSyntaxPerl)
-    }
+    public static var perl = Syntax(rawValue: &OnigSyntaxPerl)
     
     /// Perl + named group syntax
-    public static var perlNg: Syntax {
-        return Syntax(rawValue: OnigSyntaxPerl_NG)
-    }
+    public static var perlNg = Syntax(rawValue: &OnigSyntaxPerl_NG)
     
     /// Ruby syntax
-    public static var ruby: Syntax {
-        return Syntax(rawValue: OnigSyntaxRuby)
-    }
+    public static var ruby = Syntax(rawValue: &OnigSyntaxRuby)
     
     /// Oniguruma syntax
-    public static var oniguruma: Syntax {
-        return Syntax(rawValue: OnigSyntaxOniguruma)
-    }
+    public static var oniguruma = Syntax(rawValue: &OnigSyntaxOniguruma)
     
     /// Default syntax
     public static var `default`: Syntax {
         get {
-            return Syntax(rawValue: OnigDefaultSyntax.pointee)
+            return Syntax(rawValue: OnigDefaultSyntax)
         }
         
         set {
-            var raw = newValue.rawValue
-            onig_set_default_syntax(&raw)
+            onig_set_default_syntax(newValue.rawValue)
         }
     }
 
@@ -92,11 +102,28 @@ public class Syntax {
      */
     public var options: Regex.Options {
         get {
-            return Regex.Options(rawValue: onig_get_syntax_options(&self.rawValue))
+            return Regex.Options(rawValue: onig_get_syntax_options(self.rawValue))
+        }
+
+        set {
+            self.convertToOwnedIfNeeded()
+            onig_set_syntax_options(self.rawValue, newValue.rawValue)
+        }
+    }
+    
+    /**
+     If this syntax is not owned (which means only a pointer is set), convert it to a owned
+     */
+    private func convertToOwnedIfNeeded() {
+        if self.ownedSyntax != nil {
+            // already owns a syntax
+            return
         }
         
-        set {
-            onig_set_syntax_options(&self.rawValue, newValue.rawValue)
+        self.ownedSyntax = OnigSyntaxType()
+        onig_copy_syntax(&self.ownedSyntax!, self.rawValue)
+        withUnsafeMutablePointer(to: &self.ownedSyntax!) {
+            self.rawValue = $0
         }
     }
 }
@@ -310,15 +337,11 @@ extension Syntax {
     //    public static let qmarkCapitalPName = Syntax.Operators(rawValue: UInt64(ONIG_SYN_OP2_QMARK_CAPITAL_P_NAME) << 32)
         
         public var onigSyntaxOp: UInt32 {
-            get {
-                return UInt32(self.rawValue & 0xFFFFFFFF)
-            }
+            return UInt32(truncatingIfNeeded: self.rawValue)
         }
         
         public var onigSyntaxOp2: UInt32 {
-            get {
-                return UInt32(self.rawValue >> 32)
-            }
+            return UInt32(truncatingIfNeeded: self.rawValue >> 32)
         }
     }
 
@@ -327,36 +350,15 @@ extension Syntax {
      */
     public var operators: Syntax.Operators {
         get {
-            return Syntax.Operators(onigSyntaxOp: onig_get_syntax_op(&self.rawValue),
-                                    onigSyntaxOp2: onig_get_syntax_op2(&self.rawValue))
+            return Syntax.Operators(onigSyntaxOp: onig_get_syntax_op(self.rawValue),
+                                    onigSyntaxOp2: onig_get_syntax_op2(self.rawValue))
         }
         
         set {
-            onig_set_syntax_op(&self.rawValue, newValue.onigSyntaxOp)
-            onig_set_syntax_op2(&self.rawValue, newValue.onigSyntaxOp2)
+            self.convertToOwnedIfNeeded()
+            onig_set_syntax_op(self.rawValue, newValue.onigSyntaxOp)
+            onig_set_syntax_op2(self.rawValue, newValue.onigSyntaxOp2)
         }
-    }
-    
-    /**
-     Enable operators for this syntax.
-     - Parameters:
-        - operators: operators to be enabled.
-     */
-    public func enableOperators(operators: Syntax.Operators) {
-        var currentOperators = self.operators
-        currentOperators.insert(operators)
-        self.operators = currentOperators
-    }
-    
-    /**
-     Disable operators for this syntax.
-     - Parameters:
-        - operators: operators to be disabled.
-     */
-    public func disableOperators(operators: Syntax.Operators) {
-        var currentOperators = self.operators
-        currentOperators.remove(operators)
-        self.operators = currentOperators
     }
 }
 
@@ -441,35 +443,13 @@ extension Syntax {
      */
     public var behaviors: Syntax.Behaviors {
         get {
-            var onigSyntax = self.rawValue
-            return Syntax.Behaviors(rawValue: onig_get_syntax_behavior(&onigSyntax))
+            return Syntax.Behaviors(rawValue: onig_get_syntax_behavior(self.rawValue))
         }
         
         set {
-            onig_set_syntax_behavior(&self.rawValue, newValue.rawValue)
+            self.convertToOwnedIfNeeded()
+            onig_set_syntax_behavior(self.rawValue, newValue.rawValue)
         }
-    }
-    
-    /**
-     Enable given behaviours for this syntax.
-     - Parameters:
-        - behavior: behaviors to be enabled.
-     */
-    public func enableBehaviors(behaviors: Syntax.Behaviors) {
-        var currentBehavior = self.behaviors
-        currentBehavior.insert(behaviors)
-        self.behaviors = currentBehavior
-    }
-    
-    /**
-     Disable given behaviors for this syntax.
-     - Parameters:
-        - behaviors: behaviors to be disabled.
-     */
-    public func disableBehaviors(behaviors: Syntax.Behaviors) {
-        var currentBehavior = self.behaviors
-        currentBehavior.remove(behaviors)
-        self.behaviors = currentBehavior
     }
 }
 
@@ -480,94 +460,134 @@ extension Syntax {
     /**
      Meta character specifiers
      */
-    public enum MetaCharType: UInt32 {
+    public enum MetaCharType: UInt32, CustomStringConvertible {
         /// The escape character
         case escape = 0
-        /// The any (.) character
+        /// The any character (.)
         case anyChar = 1
-        /// The any number of repeats (*) character
+        /// The any number of repeats character (*)
         case anyTime = 2
-        /// The optinoal (?) chracter
+        /// The optinoal chracter (?)
         case zeroOrOneTime = 3
-        /// The at least once (+) character
+        /// The at least once character (+)
         case oneOrMoreTime = 4
-        /// The glob character for this syntax (.*)
+        /// The glob character (.*)
         case anyCharAnyTime = 5
+        
+        public var description: String {
+            switch self {
+            case .escape:
+                return "escape"
+            case .anyChar:
+                return "anyChar"
+            case .anyTime:
+                return "anyTime"
+            case .zeroOrOneTime:
+                return "zeroOrOneTime"
+            case .oneOrMoreTime:
+                return "oneOrMoreTime"
+            case .anyCharAnyTime:
+                return "anyCharAnyTime"
+            }
+        }
     }
     
-    public enum MetaChar: Equatable {
+    public enum MetaChar: Equatable, CustomStringConvertible {
         /// The meta character is not enabled
         case Ineffective
-        /// The meta character is set to the chosen `char`s, the max length of the a codepoint is 4 chars.
-        case CodePoint([UInt8])
+        /// The meta character is set to the chosen `OnigCodePoint`
+        case CodePoint(OnigCodePoint)
         
-        public init(codePoint: UInt32) {
-            if codePoint == ONIG_INEFFECTIVE_META_CHAR {
+        internal init(with onigCodePoint: OnigCodePoint) {
+            if onigCodePoint == ONIG_INEFFECTIVE_META_CHAR {
                 self = .Ineffective
             } else {
-                var bytes = [UInt8]()
-                var codePoint = codePoint
-                while codePoint != 0 {
-                    bytes.append(UInt8(codePoint & 0xFF))
-                    codePoint = codePoint >> 8
-                }
-
-                bytes.reverse()
-                self = .CodePoint(bytes)
+                self = .CodePoint(onigCodePoint)
             }
         }
         
         /**
-         Init a `MetaChar` with a string, if the string is empty or its `utf8` view has more than *4* bytes, the result will be `.Ineffective`
+         Init a `MetaChar` with a string.
+         - Note: if the string is empty or its `utf8` view has more than `MemoryLayout<OnigCodePoint>.size` bytes (*4* bytes), the result will be `.Ineffective`.
          */
-        public init(chars: String) {
-            let bytes = [UInt8](chars.utf8)
-            if (bytes.count == 0 || bytes.count > 4) {
+        public init(from str: String) {
+            let codePointByteCount = MemoryLayout<OnigCodePoint>.size
+            let bytes = [UInt8](str.utf8)
+            if (bytes.count == 0 || bytes.count > codePointByteCount) {
                 self = .Ineffective
             } else {
-                self = .CodePoint(bytes)
+                var codePoint: OnigCodePoint = 0
+                for i in 0..<min(bytes.count, codePointByteCount) {
+                    codePoint = (codePoint << 8) | OnigCodePoint(bytes[i])
+                }
+                self = .CodePoint(codePoint)
+            }
+        }
+
+        internal var onigCodePoint: OnigCodePoint {
+            switch self {
+            case .Ineffective:
+                return OnigCodePoint(ONIG_INEFFECTIVE_META_CHAR)
+            case .CodePoint(let codePoint):
+                return codePoint
+            }
+        }
+        
+        public var description: String {
+            switch self {
+            case .Ineffective:
+                return ""
+            case .CodePoint(var codePoint):
+                return withUnsafeBytes(of: &codePoint) {
+                    var bytes = Array($0.bindMemory(to: UInt8.self))
+                    bytes.append(0)
+                    return String(cString: bytes)
+                }
             }
         }
     }
 
     public struct MetaCharTable {
-        fileprivate var syntax: Syntax
+        internal typealias OnigMetaCharTablePtr = UnsafeMutablePointer<OnigMetaCharTableType>
+        internal var rawValue: OnigMetaCharTablePtr!
         
+        internal init(rawValue: OnigMetaCharTablePtr!) {
+            self.rawValue = rawValue
+        }
+
         subscript(index: MetaCharType) -> MetaChar {
             get {
                 switch (index) {
                 case .escape:
-                    return MetaChar(codePoint: self.syntax.rawValue.meta_char_table.esc)
+                    return MetaChar(with: self.rawValue.pointee.esc)
                 case .anyChar:
-                    return MetaChar(codePoint: self.syntax.rawValue.meta_char_table.anychar)
+                    return MetaChar(with: self.rawValue.pointee.anychar)
                 case .anyTime:
-                    return MetaChar(codePoint: self.syntax.rawValue.meta_char_table.anytime)
+                    return MetaChar(with: self.rawValue.pointee.anytime)
                 case .zeroOrOneTime:
-                    return MetaChar(codePoint: self.syntax.rawValue.meta_char_table.zero_or_one_time)
+                    return MetaChar(with: self.rawValue.pointee.zero_or_one_time)
                 case .oneOrMoreTime:
-                    return MetaChar(codePoint: self.syntax.rawValue.meta_char_table.one_or_more_time)
+                    return MetaChar(with: self.rawValue.pointee.one_or_more_time)
                 case .anyCharAnyTime:
-                    return MetaChar(codePoint: self.syntax.rawValue.meta_char_table.anychar_anytime)
+                    return MetaChar(with: self.rawValue.pointee.anychar_anytime)
                 }
             }
             
             set {
-                let what = index.rawValue
-                var code: UInt32 = 0
-                switch (newValue) {
-                    case .Ineffective:
-                        code = UInt32(ONIG_INEFFECTIVE_META_CHAR)
-                    case .CodePoint(let codePoint):
-                        if codePoint.count == 0 {
-                            code = UInt32(ONIG_INEFFECTIVE_META_CHAR)
-                        } else {
-                            for i in 0 ..< min(codePoint.count, 4) {
-                                code = (code << 8) | UInt32(codePoint[i])
-                            }
-                        }
+                switch (index) {
+                case .escape:
+                    self.rawValue.pointee.esc = newValue.onigCodePoint
+                case .anyChar:
+                    self.rawValue.pointee.anychar = newValue.onigCodePoint
+                case .anyTime:
+                    self.rawValue.pointee.anytime = newValue.onigCodePoint
+                case .zeroOrOneTime:
+                    self.rawValue.pointee.zero_or_one_time = newValue.onigCodePoint
+                case .oneOrMoreTime:
+                    self.rawValue.pointee.one_or_more_time = newValue.onigCodePoint
+                case .anyCharAnyTime:
+                    self.rawValue.pointee.anychar_anytime = newValue.onigCodePoint
                 }
-
-                onig_set_meta_char(&self.syntax.rawValue, what, code)
             }
         }
     }
@@ -577,10 +597,22 @@ extension Syntax {
      */
     public var metaCharTable: MetaCharTable {
         get {
-            return MetaCharTable(syntax: self)
+            return MetaCharTable(rawValue: &self.rawValue.pointee.meta_char_table)
         }
 
         set {
+            if newValue.rawValue == nil {
+                return
+            }
+
+            self.convertToOwnedIfNeeded()
+
+            if newValue.rawValue == &self.rawValue.pointee.meta_char_table {
+                // same table
+                return
+            }
+
+            self.rawValue.pointee.meta_char_table = newValue.rawValue.pointee
         }
     }
 }
