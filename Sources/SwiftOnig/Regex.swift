@@ -139,7 +139,9 @@ public class Regex {
     }
 
     /**
-     Match string and return matched UTF-8 byte count. Do not pass invalid byte string in the regex character encoding.
+     Match string and return matched UTF-8 byte count.
+     - Note:
+        Do not pass invalid byte string in the regex character encoding.
      - Parameters:
         - str: Target string to match against
         - from: The position to match against
@@ -178,7 +180,9 @@ public class Regex {
     }
 
     /**
-     Search in the string and return the first index of matched position. Do not pass invalid byte string in the regex character encoding.
+     Search in the string and return the first index of matched position.
+     - Note:
+        Do not pass invalid byte string in the regex character encoding.
      - Parameters:
         - str: Target string to search against
      - Returns:
@@ -189,7 +193,9 @@ public class Regex {
     }
 
     /**
-     Search string and return search result and matching region. Do not pass invalid byte string in the regex character encoding.
+     Search string and return search result and matching region.
+     - Note:
+        Do not pass invalid byte string in the regex character encoding.
      - Parameters:
         - str: Target string to search against
         - option: The regex search options.

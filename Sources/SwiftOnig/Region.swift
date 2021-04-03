@@ -21,12 +21,16 @@ public class Region {
                                    end: nil,
                                    history_root: nil)
     }
-
+    
     convenience init(with capacity: Int32) {
         self.init()
         self.reserve(capacity: capacity)
     }
-    
+
+    internal init(rawValue: OnigRegion) {
+        self.rawValue = rawValue
+    }
+
     deinit {
         onig_region_free(&self.rawValue, 0)
     }
