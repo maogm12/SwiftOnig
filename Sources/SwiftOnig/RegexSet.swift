@@ -7,7 +7,7 @@
 
 import COnig
 
-class RegexSet {
+public class RegexSet {
     internal typealias OnigRegSet = OpaquePointer
     internal private(set) var rawValue: OnigRegSet?
     
@@ -277,18 +277,18 @@ class RegexSet {
 }
 
 extension RegexSet : RandomAccessCollection {
-    typealias Index = Int
-    typealias Element = Regex
+    public typealias Index = Int
+    public typealias Element = Regex
     
-    var startIndex: Int {
+    public var startIndex: Int {
         return 0
     }
     
-    var endIndex: Int {
+    public var endIndex: Int {
         return self.rawValue == nil ? 0 : Int(onig_regset_number_of_regex(self.rawValue))
     }
 
-    subscript(position: Int) -> Regex {
+    public subscript(position: Int) -> Regex {
         return self.regexes[position]
     }
 }
