@@ -8,7 +8,7 @@
 import XCTest
 @testable import SwiftOnig
 
-final class RegionTests: XCTestCase {
+final class RegionTests: SwiftOnigTestsBase {
     func testResize() {
         let region =  Region()
         XCTAssertEqual(region.capacity, 0)

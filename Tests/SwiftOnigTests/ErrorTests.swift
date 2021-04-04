@@ -8,7 +8,7 @@
 import XCTest
 @testable import SwiftOnig
 
-final class OnigErrorTests: XCTestCase {
+final class OnigErrorTests: SwiftOnigTestsBase {
     func testError() {
         XCTAssertThrowsSpecific(try Regex("a{3,999999999999999999999999999999999999999999}"),
                                 OnigError.tooBigNumberForRepeatRange)

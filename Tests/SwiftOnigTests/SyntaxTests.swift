@@ -8,7 +8,7 @@
 import XCTest
 @testable import SwiftOnig
 
-final class SyntaxTest: XCTestCase {
+final class SyntaxTest: SwiftOnigTestsBase {
     func testSyntaxOperators() {
         let syntax = Syntax.java
         XCTAssertFalse(syntax.operators.contains(.optionOniguruma))

@@ -1,7 +1,7 @@
 import XCTest
 @testable import SwiftOnig
 
-final class SwiftOnigTests: XCTestCase {
+final class SwiftOnigTests: SwiftOnigTestsBase {
     func testVersion() {
         let ver = SwiftOnig.version()
         XCTAssertFalse(ver.isEmpty)
@@ -38,31 +38,4 @@ final class SwiftOnigTests: XCTestCase {
         ("testVersion", testVersion),
         ("testRegionTree", testRegionTree),
     ]
-}
-
-extension XCTestCase {
-    internal func XCTAssertThrowsSpecific<T, E: Error & Equatable>(
-        _ expression: @autoclosure () throws -> T,
-        _ error: E,
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        var thrownError: Error?
-
-        XCTAssertThrowsError(try expression(),
-                             file: file, line: line) {
-            thrownError = $0
-        }
-
-        XCTAssertTrue(
-            thrownError is E,
-            "Unexpected error type: \(type(of: thrownError))",
-            file: file, line: line
-        )
-
-        XCTAssertEqual(
-            thrownError as? E, error,
-            file: file, line: line
-        )
-    }
 }

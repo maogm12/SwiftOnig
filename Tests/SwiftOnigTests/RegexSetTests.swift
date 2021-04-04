@@ -9,7 +9,7 @@
 import XCTest
 @testable import SwiftOnig
 
-final class RegexSetTests: XCTestCase {
+final class RegexSetTests: SwiftOnigTestsBase {
     func testInit() {
         let regSet = RegexSet()
         XCTAssertTrue(regSet.isEmpty)

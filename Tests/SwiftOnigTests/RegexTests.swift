@@ -8,7 +8,7 @@
 import XCTest
 @testable import SwiftOnig
 
-final class RegexTests: XCTestCase {
+final class RegexTests: SwiftOnigTestsBase {
     func testInit() {
         XCTAssertNotNil(try? Regex("(a+)(b+)(c+)"))
         XCTAssertNil(try? Regex("+++++"))

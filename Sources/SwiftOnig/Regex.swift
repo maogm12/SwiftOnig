@@ -6,7 +6,6 @@
 //
 
 import COnig
-import Foundation
 
 public class Regex {
     internal private(set) var rawValue: OnigRegex?
@@ -25,8 +24,6 @@ public class Regex {
      */
     private var syntax: Syntax!
 
-    private static let regexNewlock = NSLock()
-
     /**
      Create a `Regex` with given paattern, option and syntax.
      - Parameters:
@@ -43,16 +40,15 @@ public class Regex {
         var error = OnigErrorInfo()
         let result = self.patternBytes.withUnsafeBufferPointer { bufPtr -> Int32 in
             // Make sure that `onig_new` isn't called by more than one thread at a time.
-            Regex.regexNewlock.lock()
-            let onigResult = onig_new(&self.rawValue,
-                                      bufPtr.baseAddress,
-                                      bufPtr.baseAddress?.advanced(by: self.patternBytes.count),
-                                      option.rawValue,
-                                      &OnigEncodingUTF8,
-                                      self.syntax.rawValue,
-                                      &error)
-            Regex.regexNewlock.unlock()
-            return onigResult
+            onigQueue.sync {
+                onig_new(&self.rawValue,
+                         bufPtr.baseAddress,
+                         bufPtr.baseAddress?.advanced(by: self.patternBytes.count),
+                         option.rawValue,
+                         &OnigEncodingUTF8,
+                         self.syntax.rawValue,
+                         &error)
+            }
         }
 
         if result != ONIG_NORMAL {
@@ -95,16 +91,15 @@ public class Regex {
         var error = OnigErrorInfo()
         let result = self.patternBytes.withUnsafeBufferPointer { bufPtr -> Int32 in
             // Make sure that `onig_new` isn't called by more than one thread at a time.
-            Regex.regexNewlock.lock()
-            let onigResult = onig_new_without_alloc(self.rawValue,
-                                                    bufPtr.baseAddress,
-                                                    bufPtr.baseAddress?.advanced(by: self.patternBytes.count),
-                                                    option.rawValue,
-                                                    &OnigEncodingUTF8,
-                                                    self.syntax.rawValue,
-                                                    &error)
-            Regex.regexNewlock.unlock()
-            return onigResult
+            onigQueue.sync {
+                onig_new_without_alloc(self.rawValue,
+                                       bufPtr.baseAddress,
+                                       bufPtr.baseAddress?.advanced(by: self.patternBytes.count),
+                                       option.rawValue,
+                                       &OnigEncodingUTF8,
+                                       self.syntax.rawValue,
+                                       &error)
+            }
         }
 
         if result != ONIG_NORMAL {
