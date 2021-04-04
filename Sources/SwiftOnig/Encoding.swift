@@ -102,4 +102,17 @@ public struct Encoding {
     
     /// GB 18030
     public static let gb18030 = Encoding(rawValue: &OnigEncodingGB18030)
+
+    /// Get or set the default encoding
+    public static var `default`: Encoding {
+        get {
+            Encoding(rawValue: onigenc_get_default_encoding())
+        }
+
+        set {
+            onigQueue.sync {
+                _ = onigenc_set_default_encoding(newValue.rawValue)
+            }
+        }
+    }
 }
