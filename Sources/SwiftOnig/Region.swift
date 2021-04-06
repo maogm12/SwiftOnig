@@ -6,7 +6,6 @@
 //
 
 import COnig
-import Foundation
 
 /**
  Match result region type.
@@ -32,7 +31,7 @@ public class Region {
     }
 
     deinit {
-        onig_region_free(&self.rawValue, 0)
+        onig_region_free(&self.rawValue, 0 /* free_self */)
     }
     
     public var capacity: Int32 {
@@ -82,13 +81,13 @@ public class Region {
         if groupIndex >= self.count {
             return nil
         }
-
-        let begin = Int(self.rawValue.beg.advanced(by: groupIndex).pointee)
+        
+        let begin = Int(self.rawValue.beg[groupIndex])
         if begin == ONIG_REGION_NOTPOS {
             return nil
         }
 
-        let end = Int(self.rawValue.end.advanced(by: groupIndex).pointee)
+        let end = Int(self.rawValue.end[groupIndex])
         if end == ONIG_REGION_NOTPOS {
             return nil
         }

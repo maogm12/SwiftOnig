@@ -22,7 +22,7 @@ final class RegionTests: SwiftOnigTestsBase {
     
     func testIterator() {
         let regex = try! Regex("(a+)(b+)(c+)")
-        let region = try! regex.search(in: "aaaabbbbc")!.region
+        let region = try! regex.firstMatch(in: "aaaabbbbc")!
 
         var ranges = [Range<Int>]()
         for range in region {

@@ -12,15 +12,11 @@ final class SwiftOnigTests: SwiftOnigTestsBase {
         let syntax = Syntax.ruby
         syntax.operators.insert(.atmarkCaptureHistory)
         let reg = try! Regex(#"(?@a+(?@b+))|(?@c+(?@d+))"#, option: .none, syntax: syntax)
-        guard let (firstIndex, region) = try! reg.search(in: "- cd aaabbb -") else {
-            XCTFail("Should match")
-            return
-        }
+        let region = try! reg.firstMatch(in: "- cd aaabbb -")
 
-        XCTAssertEqual(firstIndex, 2)
-        XCTAssertEqual(region.count, 5)
+        XCTAssertEqual(region!.count, 5)
 
-        let tree = region.tree!
+        let tree = region!.tree!
         XCTAssertEqual(tree.count, 1)
         XCTAssertEqual(tree.group, 0)
         XCTAssertEqual(tree.utf8BytesRange, 2..<4)

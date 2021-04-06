@@ -47,16 +47,33 @@ final class RegexTests: SwiftOnigTestsBase {
         let naiveEmailReg = try! Regex(#"\w+@\w+\.com"#)
         let target = "Naive email: test@example.com. :)"
 
-        XCTAssertEqual(naiveEmailReg.firstIndex(in: target), 13)
+        XCTAssertEqual(try? naiveEmailReg.firstIndex(in: target), 13)
 
-        let result = try? naiveEmailReg.search(in: target)
-        XCTAssertNotNil(result)
-        XCTAssertEqual(result!.firstIndex, 13)
-        
-        let region = result!.region
+        let region = try! naiveEmailReg.firstMatch(in: target)!
+        XCTAssertNotNil(region)
         XCTAssertEqual(region.count, 1)
+        XCTAssertEqual(region.utf8BytesRange(groupIndex: 0), 13..<29)
         XCTAssertEqual(target.subString(utf8BytesRange: region.utf8BytesRange(groupIndex: 0)!),
                        "test@example.com")
+    }
+    
+    func testMatches() {
+        let reg = try! Regex(#"\d+"#)
+        let regions = try! reg.matches(in: "aa11bb22cc33dd44")
+        XCTAssertEqual(regions.count, 4)
+        XCTAssertEqual(regions.map { $0.utf8BytesRange(groupIndex: 0)! }, [2..<4, 6..<8, 10..<12, 14..<16])
+    }
+    
+    func testEnumerateMatches() {
+        let reg = try! Regex(#"\d+"#)
+        var result = [(Int, Region)]()
+        try! reg.enumerateMatches(in: "aa11bb22cc33dd44") {
+            result.append(($0, $1))
+            return true
+        }
+
+        XCTAssertEqual(result.map { $0.0 }, [2, 6, 10, 14])
+        XCTAssertEqual(result.map { $0.1.utf8BytesRange(groupIndex: 0)! }, [2..<4, 6..<8, 10..<12, 14..<16])
     }
 
     func testName() {
@@ -69,11 +86,19 @@ final class RegexTests: SwiftOnigTestsBase {
         }
     }
     
+    func testPattern() {
+        let reg = try! Regex("(?<a>a+)(?<b>b+(?<bc>c+))(?<a>a+)")
+        XCTAssertEqual(reg.pattern, "(?<a>a+)(?<b>b+(?<bc>c+))(?<a>a+)")
+    }
+    
     static var allTests = [
         ("testInit", testInit),
         ("testReset", testReset),
         ("testMatch", testMatch),
         ("testSearch", testSearch),
+        ("testMatches", testMatches),
+        ("testEnumerateMatches", testEnumerateMatches),
         ("testName", testName),
+        ("testPattern", testPattern),
     ]
 }
