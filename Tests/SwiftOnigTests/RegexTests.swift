@@ -76,7 +76,7 @@ final class RegexTests: SwiftOnigTestsBase {
         XCTAssertEqual(result.map { $0.1.utf8BytesRange(groupIndex: 0)! }, [2..<4, 6..<8, 10..<12, 14..<16])
     }
 
-    func testName() {
+    func testNamedCaptureGroups() {
         let reg = try! Regex("(?<a>a+)(?<b>b+(?<bc>c+))(?<a>a+)")
         XCTAssertEqual(reg.namedCaptureGroupCount, 3)
         
@@ -88,11 +88,20 @@ final class RegexTests: SwiftOnigTestsBase {
         
         XCTAssertEqual(result.map { $0.name }, ["a", "bc", "b"])
         XCTAssertEqual(result.map { $0.indexes }, [[1, 4], [3], [2]])
+        
+        XCTAssertEqual(reg.namedCaptureGroupIndexes(of: "a"), [1, 4])
+        XCTAssertEqual(reg.namedCaptureGroupIndexes(of: "b"), [2])
+        XCTAssertEqual(reg.namedCaptureGroupIndexes(of: "c"), nil)
     }
     
     func testPattern() {
         let reg = try! Regex("(?<a>a+)(?<b>b+(?<bc>c+))(?<a>a+)")
         XCTAssertEqual(reg.pattern, "(?<a>a+)(?<b>b+(?<bc>c+))(?<a>a+)")
+    }
+    
+    func testCaptureGroups() {
+        let reg = try! Regex(#"(?<name>\w+):\s+(?<id>\d+)(\s+)(//.*)"#)
+        XCTAssertEqual(reg.captureGroupCount, 2) // (\s+) (//.*)
     }
     
     static var allTests = [
@@ -102,7 +111,7 @@ final class RegexTests: SwiftOnigTestsBase {
         ("testSearch", testSearch),
         ("testMatches", testMatches),
         ("testEnumerateMatches", testEnumerateMatches),
-        ("testName", testName),
         ("testPattern", testPattern),
+        ("testNamedCaptureGroups", testNamedCaptureGroups),
     ]
 }

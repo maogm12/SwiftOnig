@@ -473,7 +473,7 @@ public class Regex {
     /**
      Get the count of capture groups of the pattern.
      */
-    public var captureCount: Int {
+    public var captureGroupCount: Int {
         return self.rawValue == nil ? 0 : Int(onig_number_of_captures(self.rawValue))
     }
     
@@ -616,5 +616,39 @@ extension Regex {
                 return ONIG_ABORT
             }
         }, &closureRef)
+    }
+    
+    /**
+     Get the indexes of the named capture group with name.
+     - Parameter name: The name of the named capture group.
+     - Returns: An array of indexes of the named capture group, or `nil` if no such name is found.
+     */
+    public func namedCaptureGroupIndexes(of name: String) -> [Int]? {
+        name.withOnigurumaString { start, count in
+            let nums = UnsafeMutablePointer<UnsafeMutablePointer<Int32>?>.allocate(capacity: 1)
+            defer{
+                nums.deallocate()
+            }
+
+            let count = onig_name_to_group_numbers(self.rawValue,
+                                       start,
+                                       start.advanced(by: count),
+                                       nums)
+            
+            if count < 0 {
+                return nil
+            }
+
+            guard let indexesPtr = nums.pointee else {
+                return nil
+            }
+
+            var indexes = [Int]()
+            for i in 0..<Int(count) {
+                indexes.append(Int(indexesPtr[i]))
+            }
+
+            return indexes
+        }
     }
 }

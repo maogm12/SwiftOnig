@@ -26,10 +26,18 @@ public class Region {
         self.reserve(capacity: capacity)
     }
 
+    /**
+     Copy from other `OnigRegion`.
+    */
+    convenience init(from other: Region) {
+        self.init()
+        onig_region_copy(&self.rawValue, &other.rawValue)
+    }
+
     internal init(rawValue: OnigRegion) {
         self.rawValue = rawValue
     }
-
+    
     deinit {
         onig_region_free(&self.rawValue, 0 /* free_self */)
     }
@@ -65,7 +73,7 @@ public class Region {
             fatalError("Onig: fail to memory allocation during region resize")
         }
     }
-    
+
     /**
      Clear out a region so it can be used again.
      */
