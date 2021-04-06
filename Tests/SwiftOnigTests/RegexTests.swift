@@ -78,12 +78,16 @@ final class RegexTests: SwiftOnigTestsBase {
 
     func testName() {
         let reg = try! Regex("(?<a>a+)(?<b>b+(?<bc>c+))(?<a>a+)")
-        XCTAssertEqual(reg.nameCount, 3)
+        XCTAssertEqual(reg.namedCaptureGroupCount, 3)
         
-        reg.forEachName { (name, indice) -> Bool in
-            print(name, indice)
+        var result = [(name: String, indexes: [Int])]()
+        reg.forEachNamedCaptureGroup { (name, indexes) -> Bool in
+            result.append((name: name, indexes: indexes))
             return true
         }
+        
+        XCTAssertEqual(result.map { $0.name }, ["a", "bc", "b"])
+        XCTAssertEqual(result.map { $0.indexes }, [[1, 4], [3], [2]])
     }
     
     func testPattern() {

@@ -578,25 +578,24 @@ extension Regex {
     /**
      Get the count of named groups of the pattern.
      */
-    public var nameCount: Int {
+    public var namedCaptureGroupCount: Int {
         return self.rawValue == nil ? 0 : Int(onig_number_of_names(self.rawValue))
     }
 
-    // public func onig_foreach_name(_ reg: OnigRegex!, _ func: (@convention(c) (UnsafePointer<OnigUChar>?, UnsafePointer<OnigUChar>?, Int32, UnsafeMutablePointer<Int32>?, OnigRegex?, UnsafeMutableRawPointer?) -> Int32)!, _ arg: UnsafeMutableRawPointer!) -> Int32
-
-    public typealias nameCallBackType = @convention(c) (String, [Int]) -> Bool
-
     /**
-     Calls `callback` for each named group in the regex. Each callback gets the group name and group indices.
+     Call `body` for each named capture group in the regex. Each callback gets the capture group name and capture group indexes.
      - TODO:
-        Add iterator for named groups
+        Add iterator for named capture groups
      */
-    public func forEachName(_ callback: @escaping nameCallBackType) {
+    public func forEachNamedCaptureGroup(_ body: @escaping (_ name: String, _ indexes: [Int]) -> Bool) {
         if self.rawValue == nil {
             return
         }
 
-        onig_foreach_name(self.rawValue, { (namePtr, nameEndPtr, groupCount, groupsPtr, _ /* regex */, context) -> Int32 in
+        typealias NameCallBackType = (String, [Int]) -> Bool
+        var closureRef: Any = body
+        
+        onig_foreach_name(self.rawValue, { (namePtr, nameEndPtr, groupCount, groupsPtr, _ /* regex */, closureRefPtr) -> Int32 in
             guard let name = String(utf8String: namePtr, end: nameEndPtr) else {
                 return ONIG_ABORT
             }
@@ -610,13 +609,12 @@ extension Regex {
                 groupIndice.append(Int(groupsPtr[i]))
             }
 
-            let callback = unsafeBitCast(context, to: nameCallBackType.self)
-
-            if callback(name, groupIndice) {
+            let closure = closureRefPtr!.assumingMemoryBound(to: NameCallBackType.self).pointee
+            if closure(name, groupIndice) {
                 return ONIG_NORMAL
             } else {
                 return ONIG_ABORT
             }
-        }, unsafeBitCast(callback, to: UnsafeMutableRawPointer.self))
+        }, &closureRef)
     }
 }
