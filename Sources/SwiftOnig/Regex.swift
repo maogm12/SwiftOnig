@@ -486,6 +486,52 @@ public class Regex {
     }
     
     /**
+     Get or set the limit of subexp call count.
+     - Note: Defaul value is `0` which means unlimited.
+     */
+    public static var subexpCallLimitInSearch: UInt {
+        get {
+            onigQueue.sync {
+                UInt(truncatingIfNeeded: onig_get_subexp_call_limit_in_search())
+            }
+        }
+        
+        set {
+            onigQueue.sync {
+                _ = onig_set_subexp_call_limit_in_search(OnigULong(truncatingIfNeeded: newValue))
+            }
+        }
+    }
+    
+    /**
+     Get or set the limit level of subexp call nest level.
+     - Note: Default value is `24`.
+     */
+    public static var subexpCallMaxNestLevel: Int {
+        get {
+            Int(truncatingIfNeeded: onig_get_subexp_call_max_nest_level())
+        }
+        
+        set {
+            _ = onig_set_subexp_call_max_nest_level(OnigInt(truncatingIfNeeded: newValue))
+        }
+    }
+    
+    /**
+     Get or set the maximum depth of parser recursion.
+     - Note: Default value is `4096`, if the `newValue` is `0`, default value which is `4096` will be set,
+     */
+    public static var parseDepthLimit: UInt {
+        get {
+            UInt(truncatingIfNeeded: onig_get_parse_depth_limit())
+        }
+        
+        set {
+            _ = onig_set_parse_depth_limit(OnigUInt(truncatingIfNeeded: newValue))
+        }
+    }
+    
+    /**
      Clean up oniguruma regex object and cacahed pattern bytes.
      */
     private func cleanUp() {
@@ -657,4 +703,6 @@ extension Regex {
     }
     
     // TODO: onig_name_to_backref_number
+    
+    // TODO: onig_noname_group_capture_is_active
 }

@@ -26,44 +26,77 @@ public class MatchParam {
     }
 
     /**
-     Set a maximum number of match-stack depth. `0` means unlimited.
-     - Parameters:
-        - limit: number of limit
-     - Throws: `OnigError`
-        if `onig_set_match_stack_limit_size_of_match_param` doesn't return `ONIG_NORMAL`
+     Set the maximum number of match-stack depth of the `MatchParam`. `0` means unlimited.
+     - Parameter newLimit: The new limit.
      */
-    public func setMatchStackLimitSize(limit: UInt32) throws {
-        let result = onig_set_match_stack_limit_size_of_match_param(self.rawValue, limit)
-        if result != ONIG_NORMAL {
-            throw OnigError(result)
-        }
+    public func setMatchStackLimitSize(to newLimit: UInt) {
+        onig_set_match_stack_limit_size_of_match_param(self.rawValue, OnigUInt(truncatingIfNeeded: newLimit))
     }
 
     /**
-    Set a retry limit count of a match process.
-     - Parameters:
-        - limit: number of limit
-     - Throws: `OnigError`
-        if `onig_set_retry_limit_in_match_of_match_param` doesn't return `ONIG_NORMAL`
+    Set the retry limit count of a match process of the `MatchParam`.
+     - Parameter newLimit: The new limit.
      */
-    public func setRetryLimitInMatch(limit: UInt) throws {
-        let result = onig_set_retry_limit_in_match_of_match_param(self.rawValue, limit)
-        if result != ONIG_NORMAL {
-            throw OnigError(result)
+    public func setRetryLimitInMatch(to newLimit: UInt) {
+        onig_set_retry_limit_in_match_of_match_param(self.rawValue, OnigULong(truncatingIfNeeded: newLimit))
+    }
+
+    /**
+     Set the retry limit count in a search process of the `MatchParam`. `0` means unlimited.
+     - Parameter newLimit: The new limit.
+     */
+    public func setRetryLimitInSearch(to newLimit: UInt) {
+        onig_set_retry_limit_in_search_of_match_param(self.rawValue, OnigULong(truncatingIfNeeded: newLimit))
+    }
+    
+    /**
+     Get or set the default value of maximum number of stack size, `0` means unlimited.
+     */
+    public static var defaultMatchStackLimitSize: UInt {
+        get {
+            onigQueue.sync {
+                UInt(truncatingIfNeeded: onig_get_match_stack_limit_size())
+            }
+        }
+        
+        set {
+            _ = onigQueue.sync {
+                onig_set_match_stack_limit_size(OnigUInt(truncatingIfNeeded: newValue))
+            }
         }
     }
     
     /**
-     Set a retry limit count of a search process. `0` means unlimited.
-     - Parameters:
-        - limit: number of limit
-     - Throws: `OnigError`
-        if `onig_set_retry_limit_in_search_of_match_param` doesn't return `ONIG_NORMAL`
+     Get or set the default value of retry counts in a matching process., `0` means unlimited. The initial default value is `10000000`.
      */
-    public func setRetryLimitInSearch(limit: UInt) throws {
-        let result = onig_set_retry_limit_in_search_of_match_param(self.rawValue, limit)
-        if result != ONIG_NORMAL {
-            throw OnigError(result)
+    public static var defaultRetryLimitInMatch: UInt {
+        get {
+            onigQueue.sync {
+                UInt(truncatingIfNeeded: onig_get_retry_limit_in_match())
+            }
+        }
+        
+        set {
+            _ = onigQueue.sync {
+                onig_set_retry_limit_in_match(OnigULong(truncatingIfNeeded: newValue))
+            }
+        }
+    }
+
+    /**
+     Get or set the default value of retry counts in a matching process., `0` means unlimited.
+     */
+    public static var defaultRetryLimitInSearch: UInt {
+        get {
+            onigQueue.sync {
+                UInt(truncatingIfNeeded: onig_get_retry_limit_in_search())
+            }
+        }
+        
+        set {
+            _ = onigQueue.sync {
+                onig_set_retry_limit_in_search(OnigULong(truncatingIfNeeded: newValue))
+            }
         }
     }
 }

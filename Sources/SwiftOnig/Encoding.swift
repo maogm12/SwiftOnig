@@ -115,4 +115,63 @@ public struct Encoding {
             }
         }
     }
+    
+    /*
+     TODO:
+     # UChar* onigenc_get_prev_char_head(OnigEncoding enc, const UChar* start, const UChar* s)
+
+       Return previous character head address.
+
+       arguments
+       1 enc:   character encoding
+       2 start: string address
+       3 s:     target address of string
+
+
+     # UChar* onigenc_get_left_adjust_char_head(OnigEncoding enc,
+                                                const UChar* start, const UChar* s)
+
+       Return left-adjusted head address of a character.
+
+       arguments
+       1 enc:   character encoding
+       2 start: string address
+       3 s:     target address of string
+
+
+     # UChar* onigenc_get_right_adjust_char_head(OnigEncoding enc,
+                                                 const UChar* start, const UChar* s)
+
+       Return right-adjusted head address of a character.
+
+       arguments
+       1 enc:   character encoding
+       2 start: string address
+       3 s:     target address of string
+
+
+     # int onigenc_strlen(OnigEncoding enc, const UChar* s, const UChar* end)
+
+       Return number of characters in the string.
+
+
+     # int onigenc_strlen_null(OnigEncoding enc, const UChar* s)
+
+       Return number of characters in the string.
+       Do not pass invalid byte string in the character encoding.
+
+
+     # int onigenc_str_bytelen_null(OnigEncoding enc, const UChar* s)
+
+       Return number of bytes in the string.
+       Do not pass invalid byte string in the character encoding.
+
+     # void onig_copy_encoding(OnigEncoding to, OnigEncoding from)
+
+       Copy encoding.
+
+       arguments
+       1 to:   destination address.
+       2 from: source address.
+     */
 }
