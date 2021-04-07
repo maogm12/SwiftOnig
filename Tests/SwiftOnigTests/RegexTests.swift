@@ -14,20 +14,6 @@ final class RegexTests: SwiftOnigTestsBase {
         XCTAssertNil(try? Regex("+++++"))
         XCTAssertThrowsSpecific(try Regex("???"), OnigError.targetOfRepeatOperatorNotSpecified)
     }
-    
-    func testReset() {
-        let reg = try! Regex("a+")
-        XCTAssertTrue(reg.isMatch("aaaaa"))
-        XCTAssertFalse(reg.isMatch("bbbbb"))
-
-        try! reg.reset("b+")
-        XCTAssertFalse(reg.isMatch("aaaaa"))
-        XCTAssertTrue(reg.isMatch("bbbbb"))
-        
-        try? reg.reset("+++")
-        XCTAssertFalse(reg.isMatch("aaaaa"))
-        XCTAssertFalse(reg.isMatch("bbbbb"))
-    }
 
     func testMatch() {
         let reg = try! Regex("foo")
@@ -106,7 +92,6 @@ final class RegexTests: SwiftOnigTestsBase {
     
     static var allTests = [
         ("testInit", testInit),
-        ("testReset", testReset),
         ("testMatch", testMatch),
         ("testSearch", testSearch),
         ("testMatches", testMatches),
