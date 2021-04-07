@@ -102,18 +102,6 @@ public class Region {
 
         return begin ..< end
     }
-    
-    /**
-     Get Capture Tree
-     - Returns: the capture tree for this region, if there is one, otherwise `nil`.
-     */
-    public var tree: CaptureTreeNode? {
-        if let tree = onig_get_capture_tree(&self.rawValue) {
-            return CaptureTreeNode(rawValue: tree.pointee)
-        }
-        
-        return nil
-    }
 }
 
 extension Region: Sequence {

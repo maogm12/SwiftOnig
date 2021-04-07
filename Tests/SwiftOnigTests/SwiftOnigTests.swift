@@ -8,30 +8,7 @@ final class SwiftOnigTests: SwiftOnigTestsBase {
         print("Oniguruma version is \(ver)")
     }
 
-    func testRegionTree() {
-        let syntax = Syntax.ruby
-        syntax.operators.insert(.atmarkCaptureHistory)
-        let reg = try! Regex(#"(?@a+(?@b+))|(?@c+(?@d+))"#, option: .none, syntax: syntax)
-        let region = try! reg.firstMatch(in: "- cd aaabbb -")
-
-        XCTAssertEqual(region!.count, 5)
-
-        let tree = region!.tree!
-        XCTAssertEqual(tree.count, 1)
-        XCTAssertEqual(tree.group, 0)
-        XCTAssertEqual(tree.utf8BytesRange, 2..<4)
-
-        XCTAssertEqual(tree[0].count, 1)
-        XCTAssertEqual(tree[0].group, 3)
-        XCTAssertEqual(tree[0].utf8BytesRange, 2..<4)
-        
-        XCTAssertEqual(tree[0][0].count, 0)
-        XCTAssertEqual(tree[0][0].group, 4)
-        XCTAssertEqual(tree[0][0].utf8BytesRange, 3..<4)
-    }
-
     static var allTests = [
         ("testVersion", testVersion),
-        ("testRegionTree", testRegionTree),
     ]
 }

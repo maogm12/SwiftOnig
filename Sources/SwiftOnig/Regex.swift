@@ -479,6 +479,7 @@ public class Regex {
     
     /**
      Get the count of capture hisotries of the pattern.
+     - Note: You can't use capture history if `.atmarkCaptureHistory` is disabled in the regex syntax.
      */
     public var captureHistoryCount: Int {
         return self.rawValue == nil ? 0 : Int(onig_number_of_capture_histories(self.rawValue))
@@ -609,7 +610,10 @@ extension Regex {
                 groupIndice.append(Int(groupsPtr[i]))
             }
 
-            let closure = closureRefPtr!.assumingMemoryBound(to: NameCallBackType.self).pointee
+            guard let closure = closureRefPtr?.assumingMemoryBound(to: NameCallBackType.self).pointee else {
+                fatalError("Failed to get callbacks")
+            }
+
             if closure(name, groupIndice) {
                 return ONIG_NORMAL
             } else {
@@ -651,4 +655,6 @@ extension Regex {
             return indexes
         }
     }
+    
+    // TODO: onig_name_to_backref_number
 }
