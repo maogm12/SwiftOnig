@@ -37,7 +37,7 @@ extension StringProtocol {
         }
 
         return self.withCString { ptr -> String? in
-            if #available(OSX 11.0, *) {
+            if #available(OSX 11.0, iOS 14.0, *) {
                 return String(unsafeUninitializedCapacity: range.count) {
                     memcpy($0.baseAddress, ptr.advanced(by: range.lowerBound), range.count)
                     return range.count

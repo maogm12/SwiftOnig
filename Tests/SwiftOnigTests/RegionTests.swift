@@ -40,18 +40,18 @@ final class RegionTests: SwiftOnigTestsBase {
 
         XCTAssertEqual(region.count, 5)
 
-        let tree = region.tree!
-        XCTAssertEqual(tree.count, 1)
+        let tree = region.captureTree!
+        XCTAssertEqual(tree.childrenCount, 1)
         XCTAssertEqual(tree.group, 0)
-        XCTAssertEqual(tree.utf8BytesRange, 2..<4)
+        XCTAssertEqual(tree.bytesRange, 2..<4)
 
-        XCTAssertEqual(tree[0].count, 1)
+        XCTAssertEqual(tree[0].childrenCount, 1)
         XCTAssertEqual(tree[0].group, 3)
-        XCTAssertEqual(tree[0].utf8BytesRange, 2..<4)
+        XCTAssertEqual(tree[0].bytesRange, 2..<4)
         
-        XCTAssertEqual(tree[0][0].count, 0)
+        XCTAssertEqual(tree[0][0].childrenCount, 0)
         XCTAssertEqual(tree[0][0].group, 4)
-        XCTAssertEqual(tree[0][0].utf8BytesRange, 3..<4)
+        XCTAssertEqual(tree[0][0].bytesRange, 3..<4)
         
         var before = [(Int, Range<Int>, Int)]()
         var after = [(Int, Range<Int>, Int)]()
