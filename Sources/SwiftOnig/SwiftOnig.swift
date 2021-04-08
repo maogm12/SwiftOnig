@@ -54,7 +54,7 @@ public func uninitialize() {
     `OnigError` if `body` returns code not in following normal return codes:
     [`ONIG_NORMAL`, `ONIG_MISMATCH`, ``ONIG_NO_SUPPORT_CONFIG`, `ONIG_ABORT`]
  */
-@discardableResult internal func callOnigFunction(_ body: () throws -> Int32) throws -> Int32 {
+@discardableResult internal func callOnigFunction(_ body: () throws -> OnigInt) throws -> OnigInt {
     let result = try body()
 
     switch result {

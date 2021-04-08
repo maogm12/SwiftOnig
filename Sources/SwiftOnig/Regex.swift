@@ -55,7 +55,7 @@ final public class Regex {
         self.encoding = encoding
 
         var error = OnigErrorInfo()
-        let result = self.patternBytes.withUnsafeBufferPointer { bufPtr -> Int32 in
+        let result = self.patternBytes.withUnsafeBufferPointer { bufPtr -> OnigInt in
             // Make sure that `onig_new` isn't called by more than one thread at a time.
             onigQueue.sync {
                 onig_new(&self.rawValue,
@@ -133,8 +133,8 @@ final public class Regex {
         }
 
         let region = Region()
-        let result = str.withCString { (cstr: UnsafePointer<Int8>) -> Int32 in
-            cstr.withMemoryRebound(to: OnigUChar.self, capacity: byteCount) { start -> Int32 in
+        let result = str.withCString { (cstr: UnsafePointer<Int8>) -> OnigInt in
+            cstr.withMemoryRebound(to: OnigUChar.self, capacity: byteCount) { start -> OnigInt in
                 onig_match_with_param(self.rawValue,
                                       start,
                                       start.advanced(by: byteCount),
@@ -201,7 +201,7 @@ final public class Regex {
      - Throws: `OnigError`
      */
     public func firstIndex<T: StringProtocol>(in str: T, of utf8Range: Range<Int>, options: SearchOptions = .none, matchParam: MatchParam = MatchParam()) throws -> Int? {
-        let result = try str.withOnigurumaString { (start, count) throws -> Int32 in
+        let result = try str.withOnigurumaString { (start, count) throws -> OnigInt in
             let range = utf8Range.clamped(to: 0..<count)
             return try callOnigFunction {
                 onig_search_with_param(self.rawValue,
@@ -215,7 +215,7 @@ final public class Regex {
             }
         }
         
-        return Int(truncatingIfNeeded: result)
+        return Int(result)
     }
     
     /**
@@ -266,7 +266,7 @@ final public class Regex {
      */
     public func firstMatch<T: StringProtocol>(in str: T, of utf8Range: Range<Int>, options: SearchOptions = .none, matchParam: MatchParam = MatchParam()) throws -> Region? {
         let region = Region()
-        let result = try str.withOnigurumaString { (start, count) throws -> Int32 in
+        let result = try str.withOnigurumaString { (start, count) throws -> OnigInt in
             let range = utf8Range.clamped(to: 0..<count)
             return try callOnigFunction {
                 onig_search_with_param(self.rawValue,
@@ -461,13 +461,13 @@ final public class Regex {
     public static var subexpCallLimitInSearch: UInt {
         get {
             onigQueue.sync {
-                UInt(truncatingIfNeeded: onig_get_subexp_call_limit_in_search())
+                UInt(onig_get_subexp_call_limit_in_search())
             }
         }
         
         set {
             onigQueue.sync {
-                _ = onig_set_subexp_call_limit_in_search(OnigULong(truncatingIfNeeded: newValue))
+                _ = onig_set_subexp_call_limit_in_search(OnigULong(newValue))
             }
         }
     }
@@ -478,11 +478,11 @@ final public class Regex {
      */
     public static var subexpCallMaxNestLevel: Int {
         get {
-            Int(truncatingIfNeeded: onig_get_subexp_call_max_nest_level())
+            Int(onig_get_subexp_call_max_nest_level())
         }
         
         set {
-            _ = onig_set_subexp_call_max_nest_level(OnigInt(truncatingIfNeeded: newValue))
+            _ = onig_set_subexp_call_max_nest_level(OnigInt(newValue))
         }
     }
     
@@ -492,11 +492,11 @@ final public class Regex {
      */
     public static var parseDepthLimit: UInt {
         get {
-            UInt(truncatingIfNeeded: onig_get_parse_depth_limit())
+            UInt(onig_get_parse_depth_limit())
         }
         
         set {
-            _ = onig_set_parse_depth_limit(OnigUInt(truncatingIfNeeded: newValue))
+            _ = onig_set_parse_depth_limit(OnigUInt(newValue))
         }
     }
     
@@ -611,7 +611,7 @@ extension Regex {
         typealias NameCallBackType = (String, [Int]) -> Bool
         var closureRef: Any = body
         
-        onig_foreach_name(self.rawValue, { (namePtr, nameEndPtr, groupCount, groupsPtr, _ /* regex */, closureRefPtr) -> Int32 in
+        onig_foreach_name(self.rawValue, { (namePtr, nameEndPtr, groupCount, groupsPtr, _ /* regex */, closureRefPtr) -> OnigInt in
             guard let name = String(utf8String: namePtr, end: nameEndPtr) else {
                 return ONIG_ABORT
             }
@@ -644,7 +644,7 @@ extension Regex {
      */
     public func namedCaptureGroupIndexes(of name: String) -> [Int]? {
         name.withOnigurumaString { start, count in
-            let nums = UnsafeMutablePointer<UnsafeMutablePointer<Int32>?>.allocate(capacity: 1)
+            let nums = UnsafeMutablePointer<UnsafeMutablePointer<OnigInt>?>.allocate(capacity: 1)
             defer{
                 nums.deallocate()
             }

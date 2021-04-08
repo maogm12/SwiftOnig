@@ -20,8 +20,8 @@ public class Region {
                                    end: nil,
                                    history_root: nil)
     }
-    
-    convenience init(with capacity: Int32) {
+
+    convenience init(with capacity: Int) {
         self.init()
         self.reserve(capacity: capacity)
     }
@@ -67,7 +67,7 @@ public class Region {
      - Parameters:
         - capacity: The new capacity
     */
-    public func reserve(capacity: Int32) {
+    public func reserve(capacity: Int) {
         let result = onig_region_resize(&self.rawValue, capacity)
         if result != ONIG_NORMAL {
             fatalError("Onig: fail to memory allocation during region resize")

@@ -94,7 +94,7 @@ public enum OnigError: Error, Equatable {
 }
 
 extension OnigError {
-    public init(_ onigErrorCode: Int32, onigErrorInfo: OnigErrorInfo? = nil) {
+    public init(_ onigErrorCode: OnigInt, onigErrorInfo: OnigErrorInfo? = nil) {
         switch onigErrorCode {
         /* internal error */
         case ONIGERR_MEMORY:
@@ -260,7 +260,7 @@ extension OnigError {
         }
     }
 
-    public var onigErrorCode: Int32 {
+    public var onigErrorCode: OnigInt {
         switch self {
         /* internal error */
         case .memory:

@@ -14,14 +14,14 @@ public struct CaptureTreeNode {
      The capture group number for this capture group.
      */
     public var group: Int {
-        Int(truncatingIfNeeded: self.rawValue.group)
+        Int(self.rawValue.group)
     }
 
     /**
      The extent of this capture group.
      */
     public var bytesRange: Range<Int> {
-        Int(truncatingIfNeeded: self.rawValue.beg) ..< Int(truncatingIfNeeded: self.rawValue.end)
+        Int(self.rawValue.beg) ..< Int(self.rawValue.end)
     }
     
     /**
@@ -86,7 +86,7 @@ extension CaptureTreeNode {
      The number of child capture groups this capture group contains.
      */
     public var childrenCount: Int {
-        Int(truncatingIfNeeded: self.rawValue.num_childs)
+        Int(self.rawValue.num_childs)
     }
 
     /**

@@ -139,7 +139,7 @@ extension Syntax {
             self.rawValue = rawValue
         }
         
-        public init(onigSyntaxOp: UInt32, onigSyntaxOp2: UInt32) {
+        public init(onigSyntaxOp: OnigUInt, onigSyntaxOp2: OnigUInt) {
             self.rawValue = UInt64(onigSyntaxOp) | (UInt64(onigSyntaxOp2) << 32)
         }
 
@@ -336,12 +336,12 @@ extension Syntax {
     //    /// (?P<name>...) (?P=name)
     //    public static let qmarkCapitalPName = Syntax.Operators(rawValue: UInt64(ONIG_SYN_OP2_QMARK_CAPITAL_P_NAME) << 32)
         
-        public var onigSyntaxOp: UInt32 {
-            return UInt32(truncatingIfNeeded: self.rawValue)
+        public var onigSyntaxOp: OnigUInt {
+            return OnigUInt(truncatingIfNeeded: self.rawValue)
         }
         
-        public var onigSyntaxOp2: UInt32 {
-            return UInt32(truncatingIfNeeded: self.rawValue >> 32)
+        public var onigSyntaxOp2: OnigUInt {
+            return OnigUInt(truncatingIfNeeded: self.rawValue >> 32)
         }
     }
 
@@ -367,9 +367,9 @@ extension Syntax {
  */
 extension Syntax {
     public struct Behaviors: OptionSet {
-        public let rawValue: UInt32
+        public let rawValue: OnigUInt
         
-        public init(rawValue: UInt32) {
+        public init(rawValue: OnigUInt) {
             self.rawValue = rawValue
         }
         
@@ -460,19 +460,19 @@ extension Syntax {
     /**
      Meta character specifiers
      */
-    public enum MetaCharType: UInt32, CustomStringConvertible {
+    public enum MetaCharType: CustomStringConvertible {
         /// The escape character
-        case escape = 0
+        case escape
         /// The any character (.)
-        case anyChar = 1
+        case anyChar
         /// The any number of repeats character (*)
-        case anyTime = 2
+        case anyTime
         /// The optinoal chracter (?)
-        case zeroOrOneTime = 3
+        case zeroOrOneTime
         /// The at least once character (+)
-        case oneOrMoreTime = 4
+        case oneOrMoreTime
         /// The glob character (.*)
-        case anyCharAnyTime = 5
+        case anyCharAnyTime
         
         public var description: String {
             switch self {

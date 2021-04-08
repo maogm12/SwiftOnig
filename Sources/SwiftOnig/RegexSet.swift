@@ -102,7 +102,7 @@ final public class RegexSet {
         }
 
         try callOnigFunction {
-            onig_regset_replace(self.rawValue, Int32(index), newElement.rawValue)
+            onig_regset_replace(self.rawValue, OnigInt(index), newElement.rawValue)
         }
         self.regexes[index] = newElement
     }
@@ -121,7 +121,7 @@ final public class RegexSet {
             return nil
         }
         
-        if let onigRegionPtr = onig_regset_get_region(self.rawValue, Int32(index)) {
+        if let onigRegionPtr = onig_regset_get_region(self.rawValue, OnigInt(index)) {
             return Region(rawValue: onigRegionPtr.pointee)
         }
         
@@ -193,11 +193,11 @@ final public class RegexSet {
 
         let byteCount = str.utf8.count
         let range = utf8BytesRange.clamped(to: 0..<byteCount)
-        var bytesIndex: Int32 = 0
+        var bytesIndex: OnigInt = 0
 
         let result = try callOnigFunction {
             str.withCString {
-                $0.withMemoryRebound(to: OnigUChar.self, capacity: byteCount) { strPtr -> Int32 in
+                $0.withMemoryRebound(to: OnigUChar.self, capacity: byteCount) { strPtr -> OnigInt in
                     if let matchParams = matchParams {
                         let mps = UnsafeMutableBufferPointer<OpaquePointer?>.allocate(capacity: matchParams.count)
                         _ = mps.initialize(from: matchParams.map{ (matchParams) -> OpaquePointer? in
