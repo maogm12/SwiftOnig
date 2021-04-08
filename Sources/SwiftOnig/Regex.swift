@@ -8,25 +8,94 @@
 import COnig
 import Foundation
 
-public class Regex {
-    internal private(set) var rawValue: OnigRegex!
-
+public struct Regex {
     /**
-     Cached regex pattern in UTF-8 bytes.
-     - Note:
-     Although the default underlying storage of swift `String` use UTF-8, and we could access it with `withCString`,
-     but the lifetime of the pointers are only the scope of `withCString` closures, so keep a copy of the pattern to make sure
-     the addresses used in oniguruma is always valid.
-    */
-    private var patternBytes: ContiguousArray<UInt8>!
-    
-    /**
-     Keep a reference to the syntax to make sure the address to the syntax used in oniguruma is always valid.
+     Internal storage of the regex, it holds the pointer of a oniguruma regex as well as the cached pattern, syntax and encoding.
      */
-    private var syntax: Syntax!
+    final internal class Storage {
+        internal private(set) var rawValue: OnigRegex!
 
+        /**
+         Keep a copy of the pattern to make sure the addresses used in oniguruma is always valid.
+        */
+        internal var patternBytes: ContiguousArray<UInt8>!
+        
+        /**
+         Keep a reference to the syntax to make sure the address to the syntax used in oniguruma is always valid.
+         */
+        internal var syntax: Syntax!
+        
+        /**
+        Keep a reference to the encoding to make sure the address to the encoding used in oniguruma is always valid.
+         */
+        internal var encoding: Encoding!
+
+        /**
+         Create a `Regex` with given bytes pattern, option and syntax.
+         - Parameters:
+            - pattern: Pattern of a sequence of bytes used to create the regex.
+            - encoding: Encoding of the pattern.
+            - option: `Options` used to create the regex.
+            - syntax: `Syntax` used to create the regex.
+         - Throws:
+            `OnigError`
+         */
+        internal init<S: Sequence>(pattern bytes: S, encoding: Encoding, option: Options = .none, syntax: Syntax = .default) throws where S.Element == UInt8 {
+            self.patternBytes = ContiguousArray(bytes)
+            self.syntax = syntax
+            self.encoding = encoding
+
+            var error = OnigErrorInfo()
+            let result = self.patternBytes.withUnsafeBufferPointer { bufPtr -> Int32 in
+                // Make sure that `onig_new` isn't called by more than one thread at a time.
+                onigQueue.sync {
+                    onig_new(&self.rawValue,
+                             bufPtr.baseAddress,
+                             bufPtr.baseAddress?.advanced(by: self.patternBytes.count),
+                             option.rawValue,
+                             encoding.rawValue,
+                             self.syntax.rawValue,
+                             &error)
+                }
+            }
+
+            if result != ONIG_NORMAL {
+                self.cleanUp()
+                throw OnigError(result, onigErrorInfo: error)
+            }
+        }
+
+        deinit {
+            self.cleanUp()
+        }
+
+        /**
+         Clean up oniguruma regex object and cacahed pattern bytes.
+         */
+        private func cleanUp() {
+            if self.rawValue != nil {
+                onig_free(self.rawValue)
+                self.rawValue = nil
+            }
+            
+            if self.patternBytes != nil {
+                self.patternBytes = nil
+            }
+            
+            if self.syntax != nil {
+                self.syntax = nil
+            }
+            
+            if self.encoding != nil {
+                self.encoding = nil
+            }
+        }
+    }
+
+    internal var storage: Storage
+        
     /**
-     Create a `Regex` with given string pattern, option and syntax. UTF-8 encoding will be used for string pattern.
+     Create a `Regex` with given string pattern, option and syntax. UTF-8 encoding will be used.
      - Parameters:
         - pattern: Pattern used to create the regex.
         - option: `Options` used to create the regex.
@@ -34,8 +103,8 @@ public class Regex {
      - Throws:
         `OnigError`
      */
-    public convenience init<S: StringProtocol>(_ pattern: S, option: Options = .none, syntax: Syntax = .default) throws {
-        try self.init(pattern: pattern.utf8, encoding: Encoding.utf8, option: option, syntax: syntax)
+    public init<S: StringProtocol>(_ pattern: S, option: Options = .none, syntax: Syntax = .default) throws {
+        self.storage = try Storage(pattern: pattern.utf8, encoding: .utf8, option: option, syntax: syntax)
     }
 
     /**
@@ -49,38 +118,14 @@ public class Regex {
         `OnigError`
      */
     public init<S: Sequence>(pattern bytes: S, encoding: Encoding, option: Options = .none, syntax: Syntax = .default) throws where S.Element == UInt8 {
-        self.patternBytes = ContiguousArray(bytes)
-        self.syntax = syntax
-
-        var error = OnigErrorInfo()
-        let result = self.patternBytes.withUnsafeBufferPointer { bufPtr -> Int32 in
-            // Make sure that `onig_new` isn't called by more than one thread at a time.
-            onigQueue.sync {
-                onig_new(&self.rawValue,
-                         bufPtr.baseAddress,
-                         bufPtr.baseAddress?.advanced(by: self.patternBytes.count),
-                         option.rawValue,
-                         encoding.rawValue,
-                         self.syntax.rawValue,
-                         &error)
-            }
-        }
-
-        if result != ONIG_NORMAL {
-            self.cleanUp()
-            throw OnigError(result, onigErrorInfo: error)
-        }
+        self.storage = try Storage(pattern: bytes, encoding: .utf8, option: option, syntax: syntax)
     }
 
-    deinit {
-        self.cleanUp()
-    }
-    
     /**
      Get the pattern string of the regular expression.
      */
     public var pattern: String {
-        self.patternBytes.withUnsafeBufferPointer { patternBufPtr in
+        self.storage.patternBytes.withUnsafeBufferPointer { patternBufPtr in
             String(bytes: patternBufPtr, encoding: String.Encoding.utf8) ?? ""
         }
     }
@@ -129,7 +174,7 @@ public class Regex {
         let region = Region()
         let result = str.withCString { (cstr: UnsafePointer<Int8>) -> Int32 in
             cstr.withMemoryRebound(to: OnigUChar.self, capacity: byteCount) { start -> Int32 in
-                onig_match_with_param(self.rawValue,
+                onig_match_with_param(self.storage.rawValue,
                                       start,
                                       start.advanced(by: byteCount),
                                       start.advanced(by: utf8Offset),
@@ -198,7 +243,7 @@ public class Regex {
         let result = try str.withOnigurumaString { (start, count) throws -> Int32 in
             let range = utf8Range.clamped(to: 0..<count)
             return try callOnigFunction {
-                onig_search_with_param(self.rawValue,
+                onig_search_with_param(self.storage.rawValue,
                                        start,
                                        start.advanced(by: count),
                                        start.advanced(by: range.lowerBound),
@@ -263,7 +308,7 @@ public class Regex {
         let result = try str.withOnigurumaString { (start, count) throws -> Int32 in
             let range = utf8Range.clamped(to: 0..<count)
             return try callOnigFunction {
-                onig_search_with_param(self.rawValue,
+                onig_search_with_param(self.storage.rawValue,
                                        start,
                                        start.advanced(by: count),
                                        start.advanced(by: range.lowerBound),
@@ -396,7 +441,7 @@ public class Regex {
             while true {
                 let region = Region()
                 let result = try callOnigFunction {
-                    onig_search_with_param(self.rawValue,
+                    onig_search_with_param(self.storage.rawValue,
                                            start,
                                            start.advanced(by: count),
                                            start.advanced(by: range.lowerBound),
@@ -437,7 +482,7 @@ public class Regex {
      Get the count of capture groups of the pattern.
      */
     public var captureGroupCount: Int {
-        Int(onig_number_of_captures(self.rawValue))
+        Int(onig_number_of_captures(self.storage.rawValue))
     }
     
     /**
@@ -445,7 +490,7 @@ public class Regex {
      - Note: You can't use capture history if `.atmarkCaptureHistory` is disabled in the regex syntax.
      */
     public var captureHistoryCount: Int {
-        Int(onig_number_of_capture_histories(self.rawValue))
+        Int(onig_number_of_capture_histories(self.storage.rawValue))
     }
     
     /**
@@ -472,11 +517,15 @@ public class Regex {
      */
     public static var subexpCallMaxNestLevel: Int {
         get {
-            Int(truncatingIfNeeded: onig_get_subexp_call_max_nest_level())
+            onigQueue.sync {
+                Int(truncatingIfNeeded: onig_get_subexp_call_max_nest_level())
+            }
         }
         
         set {
-            _ = onig_set_subexp_call_max_nest_level(OnigInt(truncatingIfNeeded: newValue))
+            onigQueue.sync {
+                _ = onig_set_subexp_call_max_nest_level(OnigInt(truncatingIfNeeded: newValue))
+            }
         }
     }
     
@@ -486,29 +535,15 @@ public class Regex {
      */
     public static var parseDepthLimit: UInt {
         get {
-            UInt(truncatingIfNeeded: onig_get_parse_depth_limit())
+            onigQueue.sync {
+                UInt(truncatingIfNeeded: onig_get_parse_depth_limit())
+            }
         }
         
         set {
-            _ = onig_set_parse_depth_limit(OnigUInt(truncatingIfNeeded: newValue))
-        }
-    }
-    
-    /**
-     Clean up oniguruma regex object and cacahed pattern bytes.
-     */
-    private func cleanUp() {
-        if self.rawValue != nil {
-            onig_free(self.rawValue)
-            self.rawValue = nil
-        }
-        
-        if self.patternBytes != nil {
-            self.patternBytes = nil
-        }
-        
-        if self.syntax != nil {
-            self.syntax = nil
+            onigQueue.sync {
+                _ = onig_set_parse_depth_limit(OnigUInt(truncatingIfNeeded: newValue))
+            }
         }
     }
 }
@@ -583,13 +618,13 @@ extension Regex {
     }
 }
 
-/// Names
+// Named capture group
 extension Regex {
     /**
      Get the count of named groups of the pattern.
      */
     public var namedCaptureGroupCount: Int {
-        return self.rawValue == nil ? 0 : Int(onig_number_of_names(self.rawValue))
+        return Int(onig_number_of_names(self.storage.rawValue))
     }
 
     /**
@@ -598,14 +633,10 @@ extension Regex {
         Add iterator for named capture groups
      */
     public func forEachNamedCaptureGroup(_ body: @escaping (_ name: String, _ indexes: [Int]) -> Bool) {
-        if self.rawValue == nil {
-            return
-        }
-
         typealias NameCallBackType = (String, [Int]) -> Bool
         var closureRef: Any = body
         
-        onig_foreach_name(self.rawValue, { (namePtr, nameEndPtr, groupCount, groupsPtr, _ /* regex */, closureRefPtr) -> Int32 in
+        onig_foreach_name(self.storage.rawValue, { (namePtr, nameEndPtr, groupCount, groupsPtr, _ /* regex */, closureRefPtr) -> Int32 in
             guard let name = String(utf8String: namePtr, end: nameEndPtr) else {
                 return ONIG_ABORT
             }
@@ -643,7 +674,7 @@ extension Regex {
                 nums.deallocate()
             }
 
-            let count = onig_name_to_group_numbers(self.rawValue,
+            let count = onig_name_to_group_numbers(self.storage.rawValue,
                                        start,
                                        start.advanced(by: count),
                                        nums)

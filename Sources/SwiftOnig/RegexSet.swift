@@ -7,90 +7,146 @@
 
 import COnig
 
-public class RegexSet {
-    internal typealias OnigRegSet = OpaquePointer
-    internal private(set) var rawValue: OnigRegSet?
-    
+public struct RegexSet {
     /**
-     Cached regexes.
+     Internal storage of the regex set, it holds the pointer of a oniguruma regset and cached `Regex` array.
      */
-    private var regexes = [Regex]()
-    
-    init() {
-        onig_regset_new(&self.rawValue, 0, nil)
-    }
-    
-    convenience init<S: Sequence>(_ regexes: S) throws where S.Element: Regex {
-        self.init()
-        for reg in regexes {
-            let result = onig_regset_add(self.rawValue, reg.rawValue)
-            if result != ONIG_NORMAL {
-                self.cleanUp()
-            }
-            self.regexes.append(reg)
+    final internal class Storage {
+        internal typealias OnigRegSet = OpaquePointer
+        internal private(set) var rawValue: OnigRegSet!
+        
+        /**
+         Cached `Regex` objects to make sure oniguruma objects are not freed.
+         */
+        internal var regexes = [Regex]()
+        
+        internal init() {
+            onig_regset_new(&self.rawValue, 0, nil)
         }
-    }
+        
+        internal convenience init<S: Sequence>(_ regexes: S) throws where S.Element == Regex {
+            self.init()
+            for reg in regexes {
+                do {
+                    try callOnigFunction {
+                        onig_regset_add(self.rawValue, reg.storage.rawValue)
+                    }
+                    self.regexes.append(reg)
+                } catch {
+                    self.cleanUp()
+                    throw error
+                }
+            }
+        }
+
+        /**
+         Create a `Storage` object by copying from other `Storage`.
+         */
+        internal convenience init(from other: Storage) {
+            // These values are already added, so shouldn't throw
+            try! self.init(other.regexes)
+        }
+
+        deinit {
+            self.cleanUp()
+        }
     
-    deinit {
-        self.cleanUp()
-    }
-    
-    /**
-     Remove all regex objects.
-     */
-    public func removeAll() {
-        if self.rawValue != nil {
-            for i in (0..<self.count).reversed() {
+        /**
+         Remove all regex objects.
+         */
+        internal func removeAll() {
+            for i in (0..<self.regexes.count).reversed() {
                 // mark all regex object in the regset to be nil
                 onig_regset_replace(self.rawValue, Int32(i), nil)
             }
-        }
-        
-        if !self.regexes.isEmpty {
+            
             self.regexes.removeAll()
         }
-    }
-    
-    /**
-     Add a `Regex` object into the `RegexSet`.
-     - Note:
-         1. The `Regex` object must have the same character encoding with the `RegexSet`.
-         2. The `Regex` object is prohibited from having the `Regex.Options.findLongest` option.
-     - Parameters:
-        - newElement: The new `Regex` object to append to the `RegexSet`.
-     - Throws: `OnigError`
-     */
-    public func append(_ newElement: Regex) throws {
-        if self.rawValue == nil {
-            onig_regset_new(&self.rawValue, 0, nil)
+        
+        /**
+         Add a `Regex` object into the `RegexSet`.
+         - Note:
+             1. The `Regex` object must have the same character encoding with the `RegexSet`.
+             2. The `Regex` object is prohibited from having the `Regex.Options.findLongest` option.
+         - Parameters:
+            - newElement: The new `Regex` object to append to the `RegexSet`.
+         - Throws: `OnigError`
+         */
+        internal func append(_ newElement: Regex) throws {
+            try callOnigFunction {
+                onig_regset_add(self.rawValue, newElement.storage.rawValue)
+            }
+
+            self.regexes.append(newElement)
+        }
+        
+        /**
+         Replace regex object at specific index.
+         - TODO:
+         Swift as of now (04/02/2021) doesn't support throwing subscripts, here is the task tracking it: <https://bugs.swift.org/browse/SR-238>.
+         Once it's supported, should move this to `subscript`.
+         - Parameters:
+            - index: the index of the regex object to be replaced.
+            - newElement: the new element put in this index.
+         - Throws:
+            `OnigError` if `onig_regset_replace` falied.
+         */
+        internal func replace(regexAt index: Int, with newElement: Regex) throws {
+            if index < 0 || index >= self.count {
+                return
+            }
+
+            try callOnigFunction {
+                onig_regset_replace(self.rawValue, OnigInt(index), newElement.storage.rawValue)
+            }
+
+            self.regexes[index] = newElement
+        }
+        
+        /**
+         Remove the regex object at specific index.
+         - Parameter index: The index of the regex object to be removed.
+         */
+        internal func remove(at index: Int) {
+            if index < 0 || index >= self.count {
+                return
+            }
+
+            onig_regset_replace(self.rawValue, OnigInt(index), nil)
+            self.regexes.remove(at: index)
         }
 
-        try callOnigFunction {
-            onig_regset_add(self.rawValue, newElement.rawValue)
+        /**
+         Get count of regex object in the storage.
+         */
+        internal var count: Int {
+            Int(onig_regset_number_of_regex(self.rawValue))
         }
-        self.regexes.append(newElement)
-    }
-    
-    /**
-     Replace regex object at specific index.
-     - TODO:
-     Swift as of now (04/02/2021) doesn't support throwing subscripts, here is the task tracking it: <https://bugs.swift.org/browse/SR-238>.
-     Once it's supported, should move this to `subscript`.
-     - Parameters:
-        - index: the index of the regex object to be replaced.
-        - newElement: the new element put in this index.
-     - Throws:
-        `OnigError` if `onig_regset_replace` falied.
-     */
-    public func replace(regexAt index: Int, with newElement: Regex) throws {
-        if index < 0 || index >= self.endIndex {
-            return
+        
+        internal subscript(position: Int) -> Regex {
+            return self.regexes[position]
         }
 
-        try callOnigFunction {
-            onig_regset_replace(self.rawValue, Int32(index), newElement.rawValue)
+        /**
+         Clean up oniruguma regset object and cached `Regex`.
+         */
+        private func cleanUp() {
+            if self.rawValue != nil {
+                self.removeAll()
+                onig_regset_free(self.rawValue)
+                self.rawValue = nil
+            }
         }
-        self.regexes[index] = newElement
+    }
+    
+    internal var storage: Storage
+
+    public init() {
+        self.storage = Storage()
+    }
+    
+    public init<S: Sequence>(_ regexes: S) throws where S.Element == Regex {
+        self.storage = try Storage(regexes)
     }
 
     /**
@@ -99,7 +155,7 @@ public class RegexSet {
         - index: the index.
      */
     public func region(at index: Int) -> Region? {
-        if self.rawValue == nil {
+        if self.storage.rawValue == nil {
             return nil
         }
         
@@ -107,13 +163,13 @@ public class RegexSet {
             return nil
         }
         
-        if let onigRegionPtr = onig_regset_get_region(self.rawValue, Int32(index)) {
+        if let onigRegionPtr = onig_regset_get_region(self.storage.rawValue, OnigInt(index)) {
             return Region(rawValue: onigRegionPtr.pointee)
         }
         
         return nil
     }
-    
+
     /**
      Perform a search in the target string.
      - Parameters:
@@ -169,21 +225,17 @@ public class RegexSet {
         `OnigError` if `matchParams` is not `nil` but count doesn't match the count of regex objects, or `onig_regset_search` returns error.
      */
     public func search<S: StringProtocol>(in str: S, of utf8BytesRange: Range<Int>, lead: Lead, option: Regex.SearchOptions = .none, matchParams: [MatchParam]? = nil) throws -> (regexIndex: Int, utf8BytesIndex: Int)? {
-        if self.rawValue == nil {
-            return nil
-        }
-
         guard matchParams == nil || matchParams!.count == self.count else {
             throw OnigError.invalidArgument
         }
 
         let byteCount = str.utf8.count
         let range = utf8BytesRange.clamped(to: 0..<byteCount)
-        var bytesIndex: Int32 = 0
+        var bytesIndex: OnigInt = 0
 
         let result = try callOnigFunction {
             str.withCString {
-                $0.withMemoryRebound(to: OnigUChar.self, capacity: byteCount) { strPtr -> Int32 in
+                $0.withMemoryRebound(to: OnigUChar.self, capacity: byteCount) { strPtr -> OnigInt in
                     if let matchParams = matchParams {
                         let mps = UnsafeMutableBufferPointer<OpaquePointer?>.allocate(capacity: matchParams.count)
                         _ = mps.initialize(from: matchParams.map{ (matchParams) -> OpaquePointer? in
@@ -193,7 +245,7 @@ public class RegexSet {
                             mps.deallocate()
                         }
 
-                        return onig_regset_search_with_param(self.rawValue,
+                        return onig_regset_search_with_param(self.storage.rawValue,
                                                              strPtr,
                                                              strPtr.advanced(by: byteCount),
                                                              strPtr.advanced(by: range.lowerBound),
@@ -203,7 +255,7 @@ public class RegexSet {
                                                              mps.baseAddress,
                                                              &bytesIndex)
                     } else {
-                        return onig_regset_search(self.rawValue,
+                        return onig_regset_search(self.storage.rawValue,
                                                   strPtr,
                                                   strPtr.advanced(by: byteCount),
                                                   strPtr.advanced(by: range.lowerBound),
@@ -222,21 +274,7 @@ public class RegexSet {
             return(regexIndex: Int(result), utf8BytesIndex: Int(bytesIndex))
         }
     }
-    
-    
 
-    /**
-     Clean up oniruguma regset object and cached `Regex`.
-     */
-    private func cleanUp() {
-        self.removeAll()
-
-        if self.rawValue != nil {
-            onig_regset_free(self.rawValue)
-            self.rawValue = nil
-        }
-    }
-    
     /**
      Is given index a valid index.
      - Parameters:
@@ -274,6 +312,20 @@ public class RegexSet {
             }
         }
     }
+    
+    /**
+     If the storage is shared with others, create a owned copy.
+     - Parameter copyContent: Copy regexes in old storage to the owned storage if `true`.
+     */
+    private mutating func makeUniqueIfNotUnique(copyContent: Bool) {
+        if !isKnownUniquelyReferenced(&self.storage) {
+            if copyContent {
+                self.storage = Storage(from: self.storage)
+            } else {
+                self.storage = Storage()
+            }
+        }
+    }
 }
 
 extension RegexSet : RandomAccessCollection {
@@ -285,10 +337,60 @@ extension RegexSet : RandomAccessCollection {
     }
     
     public var endIndex: Int {
-        return self.rawValue == nil ? 0 : Int(onig_regset_number_of_regex(self.rawValue))
+        return self.storage.count
     }
 
     public subscript(position: Int) -> Regex {
-        return self.regexes[position]
+        return self.storage[position]
+    }
+}
+
+// mutating
+extension RegexSet {
+    /**
+     Remove all regex objects.
+     */
+    public mutating func removeAll() {
+        self.makeUniqueIfNotUnique(copyContent: false)
+        self.storage.removeAll()
+    }
+    
+    /**
+     Add a `Regex` object into the `RegexSet`.
+     - Note:
+         1. The `Regex` object must have the same character encoding with the `RegexSet`.
+         2. The `Regex` object is prohibited from having the `Regex.Options.findLongest` option.
+     - Parameters:
+        - newElement: The new `Regex` object to append to the `RegexSet`.
+     - Throws: `OnigError`
+     */
+    public mutating func append(_ newElement: Regex) throws {
+        self.makeUniqueIfNotUnique(copyContent: true)
+        try self.storage.append(newElement)
+    }
+    
+    /**
+     Replace regex object at specific index.
+     - TODO:
+     Swift as of now (04/02/2021) doesn't support throwing subscripts, here is the task tracking it: <https://bugs.swift.org/browse/SR-238>.
+     Once it's supported, should move this to `subscript`.
+     - Parameters:
+        - index: the index of the regex object to be replaced.
+        - newElement: the new element put in this index.
+     - Throws:
+        `OnigError` if `onig_regset_replace` falied.
+     */
+    public mutating func replace(regexAt index: Int, with newElement: Regex) throws {
+        self.makeUniqueIfNotUnique(copyContent: true)
+        try self.storage.replace(regexAt: index, with: newElement)
+    }
+    
+    /**
+     Remove the regex object at specific index.
+     - Parameter index: The index of the regex object to be removed.
+     */
+    public mutating func remove(at index: Int) {
+        self.makeUniqueIfNotUnique(copyContent: true)
+        self.storage.remove(at: index)
     }
 }

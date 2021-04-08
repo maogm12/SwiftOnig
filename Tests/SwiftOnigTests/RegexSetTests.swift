@@ -19,15 +19,23 @@ final class RegexSetTests: SwiftOnigTestsBase {
     }
     
     func testRemoveAll() {
-        let regSet = try! RegexSet([Regex("a+"), Regex("b+")])
+        var regSet = try! RegexSet([Regex("a+"), Regex("b+")])
         XCTAssertEqual(regSet.count, 2)
 
         regSet.removeAll()
         XCTAssertTrue(regSet.isEmpty)
+        
+        var regSet1 = try! RegexSet([Regex("a+"), Regex("b+")])
+        runOnBackgroundSync {
+            XCTAssertFalse(regSet1.isEmpty)
+            regSet1.removeAll()
+            XCTAssertTrue(regSet1.isEmpty)
+        }
+        XCTAssertTrue(regSet1.isEmpty)
     }
     
     func testAppend() {
-        let regSet = RegexSet()
+        var regSet = RegexSet()
         XCTAssertTrue(regSet.isEmpty)
         
         try! regSet.append(Regex("a+"))
@@ -38,7 +46,7 @@ final class RegexSetTests: SwiftOnigTestsBase {
     }
     
     func testGetterSetter() {
-        let regSet = try! RegexSet([Regex("a+"), Regex("b+")])
+        var regSet = try! RegexSet([Regex("a+"), Regex("b+")])
         var regex1 = regSet[0]
         XCTAssertTrue(regex1.isMatch("aaaa"))
         XCTAssertFalse(regex1.isMatch("cccc"))
