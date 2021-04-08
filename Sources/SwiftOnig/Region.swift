@@ -42,16 +42,16 @@ public class Region {
         onig_region_free(&self.rawValue, 0 /* free_self */)
     }
     
-    public var capacity: Int32 {
-        return self.rawValue.allocated
+    public var capacity: Int {
+        Int(self.rawValue.allocated)
     }
     
     /**
      Get the size of the region.
      - Returns: the number of registers in the region.
      */
-    public var count: Int32 {
-        return self.rawValue.num_regs
+    public var count: Int {
+        Int(self.rawValue.num_regs)
     }
     
     /**
@@ -85,7 +85,7 @@ public class Region {
      Get the position range of the Nth capture group.
      - Returns: `nil` if `group` is not a valid capture group or if the capture group did not match anything. The range returned are always byte indices with respect to the original string matched.
      */
-    public func utf8BytesRange(groupIndex: Int) -> Range<Int>? {
+    public func bytesRange(groupIndex: Int) -> Range<Int>? {
         if groupIndex >= self.count {
             return nil
         }
@@ -114,7 +114,7 @@ extension Region: Sequence {
         }
 
         public mutating func next() -> Range<Int>? {
-            let range = self.region.utf8BytesRange(groupIndex: self.groupIndex)
+            let range = self.region.bytesRange(groupIndex: self.groupIndex)
             self.groupIndex = self.groupIndex + 1
             return range
         }

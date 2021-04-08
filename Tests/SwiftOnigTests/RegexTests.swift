@@ -38,8 +38,8 @@ final class RegexTests: SwiftOnigTestsBase {
         let region = try! naiveEmailReg.firstMatch(in: target)!
         XCTAssertNotNil(region)
         XCTAssertEqual(region.count, 1)
-        XCTAssertEqual(region.utf8BytesRange(groupIndex: 0), 13..<29)
-        XCTAssertEqual(target.subString(utf8BytesRange: region.utf8BytesRange(groupIndex: 0)!),
+        XCTAssertEqual(region.bytesRange(groupIndex: 0), 13..<29)
+        XCTAssertEqual(target.subString(utf8BytesRange: region.bytesRange(groupIndex: 0)!),
                        "test@example.com")
     }
     
@@ -47,7 +47,7 @@ final class RegexTests: SwiftOnigTestsBase {
         let reg = try! Regex(#"\d+"#)
         let regions = try! reg.matches(in: "aa11bb22cc33dd44")
         XCTAssertEqual(regions.count, 4)
-        XCTAssertEqual(regions.map { $0.utf8BytesRange(groupIndex: 0)! }, [2..<4, 6..<8, 10..<12, 14..<16])
+        XCTAssertEqual(regions.map { $0.bytesRange(groupIndex: 0)! }, [2..<4, 6..<8, 10..<12, 14..<16])
     }
     
     func testEnumerateMatches() {
@@ -59,7 +59,7 @@ final class RegexTests: SwiftOnigTestsBase {
         }
 
         XCTAssertEqual(result.map { $0.0 }, [2, 6, 10, 14])
-        XCTAssertEqual(result.map { $0.1.utf8BytesRange(groupIndex: 0)! }, [2..<4, 6..<8, 10..<12, 14..<16])
+        XCTAssertEqual(result.map { $0.1.bytesRange(groupIndex: 0)! }, [2..<4, 6..<8, 10..<12, 14..<16])
     }
 
     func testNamedCaptureGroups() {

@@ -420,7 +420,7 @@ final public class Regex {
                     break
                 }
                 
-                guard let matchedRange = region.utf8BytesRange(groupIndex: 0) else {
+                guard let matchedRange = region.bytesRange(groupIndex: 0) else {
                     // matches but no region found???
                     break
                 }
