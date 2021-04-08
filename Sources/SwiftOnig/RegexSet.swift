@@ -7,27 +7,32 @@
 
 import COnig
 
-public class RegexSet {
+final public class RegexSet {
     internal typealias OnigRegSet = OpaquePointer
-    internal private(set) var rawValue: OnigRegSet?
+    internal private(set) var rawValue: OnigRegSet!
     
     /**
      Cached regexes.
      */
     private var regexes = [Regex]()
     
-    init() {
+    public init() {
         onig_regset_new(&self.rawValue, 0, nil)
     }
-    
-    convenience init<S: Sequence>(_ regexes: S) throws where S.Element: Regex {
+
+    public convenience init<S: Sequence>(_ regexes: S) throws where S.Element == Regex {
         self.init()
         for reg in regexes {
-            let result = onig_regset_add(self.rawValue, reg.rawValue)
-            if result != ONIG_NORMAL {
+            do {
+                try callOnigFunction{
+                    onig_regset_add(self.rawValue, reg.rawValue)
+                }
+                
+                self.regexes.append(reg)
+            } catch {
                 self.cleanUp()
+                throw error
             }
-            self.regexes.append(reg)
         }
     }
     
@@ -42,7 +47,7 @@ public class RegexSet {
         if self.rawValue != nil {
             for i in (0..<self.count).reversed() {
                 // mark all regex object in the regset to be nil
-                onig_regset_replace(self.rawValue, Int32(i), nil)
+                onig_regset_replace(self.rawValue, OnigInt(i), nil)
             }
         }
         
@@ -51,6 +56,15 @@ public class RegexSet {
         }
     }
     
+    /**
+     Remvoe the regex object at specific index.
+     - Parameter index: The index of the regex object to be removed.
+     */
+    public func remove(at index: Int) {
+        onig_regset_replace(self.rawValue, OnigInt(index), nil)
+        self.regexes.remove(at: index)
+    }
+
     /**
      Add a `Regex` object into the `RegexSet`.
      - Note:

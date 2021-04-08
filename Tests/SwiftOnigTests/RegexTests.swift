@@ -83,13 +83,24 @@ final class RegexTests: SwiftOnigTestsBase {
     func testPattern() {
         let reg = try! Regex("(?<a>a+)(?<b>b+(?<bc>c+))(?<a>a+)")
         XCTAssertEqual(reg.pattern, "(?<a>a+)(?<b>b+(?<bc>c+))(?<a>a+)")
+        
+        let pattern = "Cafe\u{301} du 🌍"
+        let utf16CodeUnits = Array(pattern.utf16)
+        let bytes = utf16CodeUnits.withUnsafeBufferPointer {
+            $0.baseAddress?.withMemoryRebound(to: UInt8.self, capacity: utf16CodeUnits.count * 2) {
+                UnsafeBufferPointer.init(start: $0, count: utf16CodeUnits.count * 2)
+            }
+        }!
+
+        let reg1 = try! Regex(pattern: bytes, encoding: .utf16LittleEndian)
+        XCTAssertEqual(reg1.pattern, "Cafe\u{301} du 🌍")
     }
     
     func testCaptureGroups() {
         let reg = try! Regex(#"(?<name>\w+):\s+(?<id>\d+)(\s+)(//.*)"#)
         XCTAssertEqual(reg.captureGroupCount, 2) // (\s+) (//.*)
     }
-    
+
     static var allTests = [
         ("testInit", testInit),
         ("testMatch", testMatch),

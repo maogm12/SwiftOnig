@@ -8,15 +8,11 @@
 import COnig
 import Foundation
 
-public class Regex {
+final public class Regex {
     internal private(set) var rawValue: OnigRegex!
 
     /**
-     Cached regex pattern in UTF-8 bytes.
-     - Note:
-     Although the default underlying storage of swift `String` use UTF-8, and we could access it with `withCString`,
-     but the lifetime of the pointers are only the scope of `withCString` closures, so keep a copy of the pattern to make sure
-     the addresses used in oniguruma is always valid.
+     Cached regex pattern bytes.
     */
     private var patternBytes: ContiguousArray<UInt8>!
     
@@ -24,6 +20,11 @@ public class Regex {
      Keep a reference to the syntax to make sure the address to the syntax used in oniguruma is always valid.
      */
     private var syntax: Syntax!
+    
+    /**
+     Keep a reference to the encoding to make sure the address to the encoding used in oniguruma is always valid.
+     */
+    private var encoding: Encoding!
 
     /**
      Create a `Regex` with given string pattern, option and syntax. UTF-8 encoding will be used for string pattern.
@@ -51,6 +52,7 @@ public class Regex {
     public init<S: Sequence>(pattern bytes: S, encoding: Encoding, option: Options = .none, syntax: Syntax = .default) throws where S.Element == UInt8 {
         self.patternBytes = ContiguousArray(bytes)
         self.syntax = syntax
+        self.encoding = encoding
 
         var error = OnigErrorInfo()
         let result = self.patternBytes.withUnsafeBufferPointer { bufPtr -> Int32 in
@@ -77,11 +79,15 @@ public class Regex {
     }
     
     /**
-     Get the pattern string of the regular expression.
+     Get the pattern string of the regular expression If the encoding is supported by swift string, otherwise `nil` is returned.
      */
-    public var pattern: String {
-        self.patternBytes.withUnsafeBufferPointer { patternBufPtr in
-            String(bytes: patternBufPtr, encoding: String.Encoding.utf8) ?? ""
+    public var pattern: String? {
+        guard let encoding = self.encoding?.stringEncoding else {
+            return nil
+        }
+        
+        return self.patternBytes.withUnsafeBufferPointer { patternBufPtr in
+            String(bytes: patternBufPtr, encoding: encoding) ?? ""
         }
     }
 

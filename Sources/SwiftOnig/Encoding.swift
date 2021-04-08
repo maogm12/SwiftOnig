@@ -116,6 +116,57 @@ public struct Encoding {
         }
     }
     
+    /**
+     Map `Encoding`to `String.Encoding`, only built-in encodings are supported.
+     */
+    public var stringEncoding: String.Encoding? {
+        if self.rawValue == &OnigEncodingASCII {
+            return .ascii
+        }
+        
+        if self.rawValue == &OnigEncodingISO_8859_1 {
+            return .isoLatin1
+        }
+        
+        if self.rawValue == &OnigEncodingISO_8859_2 {
+            return .isoLatin2
+        }
+        
+        if self.rawValue == &OnigEncodingEUC_JP {
+            return .japaneseEUC
+        }
+        
+        if self.rawValue == &OnigEncodingSJIS {
+            return .shiftJIS
+        }
+        
+        if self.rawValue == &OnigEncodingUTF16_BE {
+            return .utf16BigEndian
+        }
+        
+        if self.rawValue == &OnigEncodingUTF16_LE {
+            return .utf16LittleEndian
+        }
+        
+        if self.rawValue == &OnigEncodingUTF32_BE {
+            return .utf32BigEndian
+        }
+        
+        if self.rawValue == &OnigEncodingUTF32_LE {
+            return .utf32LittleEndian
+        }
+        
+        if self.rawValue == &OnigEncodingUTF8 {
+            return .utf8
+        }
+        
+        if self.rawValue == &OnigEncodingCP1251 {
+            return .windowsCP1251
+        }
+        
+        return nil
+    }
+    
     /*
      TODO:
      # UChar* onigenc_get_prev_char_head(OnigEncoding enc, const UChar* start, const UChar* s)
