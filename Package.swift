@@ -25,5 +25,11 @@ let package = Package(
         .testTarget(
             name: "SwiftOnigTests",
             dependencies: ["SwiftOnig"]),
+        
+        // Examples
+        .target(
+            name: "simple",
+            dependencies: ["SwiftOnig"],
+            path: "Examples/simple"),
     ]
 )
