@@ -132,14 +132,14 @@ final public class Regex {
             return nil
         }
 
-        let region = Region()
+        let region = try Region()
         let result = str.withCString { (cstr: UnsafePointer<Int8>) -> OnigInt in
             cstr.withMemoryRebound(to: OnigUChar.self, capacity: byteCount) { start -> OnigInt in
                 onig_match_with_param(self.rawValue,
                                       start,
                                       start.advanced(by: byteCount),
                                       start.advanced(by: utf8Offset),
-                                      &region.rawValue,
+                                      region.rawValue,
                                       options.rawValue,
                                       matchParam.rawValue)
             }
@@ -265,7 +265,7 @@ final public class Regex {
      - Throws: `OnigError`
      */
     public func firstMatch<T: StringProtocol>(in str: T, of utf8Range: Range<Int>, options: SearchOptions = .none, matchParam: MatchParam = MatchParam()) throws -> Region? {
-        let region = Region()
+        let region = try Region()
         let result = try str.withOnigurumaString { (start, count) throws -> OnigInt in
             let range = utf8Range.clamped(to: 0..<count)
             return try callOnigFunction {
@@ -274,7 +274,7 @@ final public class Regex {
                                        start.advanced(by: count),
                                        start.advanced(by: range.lowerBound),
                                        start.advanced(by: range.upperBound),
-                                       &region.rawValue,
+                                       region.rawValue,
                                        options.rawValue,
                                        matchParam.rawValue)
             }
@@ -400,14 +400,14 @@ final public class Regex {
         try str.withOnigurumaString { (start, count) throws in
             var range = utf8Range.clamped(to: 0..<count)
             while true {
-                let region = Region()
+                let region = try Region()
                 let result = try callOnigFunction {
                     onig_search_with_param(self.rawValue,
                                            start,
                                            start.advanced(by: count),
                                            start.advanced(by: range.lowerBound),
                                            start.advanced(by: range.upperBound),
-                                           &region.rawValue,
+                                           region.rawValue,
                                            options.rawValue,
                                            matchParam.rawValue)
                 }
@@ -419,12 +419,8 @@ final public class Regex {
                 if try body(Int(result), region) == false {
                     break
                 }
-                
-                guard let matchedRange = region.bytesRange(groupIndex: 0) else {
-                    // matches but no region found???
-                    break
-                }
 
+                let matchedRange = region.range
                 if matchedRange.upperBound == range.lowerBound {
                     // empty match, move to next code unit
                     let codeUnitSize = Encoding.utf8.rawValue.pointee.mbc_enc_len(start.advanced(by: matchedRange.upperBound))

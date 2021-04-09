@@ -18,15 +18,11 @@ let str = "zzzzaffffffffb"
 
 let regex = try! Regex(pattern)
 
-do {
-    guard let region = try! regex.firstMatch(in: str) else {
-        print("No match")
-        exit(EXIT_SUCCESS)
-    }
-        
-    for (index, range) in region.enumerated() {
-        print("Capture \(index) ==> range: \(range), content: \(str.subString(utf8BytesRange: range)!)")
-    }
-} catch {
-    print("Failed to search in the string \(str) due to: \(error)")
+guard let region = try! regex.firstMatch(in: str) else {
+    print("No match")
+    exit(EXIT_SUCCESS)
+}
+    
+for (index, range) in region.enumerated() {
+    print("Capture \(index) ==> range: \(range), content: \(str.subString(utf8BytesRange: range)!)")
 }

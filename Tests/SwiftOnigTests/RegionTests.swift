@@ -9,15 +9,40 @@ import XCTest
 @testable import SwiftOnig
 
 final class RegionTests: SwiftOnigTestsBase {
-    func testResize() {
-        let region =  Region()
-        XCTAssertEqual(region.capacity, 0)
+    func testSingleRange() {
+        let regex = try! Regex(#"[\d-]+"#)
+        let region = try! regex.firstMatch(in: "Phone number: 123-456-7890")!
         
-        region.reserve(capacity: 100)
-        XCTAssertEqual(region.capacity, 100)
+        XCTAssertEqual(region.rangeCount, 1)
+        XCTAssertEqual(region.range, 14..<26)
+        XCTAssertEqual(region.range(at: 0), 14..<26)
+    }
+    
+    func testMultiRanges() {
+        let regex = try! Regex(#"(\w+)@((\w+)(\.(\w+))+)"#)
+        let str = "Email: test@foo.bar.com"
+        let region = try! regex.firstMatch(in: str)!
         
-        let region2 = Region(with: 10)
-        XCTAssertEqual(region2.capacity, 10)
+        XCTAssertEqual(region.rangeCount, 6)
+        XCTAssertEqual(region.range, 7..<23)
+
+        XCTAssertEqual(region.range(at: 0), 7..<23)
+        XCTAssertEqual(str.subString(utf8BytesRange: 7..<23), "test@foo.bar.com")
+
+        XCTAssertEqual(region.range(at: 1), 7..<11)
+        XCTAssertEqual(str.subString(utf8BytesRange: region.range(at: 1)), "test")
+
+        XCTAssertEqual(region.range(at: 2), 12..<23)
+        XCTAssertEqual(str.subString(utf8BytesRange: region.range(at: 2)), "foo.bar.com")
+
+        XCTAssertEqual(region.range(at: 3), 12..<15)
+        XCTAssertEqual(str.subString(utf8BytesRange: region.range(at: 3)), "foo")
+
+        XCTAssertEqual(region.range(at: 4), 19..<23)
+        XCTAssertEqual(str.subString(utf8BytesRange: region.range(at: 4)), ".com")
+
+        XCTAssertEqual(region.range(at: 5), 20..<23)
+        XCTAssertEqual(str.subString(utf8BytesRange: region.range(at: 5)), "com")
     }
     
     func testIterator() {
@@ -30,6 +55,19 @@ final class RegionTests: SwiftOnigTestsBase {
         }
         
         XCTAssertEqual(ranges, [0..<9, 0..<4, 4..<8, 8..<9])
+    }
+    
+    func testRandomAccessCollection() {
+        let regex = try! Regex("(a+)(b+)(c+)")
+        let region = try! regex.firstMatch(in: "aabbcc")!
+        
+        XCTAssertEqual(region.startIndex, 0)
+        XCTAssertEqual(region.endIndex, 4)
+
+        XCTAssertEqual(region[0], 0..<6)
+        XCTAssertEqual(region[1], 0..<2)
+        XCTAssertEqual(region[2], 2..<4)
+        XCTAssertEqual(region[3], 4..<6)
     }
     
     func testCaptureTree() {
@@ -73,8 +111,10 @@ final class RegionTests: SwiftOnigTestsBase {
     }
     
     static var allTests = [
-        ("testResize", testResize),
+        ("testSingleRange", testSingleRange),
+        ("testMultiRanges", testMultiRanges),
         ("testIterator", testIterator),
+        ("testRandomAccessCollection", testRandomAccessCollection),
         ("testCaptureTree", testCaptureTree),
     ]
 }

@@ -103,7 +103,7 @@ extension Region {
      - Returns: the capture tree for this region, if there is one, otherwise `nil`.
      */
     public var captureTree: CaptureTreeNode? {
-        if let tree = onig_get_capture_tree(&self.rawValue) {
+        if let tree = onig_get_capture_tree(self.rawValue) {
             return CaptureTreeNode(rawValue: tree.pointee)
         }
         
@@ -123,9 +123,8 @@ extension Region {
                                        afterTraversingChildren: @escaping (_ group: Int, _ bytesRange: Range<Int>, _ level: Int) -> Bool = { _,_,_ in true }) {
         typealias CallbackType = (Int, Range<Int>, Int) -> Bool
         var callbackRef = (beforeTraversingChildren, afterTraversingChildren)
-        
-        var onigRegion = self.rawValue
-        onig_capture_tree_traverse(&onigRegion, ONIG_TRAVERSE_CALLBACK_AT_BOTH, { (group, start, end, level, at, refPtr) -> Int32 in
+
+        onig_capture_tree_traverse(self.rawValue, ONIG_TRAVERSE_CALLBACK_AT_BOTH, { (group, start, end, level, at, refPtr) -> Int32 in
             guard let (beforeChildren, afterChildren) = refPtr?.assumingMemoryBound(to: (CallbackType, CallbackType).self).pointee else {
                 fatalError("Failed to get callbacks")
             }

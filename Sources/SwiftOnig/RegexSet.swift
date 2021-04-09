@@ -120,12 +120,8 @@ final public class RegexSet {
         if !self.isIndexValid(index: index) {
             return nil
         }
-        
-        if let onigRegionPtr = onig_regset_get_region(self.rawValue, OnigInt(index)) {
-            return Region(rawValue: onigRegionPtr.pointee)
-        }
-        
-        return nil
+
+        return Region(rawValue: onig_regset_get_region(self.rawValue, OnigInt(index)))
     }
     
     /**

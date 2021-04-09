@@ -1,6 +1,6 @@
 //
 //  Region.swift
-//  
+//
 //
 //  Created by Gavin Mao on 3/27/21.
 //
@@ -8,98 +8,88 @@
 import COnig
 
 /**
- Match result region type.
+ A wrapper of oniguruma `OnigRegion` which represents the results of a single regular expression match.
+ 
+ In `SwiftOnig`, `Region` is supposed to immutable and only used as the result of regular expression matches. So it only wrap new/delete and immutable query APIs of `OnigRegion`:
+ - `onig_region_new`: wrapped in `init`.
+ - `onig_region_copy`: wrapped in `init(from:)`.
+ - `onig_region_free`: wrapper in `deinit`.
+
+ Those APIs are not wrapped becuase there is no need to reuse  `Region` in regular expression matches as in C.
+ - `onig_region_clear`
+ - `onig_region_resize`
+ - `onig_region_set`
  */
 public class Region {
-    internal var rawValue: OnigRegion
+    internal typealias OnigRegionPointer = UnsafeMutablePointer<OnigRegion>
+    internal var rawValue: OnigRegionPointer!
 
-    init() {
-        self.rawValue = OnigRegion(allocated: 0,
-                                   num_regs: 0,
-                                   beg: nil,
-                                   end: nil,
-                                   history_root: nil)
-    }
-
-    convenience init(with capacity: Int) {
-        self.init()
-        self.reserve(capacity: capacity)
+    /**
+     Create an empty `Region`.
+     - Throws: `OnigError.memory` when failing to allocated memory for the new `Region`.
+     */
+    internal init() throws {
+        self.rawValue = onig_region_new()
+        if self.rawValue == nil {
+            throw OnigError.memory
+        }
     }
 
     /**
-     Copy from other `OnigRegion`.
+     Create a new `Region` by copying from other `Region`.
+     - Parameter other: The other `Region` to copy from.
+     - Throws: `OnigError.memory` when failing to allocated memory for the new `Region`.
     */
-    convenience init(from other: Region) {
-        self.init()
-        onig_region_copy(&self.rawValue, &other.rawValue)
+    internal convenience init(from other: Region) throws {
+        try self.init()
+        onig_region_copy(self.rawValue, other.rawValue)
     }
-
-    internal init(rawValue: OnigRegion) {
+    
+    /**
+     Create a new `Region` with an exsiting oniguruma `OnigRegion` pointer.
+     
+     `Region` will take over the onwership and handle the release of the pointer.
+     - Parameter rawValue: The oniguruma `OnigRegion` pointer.
+     */
+    internal init(rawValue: OnigRegionPointer!) {
         self.rawValue = rawValue
     }
-    
+
     deinit {
-        onig_region_free(&self.rawValue, 0 /* free_self */)
-    }
-    
-    public var capacity: Int {
-        Int(self.rawValue.allocated)
-    }
-    
-    /**
-     Get the size of the region.
-     - Returns: the number of registers in the region.
-     */
-    public var count: Int {
-        Int(self.rawValue.num_regs)
-    }
-    
-    /**
-     Check if the region is empty.
-     - Returns: `true` if there are no registers in the region.
-     */
-    public var isEmpty: Bool {
-        return self.count == 0
-    }
-    
-    /**
-     Updates the region to contain `capacity` slots.
-     - Parameters:
-        - capacity: The new capacity
-    */
-    public func reserve(capacity: Int) {
-        let result = onig_region_resize(&self.rawValue, capacity)
-        if result != ONIG_NORMAL {
-            fatalError("Onig: fail to memory allocation during region resize")
-        }
+        onig_region_free(self.rawValue, 1 /* free_self */)
+        self.rawValue = nil
     }
 
     /**
-     Clear out a region so it can be used again.
+     Get the matched range of the region.
+     
+     The index of the range is the position in bytes of the string matched against. This property value is the same as `range(at: 0)`.
      */
-    public func clear() {
-        onig_region_clear(&self.rawValue)
+    public var range: Range<Int> {
+        precondition(self.rangeCount >= 1, "Empty region")
+        return self.range(at: 0)
     }
     
     /**
-     Get the position range of the Nth capture group.
-     - Returns: `nil` if `group` is not a valid capture group or if the capture group did not match anything. The range returned are always byte indices with respect to the original string matched.
+     Get the number of ranges in the region.
+     
+     A region will have at least one range representing the whole matched portion (see also `range` property), but may optionally have more, for example for a regular expression with capture groups.
      */
-    public func bytesRange(groupIndex: Int) -> Range<Int>? {
-        if groupIndex >= self.count {
-            return nil
-        }
+    public var rangeCount: Int {
+        Int(self.rawValue.pointee.num_regs)
+    }
+
+    /**
+     Get the range of the n-th capture group.
+
+     The index of the range is the position in bytes of the string matched against. Property `range` value is the same as `range(at: 0)`.
+     - Parameter group: the index of the capture group.
+     */
+    public func range(at group: Int) -> Range<Int> {
+        precondition(group >= 0 && group < self.rangeCount, "Invalid group index")
         
-        let begin = Int(self.rawValue.beg[groupIndex])
-        if begin == ONIG_REGION_NOTPOS {
-            return nil
-        }
-
-        let end = Int(self.rawValue.end[groupIndex])
-        if end == ONIG_REGION_NOTPOS {
-            return nil
-        }
-
+        let begin = Int(self.rawValue.pointee.beg[group])
+        let end = Int(self.rawValue.pointee.end[group])
         return begin ..< end
     }
 }
@@ -114,7 +104,11 @@ extension Region: Sequence {
         }
 
         public mutating func next() -> Range<Int>? {
-            let range = self.region.bytesRange(groupIndex: self.groupIndex)
+            if self.groupIndex >= self.region.rangeCount {
+                return nil
+            }
+
+            let range = self.region.range(at: self.groupIndex)
             self.groupIndex = self.groupIndex + 1
             return range
         }
@@ -122,5 +116,22 @@ extension Region: Sequence {
 
     public func makeIterator() -> Region.Iterator {
         return Region.Iterator(region: self)
+    }
+}
+
+extension Region: RandomAccessCollection {
+    public typealias Index = Int
+    public typealias Element = Range<Int>
+
+    public var startIndex: Int {
+        0
+    }
+
+    public var endIndex: Int {
+        self.rangeCount
+    }
+
+    public subscript(group: Int) -> Range<Int> {
+        self.range(at: group)
     }
 }
