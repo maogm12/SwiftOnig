@@ -23,25 +23,35 @@ import COnig
 public class Region {
     internal typealias OnigRegionPointer = UnsafeMutablePointer<OnigRegion>
     internal var rawValue: OnigRegionPointer!
+    
+    /**
+     The regular expression used in match operation.
+     */
+    internal var regex: Regex
 
     /**
      Create an empty `Region`.
+     - Parameter regex: The associated `Regex` object.
      - Throws: `OnigError.memory` when failing to allocated memory for the new `Region`.
      */
-    internal init() throws {
+    internal init(with regex: Regex) throws {
         self.rawValue = onig_region_new()
         if self.rawValue == nil {
             throw OnigError.memory
         }
+        
+        self.regex = regex
     }
 
     /**
      Create a new `Region` by copying from other `Region`.
-     - Parameter other: The other `Region` to copy from.
+     - Parameters:
+        - other: The other `Region` to copy from.
+        - regex: The associated `Regex` object.
      - Throws: `OnigError.memory` when failing to allocated memory for the new `Region`.
     */
     internal convenience init(from other: Region) throws {
-        try self.init()
+        try self.init(with: other.regex)
         onig_region_copy(self.rawValue, other.rawValue)
     }
     
@@ -50,9 +60,11 @@ public class Region {
      
      `Region` will take over the onwership and handle the release of the pointer.
      - Parameter rawValue: The oniguruma `OnigRegion` pointer.
+     - Parameter regex: The associated `Regex` object.
      */
-    internal init(rawValue: OnigRegionPointer!) {
+    internal init(rawValue: OnigRegionPointer!, regex: Regex) {
         self.rawValue = rawValue
+        self.regex = regex
     }
 
     deinit {
@@ -83,7 +95,8 @@ public class Region {
      Get the range of the n-th capture group.
 
      The index of the range is the position in bytes of the string matched against. Property `range` value is the same as `range(at: 0)`.
-     - Parameter group: the index of the capture group.
+     - Parameter group: The index of the capture group.
+     - Returns: The range of the n-th capture group.
      */
     public func range(at group: Int) -> Range<Int> {
         precondition(group >= 0 && group < self.rangeCount, "Invalid group index")
@@ -91,6 +104,33 @@ public class Region {
         let begin = Int(self.rawValue.pointee.beg[group])
         let end = Int(self.rawValue.pointee.end[group])
         return begin ..< end
+    }
+    
+    /**
+     Get the ranges of named capture groups with the specified name.
+     
+     The index of the range is the position in bytes of the string matched against.
+     - Parameter group: The name of the named capture groups.
+     - Returns: An array of ranges of named capture groups with the specified name. Or `[]` if no such group exists.
+     */
+    public func ranges(with name: String) -> [Range<Int>] {
+        self.regex.namedCaptureGroupIndexes(of: name).map { self.range(at: $0) }
+    }
+    
+    /**
+     Get the range of the first named capture group with specified name.
+
+     The index of the range is the position in bytes of the string matched against.
+     - Parameter group: The name of the named capture groups.
+     - Returns: The ranges of the first named capture group with the specified name. Or `nil` if no such group exists.
+     */
+    public func firstRange(with name: String) -> Range<Int>? {
+        let indexes = self.regex.namedCaptureGroupIndexes(of: name)
+        if let firstIndex = indexes.first {
+            return self.range(at: firstIndex)
+        } else {
+            return nil
+        }
     }
 }
 

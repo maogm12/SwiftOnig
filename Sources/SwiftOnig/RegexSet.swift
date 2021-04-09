@@ -75,10 +75,6 @@ final public class RegexSet {
      - Throws: `OnigError`
      */
     public func append(_ newElement: Regex) throws {
-        if self.rawValue == nil {
-            onig_regset_new(&self.rawValue, 0, nil)
-        }
-
         try callOnigFunction {
             onig_regset_add(self.rawValue, newElement.rawValue)
         }
@@ -112,16 +108,10 @@ final public class RegexSet {
      - Parameters:
         - index: the index.
      */
-    public func region(at index: Int) -> Region? {
-        if self.rawValue == nil {
-            return nil
-        }
-        
-        if !self.isIndexValid(index: index) {
-            return nil
-        }
-
-        return Region(rawValue: onig_regset_get_region(self.rawValue, OnigInt(index)))
+    public func region(at index: Int) -> Region! {
+        precondition(self.isIndexValid(index: index), "Invalid index in RegexSet")
+        return Region(rawValue: onig_regset_get_region(self.rawValue, OnigInt(index)),
+                      regex: self.regexes[index])
     }
     
     /**
@@ -179,10 +169,6 @@ final public class RegexSet {
         `OnigError` if `matchParams` is not `nil` but count doesn't match the count of regex objects, or `onig_regset_search` returns error.
      */
     public func search<S: StringProtocol>(in str: S, of utf8BytesRange: Range<Int>, lead: Lead, option: Regex.SearchOptions = .none, matchParams: [MatchParam]? = nil) throws -> (regexIndex: Int, utf8BytesIndex: Int)? {
-        if self.rawValue == nil {
-            return nil
-        }
-
         guard matchParams == nil || matchParams!.count == self.count else {
             throw OnigError.invalidArgument
         }
@@ -295,7 +281,7 @@ extension RegexSet : RandomAccessCollection {
     }
     
     public var endIndex: Int {
-        return self.rawValue == nil ? 0 : Int(onig_regset_number_of_regex(self.rawValue))
+        return Int(onig_regset_number_of_regex(self.rawValue))
     }
 
     public subscript(position: Int) -> Regex {

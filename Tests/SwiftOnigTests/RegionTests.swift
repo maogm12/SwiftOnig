@@ -70,6 +70,22 @@ final class RegionTests: SwiftOnigTestsBase {
         XCTAssertEqual(region[3], 4..<6)
     }
     
+    func testNamedCaptureGroups() {
+        let regex = try! Regex(#"(?<scheme>\w+)://(.*)\?(?<arg>\w+=\w+)&(?<arg>\w+=\w+)"#)
+        let str = "API: https://foo.com/bar?arg1=v1&arg2=v2"
+        let region = try! regex.firstMatch(in: str)!
+
+        XCTAssertEqual(region.ranges(with: "scheme"), [5..<10])
+        XCTAssertEqual(region.firstRange(with: "scheme"), 5..<10)
+        XCTAssertEqual(str.subString(utf8BytesRange: region.firstRange(with: "scheme")!), "https")
+        
+        XCTAssertEqual(region.ranges(with: "arg"), [25..<32, 33..<40])
+        XCTAssertEqual(region.firstRange(with: "arg"), 25..<32)
+        XCTAssertEqual(str.subString(utf8BytesRange: region.firstRange(with: "arg")!), "arg1=v1")
+
+        XCTAssertNil(region.firstRange(with: "INVALID"))
+    }
+    
     func testCaptureTree() {
         let syntax = Syntax.ruby
         syntax.operators.insert(.atmarkCaptureHistory)

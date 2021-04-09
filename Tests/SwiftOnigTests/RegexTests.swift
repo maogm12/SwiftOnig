@@ -77,7 +77,7 @@ final class RegexTests: SwiftOnigTestsBase {
         
         XCTAssertEqual(reg.namedCaptureGroupIndexes(of: "a"), [1, 4])
         XCTAssertEqual(reg.namedCaptureGroupIndexes(of: "b"), [2])
-        XCTAssertEqual(reg.namedCaptureGroupIndexes(of: "c"), nil)
+        XCTAssertEqual(reg.namedCaptureGroupIndexes(of: "c"), [])
     }
     
     func testPattern() {

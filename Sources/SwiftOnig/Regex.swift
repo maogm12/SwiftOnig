@@ -132,7 +132,7 @@ final public class Regex {
             return nil
         }
 
-        let region = try Region()
+        let region = try Region(with: self)
         let result = str.withCString { (cstr: UnsafePointer<Int8>) -> OnigInt in
             cstr.withMemoryRebound(to: OnigUChar.self, capacity: byteCount) { start -> OnigInt in
                 onig_match_with_param(self.rawValue,
@@ -265,7 +265,7 @@ final public class Regex {
      - Throws: `OnigError`
      */
     public func firstMatch<T: StringProtocol>(in str: T, of utf8Range: Range<Int>, options: SearchOptions = .none, matchParam: MatchParam = MatchParam()) throws -> Region? {
-        let region = try Region()
+        let region = try Region(with: self)
         let result = try str.withOnigurumaString { (start, count) throws -> OnigInt in
             let range = utf8Range.clamped(to: 0..<count)
             return try callOnigFunction {
@@ -400,7 +400,7 @@ final public class Regex {
         try str.withOnigurumaString { (start, count) throws in
             var range = utf8Range.clamped(to: 0..<count)
             while true {
-                let region = try Region()
+                let region = try Region(with: self)
                 let result = try callOnigFunction {
                     onig_search_with_param(self.rawValue,
                                            start,
@@ -636,9 +636,9 @@ extension Regex {
     /**
      Get the indexes of the named capture group with name.
      - Parameter name: The name of the named capture group.
-     - Returns: An array of indexes of the named capture group, or `nil` if no such name is found.
+     - Returns: An array of indexes of the named capture group, or `[]` if no such name is found.
      */
-    public func namedCaptureGroupIndexes(of name: String) -> [Int]? {
+    public func namedCaptureGroupIndexes(of name: String) -> [Int] {
         name.withOnigurumaString { start, count in
             let nums = UnsafeMutablePointer<UnsafeMutablePointer<OnigInt>?>.allocate(capacity: 1)
             defer{
@@ -651,11 +651,11 @@ extension Regex {
                                        nums)
             
             if count < 0 {
-                return nil
+                return []
             }
 
             guard let indexesPtr = nums.pointee else {
-                return nil
+                return []
             }
 
             var indexes = [Int]()
