@@ -76,14 +76,13 @@ final class RegionTests: SwiftOnigTestsBase {
         let region = try! regex.firstMatch(in: str)!
 
         XCTAssertEqual(region.ranges(with: "scheme"), [5..<10])
-        XCTAssertEqual(region.firstRange(with: "scheme"), 5..<10)
-        XCTAssertEqual(str.subString(utf8BytesRange: region.firstRange(with: "scheme")!), "https")
+        XCTAssertEqual(str.subString(utf8BytesRange: region.ranges(with: "scheme").first!), "https")
         
         XCTAssertEqual(region.ranges(with: "arg"), [25..<32, 33..<40])
-        XCTAssertEqual(region.firstRange(with: "arg"), 25..<32)
-        XCTAssertEqual(str.subString(utf8BytesRange: region.firstRange(with: "arg")!), "arg1=v1")
+        XCTAssertEqual(region.ranges(with: "arg").first, 25..<32)
+        XCTAssertEqual(str.subString(utf8BytesRange: region.ranges(with: "arg").first!), "arg1=v1")
 
-        XCTAssertNil(region.firstRange(with: "INVALID"))
+        XCTAssertTrue(region.ranges(with: "INVALID").isEmpty)
     }
     
     func testCaptureTree() {

@@ -116,47 +116,6 @@ public class Region {
     public func ranges(with name: String) -> [Range<Int>] {
         self.regex.namedCaptureGroupIndexes(of: name).map { self.range(at: $0) }
     }
-    
-    /**
-     Get the range of the first named capture group with specified name.
-
-     The index of the range is the position in bytes of the string matched against.
-     - Parameter group: The name of the named capture groups.
-     - Returns: The ranges of the first named capture group with the specified name. Or `nil` if no such group exists.
-     */
-    public func firstRange(with name: String) -> Range<Int>? {
-        let indexes = self.regex.namedCaptureGroupIndexes(of: name)
-        if let firstIndex = indexes.first {
-            return self.range(at: firstIndex)
-        } else {
-            return nil
-        }
-    }
-}
-
-extension Region: Sequence {
-    public struct Iterator: IteratorProtocol {
-        private let region: Region
-        private var groupIndex: Int = 0
-
-        public init(region: Region) {
-            self.region = region
-        }
-
-        public mutating func next() -> Range<Int>? {
-            if self.groupIndex >= self.region.rangeCount {
-                return nil
-            }
-
-            let range = self.region.range(at: self.groupIndex)
-            self.groupIndex = self.groupIndex + 1
-            return range
-        }
-    }
-
-    public func makeIterator() -> Region.Iterator {
-        return Region.Iterator(region: self)
-    }
 }
 
 extension Region: RandomAccessCollection {
