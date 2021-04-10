@@ -88,7 +88,7 @@ final class RegionTests: SwiftOnigTestsBase {
     func testCaptureTree() {
         let syntax = Syntax.ruby
         syntax.operators.insert(.atmarkCaptureHistory)
-        let reg = try! Regex(#"(?@a+(?@b+))|(?@c+(?@d+))"#, option: .none, syntax: syntax)
+        let reg = try! Regex(#"(?@a+(?@b+))|(?@c+(?@d+))"#, syntax: syntax)
         let region = try! reg.firstMatch(in: "- cd aaabbb -")!
 
         XCTAssertEqual(region.count, 5)

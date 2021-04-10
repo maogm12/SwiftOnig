@@ -43,7 +43,7 @@ final class RegexSetTests: SwiftOnigTestsBase {
         try! regSet.append(Regex("a+"))
         XCTAssertEqual(regSet.count, 1)
         
-        XCTAssertThrowsSpecific(try regSet.append(Regex("a+", option: .findLongest, syntax: Syntax.default)), OnigError.invalidArgument)
+        XCTAssertThrowsSpecific(try regSet.append(Regex("a+", options: .findLongest, syntax: Syntax.default)), OnigError.invalidArgument)
         XCTAssertEqual(regSet.count, 1)
     }
     

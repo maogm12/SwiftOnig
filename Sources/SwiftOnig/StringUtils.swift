@@ -73,7 +73,7 @@ extension StringProtocol {
             return result!
         }
         
-        // If contiguous storage, go with cstring
+        // If contiguous storage is not available, go with cstring
         return try self.withCString {
             try $0.withMemoryRebound(to: OnigUChar.self, capacity: byteCount) {
                 try body($0, byteCount)

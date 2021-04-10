@@ -10,7 +10,7 @@ import COnig
 /**
  A wrapper of oniguruma `OnigRegion` which represents the results of a single regular expression match.
  
- In `SwiftOnig`, `Region` is supposed to immutable and only used as the result of regular expression matches. So it only wrap new/delete and immutable query APIs of `OnigRegion`:
+ In `SwiftOnig`, `Region` is supposed to be immutable and only used as the result of regular expression matches. So it only wrap new/delete and immutable query APIs of `OnigRegion`:
  - `onig_region_new`: wrapped in `init`.
  - `onig_region_copy`: wrapped in `init(from:)`.
  - `onig_region_free`: wrapper in `deinit`.
@@ -50,21 +50,21 @@ public class Region {
         - regex: The associated `Regex` object.
      - Throws: `OnigError.memory` when failing to allocated memory for the new `Region`.
     */
-    internal convenience init(from other: Region) throws {
+    internal convenience init(copying other: Region) throws {
         try self.init(with: other.regex)
         onig_region_copy(self.rawValue, other.rawValue)
     }
     
     /**
-     Create a new `Region` with an exsiting oniguruma `OnigRegion` pointer.
+     Create a new `Region` by coping from an exsiting oniguruma `OnigRegion` pointer.
      
-     `Region` will take over the onwership and handle the release of the pointer.
-     - Parameter rawValue: The oniguruma `OnigRegion` pointer.
-     - Parameter regex: The associated `Regex` object.
+     - Parameters:
+        - rawValue: The oniguruma `OnigRegion` pointer.
+        - regex: The associated `Regex` object.
      */
-    internal init(rawValue: OnigRegionPointer!, regex: Regex) {
-        self.rawValue = rawValue
-        self.regex = regex
+    internal convenience init(copying rawValue: OnigRegionPointer!, regex: Regex) throws {
+        try self.init(with: regex)
+        onig_region_copy(self.rawValue, rawValue)
     }
 
     deinit {

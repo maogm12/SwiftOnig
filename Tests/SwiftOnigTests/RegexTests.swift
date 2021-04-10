@@ -60,6 +60,16 @@ final class RegexTests: SwiftOnigTestsBase {
 
         XCTAssertEqual(result.map { $0.0 }, [2, 6, 10, 14])
         XCTAssertEqual(result.map { $0.1.range }, [2..<4, 6..<8, 10..<12, 14..<16])
+
+        // Abort enumeration
+        var resultFirst2 = [(Int, Region)]()
+        try! reg.enumerateMatches(in: "aa11bb22cc33dd44") {
+            resultFirst2.append(($0, $1))
+            return resultFirst2.count < 2
+        }
+
+        XCTAssertEqual(resultFirst2.map { $0.0 }, [2, 6])
+        XCTAssertEqual(resultFirst2.map { $0.1.range }, [2..<4, 6..<8])
     }
 
     func testNamedCaptureGroups() {
