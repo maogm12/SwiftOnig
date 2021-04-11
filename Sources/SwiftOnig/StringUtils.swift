@@ -27,6 +27,19 @@ extension String {
     }
 }
 
+public protocol OnigurumaString {
+    /**
+     Call `body(start, count)` with underlying `OnigUChar` bytes, where `start` is a begining address of the bytes,`count`is the count of bytes.
+     
+     The pointer passed as an argument to body might be valid only during the execution of `withOnigurumaString(_:)`. Do not store or return the pointer for later use.
+     - Parameters:
+         - body: A closure with a pointer to the underlying bytes. If body has a return value, that value is also used as the return value for the `withOnigurumaString(_:)` method. The pointer argument might be valid only for the duration of the method's execution.
+         - start: A pointer to the bytes content.
+         - count: Count of bytes.
+     */
+    func withOnigurumaString<Result>(_ body: (_ start: UnsafePointer<OnigUChar>, _ count: Int) throws -> Result) rethrows -> Result
+}
+
 extension StringProtocol {
     /**
      Get a substring with a range of UTF-8 byte index.
@@ -36,30 +49,24 @@ extension StringProtocol {
             return nil
         }
 
-        return self.withCString { ptr -> String? in
-            if #available(OSX 11.0, iOS 14.0, *) {
-                return String(unsafeUninitializedCapacity: range.count) {
-                    memcpy($0.baseAddress, ptr.advanced(by: range.lowerBound), range.count)
-                    return range.count
-                }
-            } else {
-                let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: range.count)
-                memcpy(buffer, ptr.advanced(by: range.lowerBound), count)
-                let subStr = String(cString: buffer)
-                buffer.deallocate()
-                return subStr
+        return self.withCString {
+            $0.withMemoryRebound(to: UInt8.self, capacity: range.count) {
+                String(bytes: UnsafeBufferPointer(start: $0.advanced(by: range.lowerBound), count: range.count),
+                       encoding: .utf8)
             }
         }
     }
 
     /**
-     Call `body(start, count)`, where `start` is a pointer to the string content,`count`is the UTF-8 code unit count.
-     - Note: The pointer passed as an argument to body might be valid only during the execution of `withOnigCString(_:)`. Do not store or return the pointer for later use.
-     - Parameter body: A closure with a pointe. If body has a return value, that value is also used as the return value for the `withOnigCString(_:)` method. The pointer argument might be valid only for the duration of the method’s execution.
-     - Parameter start: A pointer to the string content as an UTF-8 `OnigUChar` string.
-     - Parameter count: Count of UTF-8 code units in the string.
+     Call `body(start, count)`, where `start` is a pointer to the string UTF-8 bytes content,`count`is the UTF-8 code unit count.
+     
+     The pointer passed as an argument to body might be valid only during the execution of `withOnigurumaString(_:)`. Do not store or return the pointer for later use.
+     - Parameters:
+         - body: A closure with a pointe. If body has a return value, that value is also used as the return value for the `withOnigurumaString(_:)` method. The pointer argument might be valid only for the duration of the method's execution.
+         - start: A pointer to the string UTF-8 bytes content.
+         - count: Count of UTF-8 code units in the string.
      */
-    internal func withOnigurumaString<Result>(_ body: (_ start: UnsafePointer<OnigUChar>, _ count: Int) throws -> Result) rethrows -> Result {
+    public func withOnigurumaString<Result>(_ body: (_ start: UnsafePointer<OnigUChar>, _ count: Int) throws -> Result) rethrows -> Result {
         precondition(MemoryLayout<UInt8>.size == MemoryLayout<OnigUChar>.size)
 
         let byteCount = self.utf8.count
@@ -81,3 +88,52 @@ extension StringProtocol {
         }
     }
 }
+
+extension ContiguousBytes {
+    /**
+     Call `body(start, count)` with underlying `OnigUChar` bytes, where `start` is a begining address of the bytes,`count`is the count of bytes.
+     
+     The pointer passed as an argument to body might be valid only during the execution of `withOnigurumaString(_:)`. Do not store or return the pointer for later use.
+     - Parameters:
+         - body: A closure with a pointer to the underlying bytes. If body has a return value, that value is also used as the return value for the `withOnigurumaString(_:)` method. The pointer argument might be valid only for the duration of the method's execution.
+         - start: A pointer to the bytes content.
+         - count: Count of bytes.
+     */
+    public func withOnigurumaString<Result>(_ body: (_ start: UnsafePointer<OnigUChar>, _ count: Int) throws -> Result) rethrows -> Result {
+        precondition(MemoryLayout<UInt8>.stride == MemoryLayout<OnigUChar>.stride, "UInt8 and OnigUChar should be the same size")
+        return try self.withUnsafeBytes { bufPtr in
+            guard let start = bufPtr.baseAddress?.assumingMemoryBound(to: OnigUChar.self) else {
+                return try CollectionOfOne<UInt8>(0).withOnigurumaString(body)
+            }
+            
+            return try body(start, bufPtr.count)
+        }
+    }
+}
+
+extension Array : OnigurumaString where Element == UInt8 { }
+
+extension ArraySlice : OnigurumaString where Element == UInt8 { }
+
+extension ContiguousArray : OnigurumaString where Element == UInt8 { }
+
+extension UnsafeBufferPointer : OnigurumaString where Element == UInt8 { }
+
+extension UnsafeMutableBufferPointer : OnigurumaString where Element == UInt8 { }
+
+extension CollectionOfOne : OnigurumaString where Element == UInt8 { }
+
+extension Slice : OnigurumaString where Base : OnigurumaString {
+    public func withOnigurumaString<Result>(_ body: (UnsafePointer<OnigUChar>, Int) throws -> Result) rethrows -> Result {
+        let offset = base.distance(from: base.startIndex, to: self.startIndex)
+        return try base.withOnigurumaString { (baseStart, baseCount) in
+            try body(baseStart.advanced(by: offset), self.count)
+        }
+    }
+}
+
+extension Data: OnigurumaString { }
+
+extension String: OnigurumaString { }
+
+extension Substring: OnigurumaString { }

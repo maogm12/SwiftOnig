@@ -10,7 +10,7 @@ import XCTest
 
 final class RegionTests: SwiftOnigTestsBase {
     func testSingleRange() {
-        let regex = try! Regex(#"[\d-]+"#)
+        let regex = try! Regex(pattern: #"[\d-]+"#)
         let region = try! regex.firstMatch(in: "Phone number: 123-456-7890")!
         
         XCTAssertEqual(region.rangeCount, 1)
@@ -19,7 +19,7 @@ final class RegionTests: SwiftOnigTestsBase {
     }
     
     func testMultiRanges() {
-        let regex = try! Regex(#"(\w+)@((\w+)(\.(\w+))+)"#)
+        let regex = try! Regex(pattern: #"(\w+)@((\w+)(\.(\w+))+)"#)
         let str = "Email: test@foo.bar.com"
         let region = try! regex.firstMatch(in: str)!
         
@@ -46,7 +46,7 @@ final class RegionTests: SwiftOnigTestsBase {
     }
     
     func testIterator() {
-        let regex = try! Regex("(a+)(b+)(c+)")
+        let regex = try! Regex(pattern: "(a+)(b+)(c+)")
         let region = try! regex.firstMatch(in: "aaaabbbbc")!
 
         var ranges = [Range<Int>]()
@@ -58,7 +58,7 @@ final class RegionTests: SwiftOnigTestsBase {
     }
     
     func testRandomAccessCollection() {
-        let regex = try! Regex("(a+)(b+)(c+)")
+        let regex = try! Regex(pattern: "(a+)(b+)(c+)")
         let region = try! regex.firstMatch(in: "aabbcc")!
         
         XCTAssertEqual(region.startIndex, 0)
@@ -71,7 +71,7 @@ final class RegionTests: SwiftOnigTestsBase {
     }
     
     func testNamedCaptureGroups() {
-        let regex = try! Regex(#"(?<scheme>\w+)://(.*)\?(?<arg>\w+=\w+)&(?<arg>\w+=\w+)"#)
+        let regex = try! Regex(pattern: #"(?<scheme>\w+)://(.*)\?(?<arg>\w+=\w+)&(?<arg>\w+=\w+)"#)
         let str = "API: https://foo.com/bar?arg1=v1&arg2=v2"
         let region = try! regex.firstMatch(in: str)!
 
@@ -88,7 +88,7 @@ final class RegionTests: SwiftOnigTestsBase {
     func testCaptureTree() {
         let syntax = Syntax.ruby
         syntax.operators.insert(.atmarkCaptureHistory)
-        let reg = try! Regex(#"(?@a+(?@b+))|(?@c+(?@d+))"#, syntax: syntax)
+        let reg = try! Regex(pattern: #"(?@a+(?@b+))|(?@c+(?@d+))"#, syntax: syntax)
         let region = try! reg.firstMatch(in: "- cd aaabbb -")!
 
         XCTAssertEqual(region.count, 5)

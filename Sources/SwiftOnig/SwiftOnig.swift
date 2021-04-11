@@ -63,6 +63,6 @@ public func uninitialize() {
     case ONIG_NORMAL, ONIG_MISMATCH, ONIG_NO_SUPPORT_CONFIG, ONIG_ABORT:
         return result
     default:
-        throw OnigError(result)
+        throw OnigError(onigErrorCode: result)
     }
 }

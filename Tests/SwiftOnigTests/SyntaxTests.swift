@@ -20,13 +20,13 @@ final class SyntaxTest: SwiftOnigTestsBase {
         XCTAssertFalse(syntax.operators.contains(.optionOniguruma))
         
         let syntax1 = Syntax.ruby
-        var reg = try! Regex("a?bbb", syntax: syntax1)
+        var reg = try! Regex(pattern: "a?bbb", syntax: syntax1)
         XCTAssertTrue(reg.isMatch("abbb"))
         XCTAssertTrue(reg.isMatch("bbb"))
         XCTAssertFalse(reg.isMatch("a?bbb"))
 
         syntax1.operators.remove(.qmarkZeroOne) // disable `?`
-        reg = try! Regex("a?bbb", syntax: syntax1)
+        reg = try! Regex(pattern: "a?bbb", syntax: syntax1)
         XCTAssertFalse(reg.isMatch("abbb"))
         XCTAssertFalse(reg.isMatch("bbb"))
         XCTAssertTrue(reg.isMatch("a?bbb"))
@@ -54,13 +54,13 @@ final class SyntaxTest: SwiftOnigTestsBase {
     func testSyntaxMetaChar() {
         let syntax = Syntax.ruby
         XCTAssertEqual(syntax.metaCharTable[.escape], Syntax.MetaChar(from: #"\"#))
-        var reg = try! Regex(#"\w`w"#, syntax: syntax)
+        var reg = try! Regex(pattern: #"\w`w"#, syntax: syntax)
         XCTAssertTrue(reg.isMatch(#"a`w"#))
         XCTAssertFalse(reg.isMatch(#"\wb"#))
 
         syntax.metaCharTable[.escape] = Syntax.MetaChar(from: #"`"#) // change escape char to `
         XCTAssertEqual(syntax.metaCharTable[.escape], Syntax.MetaChar(from: #"`"#))
-        reg = try! Regex(#"\w`w"#, syntax: syntax)
+        reg = try! Regex(pattern: #"\w`w"#, syntax: syntax)
         XCTAssertFalse(reg.isMatch(#"a`w"#))
         XCTAssertTrue(reg.isMatch(#"\wb"#))
     }

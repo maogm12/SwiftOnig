@@ -94,7 +94,7 @@ public enum OnigError: Error, Equatable {
 }
 
 extension OnigError {
-    public init(_ onigErrorCode: OnigInt, onigErrorInfo: OnigErrorInfo? = nil) {
+    public init(onigErrorCode: OnigInt, onigErrorInfo: OnigErrorInfo? = nil) {
         switch onigErrorCode {
         /* internal error */
         case ONIGERR_MEMORY:
@@ -427,10 +427,21 @@ extension OnigError {
 
 extension OnigErrorInfo: CustomStringConvertible {
     /**
-     Get the string of this `OnigErrorInfo`. Only UTF-8 encoding is considered.
-     - TODO: Support more encodings.
+     Get the content of this `OnigErrorInfo`.
+     - Returns: A string if the encoding is supposted by swfit string. Otherwise an array of raw bytes.
      */
     public var description: String {
-        String(utf8String: self.par, end: self.par_end) ?? ""
+        if self.par == nil || self.par_end == nil {
+            return ""
+        }
+
+        let encoding = Encoding(rawValue: self.enc)
+        let buf = UnsafeBufferPointer(start: self.par, count: self.par.distance(to: self.par_end))
+        var content: String? = nil
+        if let stringEncoding = encoding.stringEncoding {
+            content = String(bytes: buf, encoding: stringEncoding)
+        }
+
+        return content ?? Array(buf).description
     }
 }

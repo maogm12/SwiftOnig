@@ -10,27 +10,27 @@ import XCTest
 
 final class RegexTests: SwiftOnigTestsBase {
     func testInit() {
-        XCTAssertNotNil(try? Regex("(a+)(b+)(c+)"))
-        XCTAssertNil(try? Regex("+++++"))
-        XCTAssertThrowsSpecific(try Regex("???"), OnigError.targetOfRepeatOperatorNotSpecified)
+        XCTAssertNotNil(try? Regex(pattern: "(a+)(b+)(c+)"))
+        XCTAssertNil(try? Regex(pattern: "+++++"))
+        XCTAssertThrowsSpecific(try Regex(pattern: "???"), OnigError.targetOfRepeatOperatorNotSpecified)
     }
 
     func testMatch() {
-        let reg = try! Regex("foo")
+        let reg = try! Regex(pattern: "foo")
 
         XCTAssertTrue(reg.isMatch("foo"))
         XCTAssertFalse(reg.isMatch("bar"))
 
-        XCTAssertEqual(reg.matchedByteCount(in: "foo"), 3)
-        XCTAssertEqual(reg.matchedByteCount(in: "foo bar"), 3)
-        XCTAssertNil(reg.matchedByteCount(in: "bar"))
+        XCTAssertEqual(try! reg.matchedByteCount(in: "foo"), 3)
+        XCTAssertEqual(try! reg.matchedByteCount(in: "foo bar"), 3)
+        XCTAssertNil(try! reg.matchedByteCount(in: "bar"))
 
         XCTAssertNil(try! reg.match(in: "bar foo"))
         XCTAssertNil(try! reg.match(in: "bar"))
     }
     
     func testSearch() {
-        let naiveEmailReg = try! Regex(#"\w+@\w+\.com"#)
+        let naiveEmailReg = try! Regex(pattern: #"\w+@\w+\.com"#)
         let target = "Naive email: test@example.com. :)"
 
         XCTAssertEqual(try? naiveEmailReg.firstIndex(in: target), 13)
@@ -44,14 +44,14 @@ final class RegexTests: SwiftOnigTestsBase {
     }
     
     func testMatches() {
-        let reg = try! Regex(#"\d+"#)
+        let reg = try! Regex(pattern: #"\d+"#)
         let regions = try! reg.matches(in: "aa11bb22cc33dd44")
         XCTAssertEqual(regions.count, 4)
         XCTAssertEqual(regions.map { $0.range }, [2..<4, 6..<8, 10..<12, 14..<16])
     }
     
     func testEnumerateMatches() {
-        let reg = try! Regex(#"\d+"#)
+        let reg = try! Regex(pattern: #"\d+"#)
         var result = [(Int, Region)]()
         try! reg.enumerateMatches(in: "aa11bb22cc33dd44") {
             result.append(($0, $1))
@@ -73,15 +73,15 @@ final class RegexTests: SwiftOnigTestsBase {
     }
 
     func testNamedCaptureGroups() {
-        let reg = try! Regex("(?<a>a+)(?<b>b+(?<bc>c+))(?<a>a+)")
+        let reg = try! Regex(pattern: "(?<a>a+)(?<b>b+(?<bc>c+))(?<a>a+)")
         XCTAssertEqual(reg.namedCaptureGroupCount, 3)
         
         var result = [(name: String, indexes: [Int])]()
-        reg.forEachNamedCaptureGroup { (name, indexes) -> Bool in
+        reg.enumerateNamedCaptureGroups { (name, indexes) -> Bool in
             result.append((name: name, indexes: indexes))
             return true
         }
-        
+
         XCTAssertEqual(result.map { $0.name }, ["a", "bc", "b"])
         XCTAssertEqual(result.map { $0.indexes }, [[1, 4], [3], [2]])
         
@@ -91,7 +91,7 @@ final class RegexTests: SwiftOnigTestsBase {
     }
     
     func testPattern() {
-        let reg = try! Regex("(?<a>a+)(?<b>b+(?<bc>c+))(?<a>a+)")
+        let reg = try! Regex(pattern: "(?<a>a+)(?<b>b+(?<bc>c+))(?<a>a+)")
         XCTAssertEqual(reg.pattern, "(?<a>a+)(?<b>b+(?<bc>c+))(?<a>a+)")
         
         let pattern = "Cafe\u{301} du 🌍"
@@ -102,12 +102,12 @@ final class RegexTests: SwiftOnigTestsBase {
             }
         }!
 
-        let reg1 = try! Regex(pattern: bytes, encoding: .utf16LittleEndian)
+        let reg1 = try! Regex(patternBytes: bytes, encoding: .utf16LittleEndian)
         XCTAssertEqual(reg1.pattern, "Cafe\u{301} du 🌍")
     }
     
     func testCaptureGroups() {
-        let reg = try! Regex(#"(?<name>\w+):\s+(?<id>\d+)(\s+)(//.*)"#)
+        let reg = try! Regex(pattern: #"(?<name>\w+):\s+(?<id>\d+)(\s+)(//.*)"#)
         XCTAssertEqual(reg.captureGroupCount, 2) // (\s+) (//.*)
     }
 

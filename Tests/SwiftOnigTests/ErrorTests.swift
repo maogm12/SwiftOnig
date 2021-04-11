@@ -10,10 +10,10 @@ import XCTest
 
 final class OnigErrorTests: SwiftOnigTestsBase {
     func testError() {
-        XCTAssertThrowsSpecific(try Regex("a{3,999999999999999999999999999999999999999999}"),
+        XCTAssertThrowsSpecific(try Regex(pattern: "a{3,999999999999999999999999999999999999999999}"),
                                 OnigError.tooBigNumberForRepeatRange)
         
-        XCTAssertThrowsSpecific(try Regex(#"(?<$$$>\d+)"#),
+        XCTAssertThrowsSpecific(try Regex(pattern: #"(?<$$$>\d+)"#),
                                 OnigError.invalidCharInGroupName("$$$"))
     }
     

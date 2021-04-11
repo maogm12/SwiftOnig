@@ -16,7 +16,7 @@ defer {
 let pattern = #"a(.*)b|[e-f]+"#
 let str = "zzzzaffffffffb"
 
-let regex = try! Regex(pattern)
+let regex = try! Regex(pattern: pattern)
 
 guard let region = try! regex.firstMatch(in: str) else {
     print("No match")
