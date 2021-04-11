@@ -91,19 +91,22 @@ final class RegexTests: SwiftOnigTestsBase {
     }
     
     func testPattern() {
-        let reg = try! Regex(pattern: "(?<a>a+)(?<b>b+(?<bc>c+))(?<a>a+)")
-        XCTAssertEqual(reg.pattern, "(?<a>a+)(?<b>b+(?<bc>c+))(?<a>a+)")
+        let regUtf8 = try! Regex(pattern: "(?<a>a+)(?<b>b+(?<bc>c+))(?<a>a+)")
+        XCTAssertEqual(regUtf8.pattern, "(?<a>a+)(?<b>b+(?<bc>c+))(?<a>a+)")
         
         let pattern = "Cafe\u{301} du 🌍"
         let utf16CodeUnits = Array(pattern.utf16)
-        let bytes = utf16CodeUnits.withUnsafeBufferPointer {
+        let utf16bytes = utf16CodeUnits.withUnsafeBufferPointer {
             $0.baseAddress?.withMemoryRebound(to: UInt8.self, capacity: utf16CodeUnits.count * 2) {
                 UnsafeBufferPointer.init(start: $0, count: utf16CodeUnits.count * 2)
             }
         }!
-
-        let reg1 = try! Regex(patternBytes: bytes, encoding: .utf16LittleEndian)
-        XCTAssertEqual(reg1.pattern, "Cafe\u{301} du 🌍")
+        let regUtf16 = try! Regex(patternBytes: utf16bytes, encoding: .utf16LittleEndian)
+        XCTAssertEqual(regUtf16.pattern, "Cafe\u{301} du 🌍")
+        
+        let gb18030Bytes: [UInt8] = [196, 227, 186, 195] // 你好
+        let regGb18030 = try! Regex(patternBytes: gb18030Bytes, encoding: .gb18030)
+        XCTAssertEqual(regGb18030.pattern, "你好")
     }
     
     func testCaptureGroups() {

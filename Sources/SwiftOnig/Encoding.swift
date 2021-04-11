@@ -6,8 +6,9 @@
 //
 
 import COnig
+import CoreFoundation
 
-public struct Encoding {
+public struct Encoding: Equatable {
     internal var rawValue: OnigEncoding!
 
     /// ACSII
@@ -120,51 +121,105 @@ public struct Encoding {
      Map `Encoding`to `String.Encoding`, only built-in encodings are supported.
      */
     public var stringEncoding: String.Encoding? {
-        if self.rawValue == &OnigEncodingASCII {
+        switch (self) {
+        // ACSII
+        case .ascii:
             return .ascii
-        }
-        
-        if self.rawValue == &OnigEncodingISO_8859_1 {
+        // ISO/IEC 8859-1, Latin-1, Western European
+        case .iso8859Part1:
             return .isoLatin1
-        }
-        
-        if self.rawValue == &OnigEncodingISO_8859_2 {
+        // ISO/IEC 8859-2, Latin-2, Central European
+        case .iso8859Part2:
             return .isoLatin2
-        }
-        
-        if self.rawValue == &OnigEncodingEUC_JP {
-            return .japaneseEUC
-        }
-        
-        if self.rawValue == &OnigEncodingSJIS {
-            return .shiftJIS
-        }
-        
-        if self.rawValue == &OnigEncodingUTF16_BE {
-            return .utf16BigEndian
-        }
-        
-        if self.rawValue == &OnigEncodingUTF16_LE {
-            return .utf16LittleEndian
-        }
-        
-        if self.rawValue == &OnigEncodingUTF32_BE {
-            return .utf32BigEndian
-        }
-        
-        if self.rawValue == &OnigEncodingUTF32_LE {
-            return .utf32LittleEndian
-        }
-        
-        if self.rawValue == &OnigEncodingUTF8 {
+        // ISO/IEC 8859-3, Latin-3, South European
+        case .iso8859Part3:
+            return String.Encoding.SwiftOnig.isoLatin3
+        // ISO/IEC 8859-4, Latin-4, North European
+        case .iso8859Part4:
+            return String.Encoding.SwiftOnig.isoLatin4
+        // ISO/IEC 8859-5, Latin/Cyrillic
+        case .iso8859Part5:
+            return String.Encoding.SwiftOnig.isoLatinCyrillic
+        // ISO/IEC 8859-6, Latin/Arabic
+        case .iso8859Part6:
+            return String.Encoding.SwiftOnig.isoLatinArabic
+        // ISO/IEC 8859-7, Latin/Greek
+        case .iso8859Part7:
+            return String.Encoding.SwiftOnig.isoLatinGreek
+        // ISO/IEC 8859-8, Latin/Hebrew
+        case .iso8859Part8:
+            return String.Encoding.SwiftOnig.isoLatinHebrew
+        // ISO/IEC 8859-9, Latin-5/Turkish
+        case .iso8859Part9:
+            return String.Encoding.SwiftOnig.isoLatin5
+        // ISO/IEC 8859-10, Latin-6, Nordic
+        case .iso8859Part10:
+            return String.Encoding.SwiftOnig.isoLatin6
+        // ISO/IEC 8859-11, Latin/Thai
+        case .iso8859Part11:
+            return String.Encoding.SwiftOnig.isoLatinThai
+        // ISO/IEC 8859-13, Latin-7, Baltic Rim
+        case .iso8859Part13:
+            return String.Encoding.SwiftOnig.isoLatin7
+        // ISO/IEC 8859-14, Latin-8, Celtic
+        case .iso8859Part14:
+            return String.Encoding.SwiftOnig.isoLatin8
+        // ISO/IEC 8859-15, Latin-9
+        case .iso8859Part15:
+            return String.Encoding.SwiftOnig.isoLatin9
+        // ISO/IEC 8859-16, Latin-10, South-Eastern European
+        case .iso8859Part16:
+            return String.Encoding.SwiftOnig.isoLatin10
+        // UTF-8
+        case .utf8:
             return .utf8
-        }
-        
-        if self.rawValue == &OnigEncodingCP1251 {
+        // UTF-16 big endian
+        case .utf16BigEndian:
+            return .utf16BigEndian
+        // UTF-16 little endian
+        case .utf16LittleEndian:
+            return .utf16LittleEndian
+        // UTF-32 big endian
+        case .utf32BigEndian:
+            return .utf32BigEndian
+        // UTF-32 little endian
+        case .utf32LittleEndian:
+            return .utf32LittleEndian
+        // EUC JP
+        case .eucJP:
+            return .japaneseEUC
+        // EUC TW
+        case .eucTW:
+            return String.Encoding.SwiftOnig.eucTW
+        // EUC KR
+        case .eucKR:
+            return String.Encoding.SwiftOnig.eucKR
+        /// EUC CN
+        case .eucCN:
+            return String.Encoding.SwiftOnig.eucCN
+        /// Shift JIS
+        case .shiftJIS:
+            return .shiftJIS
+
+        // KOI-8
+        // case .koi8:
+        //     return nil
+            
+        // KOI8-R
+        case .koi8r:
+            return String.Encoding.SwiftOnig.koi8r
+        // CP1251, Windows-1251
+        case .cp1251:
             return .windowsCP1251
+        // BIG 5
+        case .big5:
+            return String.Encoding.SwiftOnig.big5
+        /// GB 18030
+        case .gb18030:
+            return String.Encoding.SwiftOnig.gb18030
+        default:
+            return nil
         }
-        
-        return nil
     }
     
     /*
@@ -225,4 +280,28 @@ public struct Encoding {
        1 to:   destination address.
        2 from: source address.
      */
+}
+
+extension String.Encoding {
+    struct SwiftOnig {
+        static let isoLatin3 = String.Encoding(rawValue: CFStringConvertEncodingToNSStringEncoding(CFStringEncoding(CFStringEncodings.isoLatin3.rawValue)))
+        static let isoLatin4 = String.Encoding(rawValue: CFStringConvertEncodingToNSStringEncoding(CFStringEncoding(CFStringEncodings.isoLatin4.rawValue)))
+        static let isoLatin5 = String.Encoding(rawValue: CFStringConvertEncodingToNSStringEncoding(CFStringEncoding(CFStringEncodings.isoLatin5.rawValue)))
+        static let isoLatin6 = String.Encoding(rawValue: CFStringConvertEncodingToNSStringEncoding(CFStringEncoding(CFStringEncodings.isoLatin6.rawValue)))
+        static let isoLatin7 = String.Encoding(rawValue: CFStringConvertEncodingToNSStringEncoding(CFStringEncoding(CFStringEncodings.isoLatin7.rawValue)))
+        static let isoLatin8 = String.Encoding(rawValue: CFStringConvertEncodingToNSStringEncoding(CFStringEncoding(CFStringEncodings.isoLatin8.rawValue)))
+        static let isoLatin9 = String.Encoding(rawValue: CFStringConvertEncodingToNSStringEncoding(CFStringEncoding(CFStringEncodings.isoLatin9.rawValue)))
+        static let isoLatin10 = String.Encoding(rawValue: CFStringConvertEncodingToNSStringEncoding(CFStringEncoding(CFStringEncodings.isoLatin10.rawValue)))
+        static let isoLatinThai = String.Encoding(rawValue: CFStringConvertEncodingToNSStringEncoding(CFStringEncoding(CFStringEncodings.isoLatinThai.rawValue)))
+        static let isoLatinCyrillic = String.Encoding(rawValue: CFStringConvertEncodingToNSStringEncoding(CFStringEncoding(CFStringEncodings.isoLatinCyrillic.rawValue)))
+        static let isoLatinArabic = String.Encoding(rawValue: CFStringConvertEncodingToNSStringEncoding(CFStringEncoding(CFStringEncodings.isoLatinArabic.rawValue)))
+        static let isoLatinGreek = String.Encoding(rawValue: CFStringConvertEncodingToNSStringEncoding(CFStringEncoding(CFStringEncodings.isoLatinGreek.rawValue)))
+        static let isoLatinHebrew = String.Encoding(rawValue: CFStringConvertEncodingToNSStringEncoding(CFStringEncoding(CFStringEncodings.isoLatinHebrew.rawValue)))
+        static let eucCN = String.Encoding(rawValue: CFStringConvertEncodingToNSStringEncoding(CFStringEncoding(CFStringEncodings.EUC_CN.rawValue)))
+        static let eucKR = String.Encoding(rawValue: CFStringConvertEncodingToNSStringEncoding(CFStringEncoding(CFStringEncodings.EUC_KR.rawValue)))
+        static let eucTW = String.Encoding(rawValue: CFStringConvertEncodingToNSStringEncoding(CFStringEncoding(CFStringEncodings.EUC_TW.rawValue)))
+        static let koi8r = String.Encoding(rawValue: CFStringConvertEncodingToNSStringEncoding(CFStringEncoding(CFStringEncodings.KOI8_R.rawValue)))
+        static let gb18030 = String.Encoding(rawValue: CFStringConvertEncodingToNSStringEncoding(CFStringEncoding(CFStringEncodings.GB_18030_2000.rawValue)))
+        static let big5 = String.Encoding(rawValue: CFStringConvertEncodingToNSStringEncoding(CFStringEncoding(CFStringEncodings.big5.rawValue)))
+    }
 }
