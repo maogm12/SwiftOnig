@@ -6,6 +6,7 @@ import RegionTests
 import OnigErrorTests
 import RegexTests
 import RegexSetTests
+import EncodingTests
 
 var tests = [XCTestCaseEntry]()
 tests += SwiftOnigTests.allTests()
@@ -14,4 +15,5 @@ tests += RegionTests.allTests()
 tests += OnigErrorTests.allTests()
 tests += RegexTests.allTests()
 tests += RegexSetTests.allTests()
+tests += EncodingTests.allTests()
 XCTMain(tests)
