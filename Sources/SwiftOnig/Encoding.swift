@@ -8,11 +8,11 @@
 import COnig
 import CoreFoundation
 
-public struct Encoding: Equatable {
+public struct Encoding: Equatable, CustomStringConvertible {
     internal let rawValue: OnigEncoding!
 
     /// The `String.Encoding` of the corresponding oniguruma encoding.
-    public let stringEncoding: String.Encoding?
+    public let stringEncoding: String.Encoding
 
     /**
      Create a `Encoding` with oniguruma `OnigEncoding` pointer.
@@ -23,18 +23,6 @@ public struct Encoding: Equatable {
     internal init(rawValue: OnigEncoding!) {
         self.rawValue = rawValue
         self.stringEncoding = Encoding._stringEncoding(from: self.rawValue)
-    }
-    
-    /**
-     Create a `Encoding` with oniguruma `OnigEncoding` pointer and the corresponding `String.Encoding`.
-
-     - Parameters:
-        - rawValue: The raw oniguruma `OnigEncoding` pointer.
-        - stringEncoding: the corresponding `String.Encoding` for this `OnigEncoding`.
-     */
-    public init(rawValue: OnigEncoding!, stringEncoding: String.Encoding) {
-        self.rawValue = rawValue
-        self.stringEncoding = stringEncoding
     }
 
     /// ACSII
@@ -142,11 +130,15 @@ public struct Encoding: Equatable {
             }
         }
     }
+    
+    public var description: String {
+        self.stringEncoding.description
+    }
 
     /**
      Map `Encoding`to `String.Encoding`, only built-in encodings are supported.
      */
-    private static func _stringEncoding(from onigEncoding: OnigEncoding) -> String.Encoding? {
+    private static func _stringEncoding(from onigEncoding: OnigEncoding) -> String.Encoding {
         if (onigEncoding == &OnigEncodingASCII) { // ACSII
             return .ascii
         } else if (onigEncoding == &OnigEncodingISO_8859_1) { // ISO/IEC 8859-1, Latin-1, Western European
@@ -211,9 +203,9 @@ public struct Encoding: Equatable {
             return String.Encoding.SwiftOnig.big5
         } else if (onigEncoding == &OnigEncodingGB18030) { // GB 18030
             return String.Encoding.SwiftOnig.gb18030
-        } else {
-            return nil
         }
+        
+        fatalError("Unexpected encoding")
     }
 
     /*

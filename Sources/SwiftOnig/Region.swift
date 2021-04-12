@@ -113,13 +113,9 @@ public struct Subregion {
     public var string: String? {
         let range = self.range
         return self.region.str.withOnigurumaString { (start, count) -> String? in
-            if let encoding = self.region.regex.encoding.stringEncoding {
-                return String(bytes: UnsafeBufferPointer(start: start.advanced(by: range.lowerBound),
-                                                         count: range.count),
-                              encoding: encoding)
-            } else {
-                return nil
-            }
+            String(bytes: UnsafeBufferPointer(start: start.advanced(by: range.lowerBound),
+                                              count: range.count),
+                   encoding: self.region.regex.encoding.stringEncoding)
         }
     }
 }

@@ -437,11 +437,6 @@ extension OnigErrorInfo: CustomStringConvertible {
 
         let encoding = Encoding(rawValue: self.enc)
         let buf = UnsafeBufferPointer(start: self.par, count: self.par.distance(to: self.par_end))
-        var content: String? = nil
-        if let stringEncoding = encoding.stringEncoding {
-            content = String(bytes: buf, encoding: stringEncoding)
-        }
-
-        return content ?? Array(buf).description
+        return String(bytes: buf, encoding: encoding.stringEncoding) ?? Array(buf).description
     }
 }

@@ -781,33 +781,39 @@ extension Regex {
             return
         }
         
-        typealias NameCallbackType = (String, [Int]) -> Bool
-        var closureRef = body
+        typealias ContextType = (regex: Regex, callback: (String, [Int]) -> Bool)
+        var context: ContextType = (regex: self, callback: body)
         
-        onig_foreach_name(self.rawValue, { (namePtr, nameEndPtr, groupCount, groupsPtr, _ /* regex */, closureRefPtr) -> OnigInt in
-            guard let name = String(utf8String: namePtr, end: nameEndPtr) else {
-                return ONIG_ABORT
+        onig_foreach_name(self.rawValue, { (namePtr, nameEndPtr, groupCount, groupsPtr, _ /* regex */, contextPtr) -> OnigInt in
+            if namePtr == nil || nameEndPtr == nil {
+                fatalError("Capture group name is nil")
             }
-            
-            guard let groupsPtr = groupsPtr else {
-                return ONIG_ABORT
+
+            if groupsPtr == nil {
+                fatalError("Group indexes are nil")
             }
-            
-            var groupIndice = [Int]()
+
+            guard let context = contextPtr?.assumingMemoryBound(to: ContextType.self).pointee else {
+                fatalError("Fail to get the callback")
+            }
+
+            let buffer = UnsafeBufferPointer(start: namePtr, count: namePtr!.distance(to: nameEndPtr!))
+            let stringEncoding = context.regex.encoding.stringEncoding
+            guard let name = String(bytes: buffer, encoding: stringEncoding) else {
+                fatalError("Fail to encode capture group name with encoding \(stringEncoding)")
+            }
+
+            var groupIndexes = [Int]()
             for i in 0..<Int(groupCount) {
-                groupIndice.append(Int(groupsPtr[i]))
+                groupIndexes.append(Int(groupsPtr![i]))
             }
-            
-            guard let closure = closureRefPtr?.assumingMemoryBound(to: NameCallbackType.self).pointee else {
-                fatalError("Failed to get the callback")
-            }
-            
-            if closure(name, groupIndice) {
+
+            if context.callback(name, groupIndexes) {
                 return ONIG_NORMAL
             } else {
                 return ONIG_ABORT
             }
-        }, &closureRef)
+        }, &context)
     }
     
     /**

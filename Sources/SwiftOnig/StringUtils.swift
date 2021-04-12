@@ -8,25 +8,6 @@
 import COnig
 import Foundation
 
-extension String {
-    /**
-     Initialize a string with a part of utf8 bytes.
-     */
-    public init?(utf8String start: UnsafePointer<UInt8>!, end: UnsafePointer<UInt8>!) {
-        if start == nil || end == nil {
-            return nil
-        }
-
-        let count = start.distance(to: end)
-        let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: count)
-        defer {
-            buffer.deallocate()
-        }
-        buffer.initialize(from: start, count: count)
-        self.init(cString: buffer)
-    }
-}
-
 public protocol OnigurumaString {
     /**
      Call `body(start, count)` with underlying `OnigUChar` bytes, where `start` is a begining address of the bytes,`count`is the count of bytes.
@@ -41,22 +22,6 @@ public protocol OnigurumaString {
 }
 
 extension StringProtocol {
-    /**
-     Get a substring with a range of UTF-8 byte index.
-     */
-    public func subString(utf8BytesRange range: Range<Int>) -> String? {
-        if range != range.clamped(to: 0 ..< self.utf8.count) {
-            return nil
-        }
-
-        return self.withCString {
-            $0.withMemoryRebound(to: UInt8.self, capacity: range.count) {
-                String(bytes: UnsafeBufferPointer(start: $0.advanced(by: range.lowerBound), count: range.count),
-                       encoding: .utf8)
-            }
-        }
-    }
-
     /**
      Call `body(start, count)`, where `start` is a pointer to the string UTF-8 bytes content,`count`is the UTF-8 code unit count.
      
