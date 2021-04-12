@@ -13,9 +13,9 @@ final class RegionTests: SwiftOnigTestsBase {
         let regex = try! Regex(pattern: #"[\d-]+"#)
         let region = try! regex.firstMatch(in: "Phone number: 123-456-7890")!
         
-        XCTAssertEqual(region.rangeCount, 1)
-        XCTAssertEqual(region.range, 14..<26)
-        XCTAssertEqual(region.range(at: 0), 14..<26)
+        XCTAssertEqual(region.count, 1)
+        XCTAssertEqual(region[0].range, 14..<26)
+        XCTAssertEqual(region[0].string, "123-456-7890")
     }
     
     func testMultiRanges() {
@@ -23,38 +23,46 @@ final class RegionTests: SwiftOnigTestsBase {
         let str = "Email: test@foo.bar.com"
         let region = try! regex.firstMatch(in: str)!
         
-        XCTAssertEqual(region.rangeCount, 6)
-        XCTAssertEqual(region.range, 7..<23)
+        XCTAssertEqual(region.count, 6)
 
-        XCTAssertEqual(region.range(at: 0), 7..<23)
-        XCTAssertEqual(str.subString(utf8BytesRange: 7..<23), "test@foo.bar.com")
+        XCTAssertEqual(region[0].range, 7..<23)
+        XCTAssertEqual(region[0].string, "test@foo.bar.com")
 
-        XCTAssertEqual(region.range(at: 1), 7..<11)
-        XCTAssertEqual(str.subString(utf8BytesRange: region.range(at: 1)), "test")
+        XCTAssertEqual(region[1].range, 7..<11)
+        XCTAssertEqual(region[1].string, "test")
 
-        XCTAssertEqual(region.range(at: 2), 12..<23)
-        XCTAssertEqual(str.subString(utf8BytesRange: region.range(at: 2)), "foo.bar.com")
+        XCTAssertEqual(region[2].range, 12..<23)
+        XCTAssertEqual(region[2].string, "foo.bar.com")
 
-        XCTAssertEqual(region.range(at: 3), 12..<15)
-        XCTAssertEqual(str.subString(utf8BytesRange: region.range(at: 3)), "foo")
+        XCTAssertEqual(region[3].range, 12..<15)
+        XCTAssertEqual(region[3].string, "foo")
 
-        XCTAssertEqual(region.range(at: 4), 19..<23)
-        XCTAssertEqual(str.subString(utf8BytesRange: region.range(at: 4)), ".com")
+        XCTAssertEqual(region[4].range, 19..<23)
+        XCTAssertEqual(region[4].string, ".com")
 
-        XCTAssertEqual(region.range(at: 5), 20..<23)
-        XCTAssertEqual(str.subString(utf8BytesRange: region.range(at: 5)), "com")
+        XCTAssertEqual(region[5].range, 20..<23)
+        XCTAssertEqual(region[5].string, "com")
+    }
+    
+    func testString() {
+        let regex = try! Regex(pattern: #"(\w+)@((\w+)(\.(\w+))+)"#)
+        let str = "Email: test@foo.bar.com"
+        let region = try! regex.firstMatch(in: str)!
+        
+        XCTAssertEqual(region[2].string, "foo.bar.com")
     }
     
     func testIterator() {
         let regex = try! Regex(pattern: "(a+)(b+)(c+)")
         let region = try! regex.firstMatch(in: "aaaabbbbc")!
 
-        var ranges = [Range<Int>]()
+        var ranges = [Subregion]()
         for range in region {
             ranges.append(range)
         }
         
-        XCTAssertEqual(ranges, [0..<9, 0..<4, 4..<8, 8..<9])
+        XCTAssertEqual(ranges.map { $0.range }, [0..<9, 0..<4, 4..<8, 8..<9])
+        XCTAssertEqual(ranges.map { $0.string }, ["aaaabbbbc", "aaaa", "bbbb", "c"])
     }
     
     func testRandomAccessCollection() {
@@ -64,10 +72,10 @@ final class RegionTests: SwiftOnigTestsBase {
         XCTAssertEqual(region.startIndex, 0)
         XCTAssertEqual(region.endIndex, 4)
 
-        XCTAssertEqual(region[0], 0..<6)
-        XCTAssertEqual(region[1], 0..<2)
-        XCTAssertEqual(region[2], 2..<4)
-        XCTAssertEqual(region[3], 4..<6)
+        XCTAssertEqual(region[0].range, 0..<6)
+        XCTAssertEqual(region[1].range, 0..<2)
+        XCTAssertEqual(region[2].range, 2..<4)
+        XCTAssertEqual(region[3].range, 4..<6)
     }
     
     func testNamedCaptureGroups() {
@@ -75,14 +83,13 @@ final class RegionTests: SwiftOnigTestsBase {
         let str = "API: https://foo.com/bar?arg1=v1&arg2=v2"
         let region = try! regex.firstMatch(in: str)!
 
-        XCTAssertEqual(region.ranges(with: "scheme"), [5..<10])
-        XCTAssertEqual(str.subString(utf8BytesRange: region.ranges(with: "scheme").first!), "https")
+        XCTAssertEqual(region["scheme"].map { $0.range }, [5..<10])
+        XCTAssertEqual(region["scheme"].map { $0.string }, ["https"])
         
-        XCTAssertEqual(region.ranges(with: "arg"), [25..<32, 33..<40])
-        XCTAssertEqual(region.ranges(with: "arg").first, 25..<32)
-        XCTAssertEqual(str.subString(utf8BytesRange: region.ranges(with: "arg").first!), "arg1=v1")
+        XCTAssertEqual(region["arg"].map{ $0.range }, [25..<32, 33..<40])
+        XCTAssertEqual(region["arg"].map{ $0.string }, ["arg1=v1","arg2=v2"])
 
-        XCTAssertTrue(region.ranges(with: "INVALID").isEmpty)
+        XCTAssertTrue(region["INVALID"].isEmpty)
     }
     
     func testCaptureTree() {

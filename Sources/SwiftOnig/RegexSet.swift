@@ -111,7 +111,8 @@ final public class RegexSet {
     public func region(at index: Int) -> Region! {
         precondition(self.isIndexValid(index: index), "Invalid index in RegexSet")
         return try! Region(copying: onig_regset_get_region(self.rawValue, OnigInt(index)),
-                      regex: self.regexes[index])
+                           regex: self.regexes[index],
+                           str: "")  // TODO: fix
     }
     
     /**

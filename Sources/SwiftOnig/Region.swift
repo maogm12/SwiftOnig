@@ -30,28 +30,36 @@ public class Region {
     internal var regex: Regex
 
     /**
+     The string matched against.
+     */
+    internal var str: OnigurumaString
+
+    // MARK: init and deinit
+    
+    /**
      Create an empty `Region`.
      - Parameter regex: The associated `Regex` object.
+     - Parameter text: The string matched against.
      - Throws: `OnigError.memory` when failing to allocated memory for the new `Region`.
      */
-    internal init(with regex: Regex) throws {
+    internal init(regex: Regex, str: OnigurumaString) throws {
         self.rawValue = onig_region_new()
         if self.rawValue == nil {
             throw OnigError.memory
         }
         
         self.regex = regex
+        self.str = str
     }
 
     /**
      Create a new `Region` by copying from other `Region`.
      - Parameters:
         - other: The other `Region` to copy from.
-        - regex: The associated `Regex` object.
      - Throws: `OnigError.memory` when failing to allocated memory for the new `Region`.
     */
     internal convenience init(copying other: Region) throws {
-        try self.init(with: other.regex)
+        try self.init(regex: other.regex, str: other.str)
         onig_region_copy(self.rawValue, other.rawValue)
     }
     
@@ -62,8 +70,8 @@ public class Region {
         - rawValue: The oniguruma `OnigRegion` pointer.
         - regex: The associated `Regex` object.
      */
-    internal convenience init(copying rawValue: OnigRegionPointer!, regex: Regex) throws {
-        try self.init(with: regex)
+    internal convenience init(copying rawValue: OnigRegionPointer!, regex: Regex, str: OnigurumaString) throws {
+        try self.init(regex: regex, str: str)
         onig_region_copy(self.rawValue, rawValue)
     }
 
@@ -73,64 +81,73 @@ public class Region {
     }
 
     /**
-     Get the matched range of the region.
+     Get the number of subregion in the region.
      
-     The index of the range is the position in bytes of the string matched against. This property value is the same as `range(at: 0)`.
+     A region will have at least one subregion representing the whole matched portion, but may optionally have more, for example for a regular expression with capture groups.
      */
-    public var range: Range<Int> {
-        precondition(self.rangeCount >= 1, "Empty region")
-        return self.range(at: 0)
-    }
-    
-    /**
-     Get the number of ranges in the region.
-     
-     A region will have at least one range representing the whole matched portion (see also `range` property), but may optionally have more, for example for a regular expression with capture groups.
-     */
-    public var rangeCount: Int {
+    public var count: Int {
         Int(self.rawValue.pointee.num_regs)
     }
+}
 
-    /**
-     Get the range of the n-th capture group.
+// MARK: Subregion
 
-     The index of the range is the position in bytes of the string matched against. Property `range` value is the same as `range(at: 0)`.
-     - Parameter group: The index of the capture group.
-     - Returns: The range of the n-th capture group.
-     */
-    public func range(at group: Int) -> Range<Int> {
-        precondition(group >= 0 && group < self.rangeCount, "Invalid group index")
-        
-        let begin = Int(self.rawValue.pointee.beg[group])
-        let end = Int(self.rawValue.pointee.end[group])
+/**
+ `Subregion` represents the matching result for a single capture group.
+ */
+public struct Subregion {
+    /// The `Region` this `Subregion` belongs to.
+    public let region: Region
+
+    /// The n-th capture group. `0` means the whole matching portition.
+    public let group: Int
+
+    /// Get the range of the this capture group.
+    public var range: Range<Int> {
+        let begin = Int(self.region.rawValue.pointee.beg[self.group])
+        let end = Int(self.region.rawValue.pointee.end[self.group])
         return begin ..< end
     }
-    
-    /**
-     Get the ranges of named capture groups with the specified name.
-     
-     The index of the range is the position in bytes of the string matched against.
-     - Parameter group: The name of the named capture groups.
-     - Returns: An array of ranges of named capture groups with the specified name. Or `[]` if no such group exists.
-     */
-    public func ranges(with name: String) -> [Range<Int>] {
-        self.regex.namedCaptureGroupIndexes(of: name).map { self.range(at: $0) }
+
+    /// Get the matched string of this capture group, if the encoding of the regular expression fails to encode the bytes in the range, `nil` will be returned.
+    public var string: String? {
+        let range = self.range
+        return self.region.str.withOnigurumaString { (start, count) -> String? in
+            if let encoding = self.region.regex.encoding.stringEncoding {
+                return String(bytes: UnsafeBufferPointer(start: start.advanced(by: range.lowerBound),
+                                                         count: range.count),
+                              encoding: encoding)
+            } else {
+                return nil
+            }
+        }
     }
 }
 
 extension Region: RandomAccessCollection {
     public typealias Index = Int
-    public typealias Element = Range<Int>
+    public typealias Element = Subregion
 
     public var startIndex: Int {
         0
     }
 
     public var endIndex: Int {
-        self.rangeCount
+        self.count
     }
 
-    public subscript(group: Int) -> Range<Int> {
-        self.range(at: group)
+    /**
+     Get the subregion of n-th capture group.
+     */
+    public subscript(group: Int) -> Subregion {
+        precondition(group >= 0 && group < self.count, "Group index \(group) out of range")
+        return Subregion(region: self, group: group)
+    }
+
+    /**
+     Get the subregions of named capture groups with the specified name.
+     */
+    public subscript(name: String) -> [Subregion] {
+        self.regex.namedCaptureGroupIndexes(of: name).map { Subregion(region: self, group: $0) }
     }
 }

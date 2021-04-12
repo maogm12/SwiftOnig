@@ -239,7 +239,7 @@ final public class Regex {
                          options: SearchOptions = .none,
                          matchParam: MatchParam = MatchParam()
     ) throws -> Region? where S: OnigurumaString {
-        let region = try Region(with: self)
+        let region = try Region(regex: self, str: str)
         let result = try str.withOnigurumaString { (start, count) in
             try callOnigFunction {
                 precondition(offset >= 0 && offset < count, "Offset \(offset) is out of string bytes range \(0..<count)")
@@ -397,7 +397,7 @@ final public class Regex {
                                  options: SearchOptions = .none,
                                  matchParam: MatchParam = MatchParam()
     ) throws -> Region? where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
-        let region = try Region(with: self)
+        let region = try Region(regex: self, str: str)
         let result = try str.withOnigurumaString { (start, count) throws -> OnigInt in
             let range = range.relative(to: 0..<count).clamped(to: 0..<count)
             return try callOnigFunction {
@@ -565,12 +565,12 @@ final public class Regex {
                                                           matchParam: MatchParam = MatchParam(),
                                                           body: (_ index: Int, _ region: Region) -> Bool
     ) throws -> Int where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
-        typealias ContextType = (regex: Regex, callback: (Int, Region) -> Bool)
-
         let result = try str.withOnigurumaString { (start, count) throws -> OnigInt in
             let range = range.relative(to: 0..<count).clamped(to: 0..<count)
-            let region = try Region(with: self)
-            var context = (regex: self, callback: body)
+            let region = try Region(regex: self, str: str)
+
+            typealias ContextType = (region: Region, callback: (Int, Region) -> Bool)
+            var context = (region: region, callback: body)
 
             return try callOnigFunction {
                 onig_scan(self.rawValue,
@@ -578,12 +578,12 @@ final public class Regex {
                           start.advanced(by: range.upperBound),
                           region.rawValue,
                           options.rawValue,
-                          { (_, index, onigRegion, contextPtr) -> Int32 in
+                          { (_, index, onigRegion, contextPtr) -> OnigInt in
                             guard let context = contextPtr?.assumingMemoryBound(to: ContextType.self).pointee else {
                                 fatalError("Fail to retrive the context")
                             }
 
-                            guard let region = try? Region(copying: onigRegion, regex: context.regex) else {
+                            guard let region = try? Region(copying: onigRegion, regex: context.region.regex, str: context.region.str) else {
                                 fatalError("Fail to creating the region")
                             }
 

@@ -23,6 +23,6 @@ guard let region = try! regex.firstMatch(in: str) else {
     exit(EXIT_SUCCESS)
 }
     
-for (index, range) in region.enumerated() {
-    print("Capture \(index) ==> range: \(range), content: \(str.subString(utf8BytesRange: range)!)")
+for (index, subregion) in region.enumerated() {
+    print("Capture \(index) ==> range: \(subregion.range), content: \(subregion.string!))")
 }

@@ -35,19 +35,27 @@ final class RegexTests: SwiftOnigTestsBase {
 
         XCTAssertEqual(try? naiveEmailReg.firstIndex(in: target), 13)
 
-        let region = try! naiveEmailReg.firstMatch(in: target)!
+        var region = try! naiveEmailReg.firstMatch(in: target)!
         XCTAssertNotNil(region)
-        XCTAssertEqual(region.rangeCount, 1)
-        XCTAssertEqual(region.range(at: 0), 13..<29)
-        XCTAssertEqual(target.subString(utf8BytesRange: region.range(at: 0)),
-                       "test@example.com")
+        XCTAssertEqual(region.count, 1)
+        XCTAssertEqual(region[0].range, 13..<29)
+        XCTAssertEqual(region[0].string, "test@example.com")
+        
+        let gb18030Bytes: [UInt8] = [196, 227, 186, 195] // 你好
+        let regGb18030 = try! Regex(patternBytes: gb18030Bytes, encoding: .gb18030)
+        let gb18030String: [UInt8] = [196, 227, 186, 195, 163, 172, 202, 192, 189, 231] // 你好，世界
+        region = try! regGb18030.firstMatch(in: gb18030String)!
+        XCTAssertNotNil(region)
+        XCTAssertEqual(region.count, 1)
+        XCTAssertEqual(region[0].range, 0..<4)
+        XCTAssertEqual(region[0].string, "你好")
     }
     
     func testMatches() {
         let reg = try! Regex(pattern: #"\d+"#)
         let regions = try! reg.matches(in: "aa11bb22cc33dd44")
         XCTAssertEqual(regions.count, 4)
-        XCTAssertEqual(regions.map { $0.range }, [2..<4, 6..<8, 10..<12, 14..<16])
+        XCTAssertEqual(regions.map { $0[0].range }, [2..<4, 6..<8, 10..<12, 14..<16])
     }
     
     func testEnumerateMatches() {
@@ -59,7 +67,8 @@ final class RegexTests: SwiftOnigTestsBase {
         }
 
         XCTAssertEqual(result.map { $0.0 }, [2, 6, 10, 14])
-        XCTAssertEqual(result.map { $0.1.range }, [2..<4, 6..<8, 10..<12, 14..<16])
+        XCTAssertEqual(result.map { $0.1[0].range }, [2..<4, 6..<8, 10..<12, 14..<16])
+        XCTAssertEqual(result.map { $0.1[0].string }, ["11", "22", "33", "44"])
 
         // Abort enumeration
         var resultFirst2 = [(Int, Region)]()
@@ -69,7 +78,8 @@ final class RegexTests: SwiftOnigTestsBase {
         }
 
         XCTAssertEqual(resultFirst2.map { $0.0 }, [2, 6])
-        XCTAssertEqual(resultFirst2.map { $0.1.range }, [2..<4, 6..<8])
+        XCTAssertEqual(resultFirst2.map { $0.1[0].range }, [2..<4, 6..<8])
+        XCTAssertEqual(resultFirst2.map { $0.1[0].string }, ["11", "22"])
     }
 
     func testNamedCaptureGroups() {
