@@ -285,29 +285,6 @@ final public class Regex {
      If `str` conforms to `StringProtocol`, will search against the UTF-8 bytes of the string. Do not pass invalid bytes in the regular expression encoding.
      - Parameters:
          - str: Target string to search against.
-         - range: Unbounded range represents the whole string.
-         - option: The regex search options.
-         - matchParam: Match parameter values (`matchStackLimit`, `retryLimitInMatch`, `retryLimitInSearch`)
-     - Returns: The matching index, or `nil` if no match is found.
-     - Throws: `OnigError`
-     */
-    public func firstIndex<S>(in str: S,
-                              of range: UnboundedRange,
-                              options: SearchOptions = .none,
-                              matchParam: MatchParam = MatchParam()
-    ) throws -> Int? where S: OnigurumaString {
-        try self.firstIndex(in: str,
-                            of: 0...,
-                            options: options,
-                            matchParam: matchParam)
-    }
-
-    /**
-     Search in a range of a string and return the first matching index of byte.
-
-     If `str` conforms to `StringProtocol`, will search against the UTF-8 bytes of the string. Do not pass invalid bytes in the regular expression encoding.
-     - Parameters:
-         - str: Target string to search against.
          - range: The range of bytes to search against. It will be clamped to the range of the whole string first.
          - option: The regex search options.
          - matchParam: Match parameter values (`matchStackLimit`, `retryLimitInMatch`, `retryLimitInSearch`)
@@ -348,29 +325,6 @@ final public class Regex {
      - Throws: `OnigError`
      */
     public func firstMatch<S>(in str: S,
-                              options: SearchOptions = .none,
-                              matchParam: MatchParam = MatchParam()
-    ) throws -> Region? where S: OnigurumaString {
-        try self.firstMatch(in: str,
-                            of: 0...,
-                            options: options,
-                            matchParam: matchParam)
-    }
-    
-    /**
-     Search a string and return the first matching region.
-
-     If `str` conforms to `StringProtocol`, will search against the UTF-8 bytes of the string. Do not pass invalid bytes in the regular expression encoding.
-     - Parameters:
-         - str: Target string to search against.
-         - range: Unbounded range represents the whole string.
-         - option: The regular expression search options.
-         - matchParam: Match parameter values (`matchStackLimit`, `retryLimitInMatch`, `retryLimitInSearch`)
-     - Returns: The matching region, or `nil` if no match is found.
-     - Throws: `OnigError`
-     */
-    public func firstMatch<S>(in str: S,
-                              of range: UnboundedRange,
                               options: SearchOptions = .none,
                               matchParam: MatchParam = MatchParam()
     ) throws -> Region? where S: OnigurumaString {
@@ -441,29 +395,6 @@ final public class Regex {
                          options: options,
                          matchParam: matchParam)
     }
-    
-    /**
-     Find all matching region in the string.
-
-     If `str` conforms to `StringProtocol`, will search against the UTF-8 bytes of the string. Do not pass invalid bytes in the regular expression encoding.
-     - Parameters:
-         - str: Target string to search against.
-         - range: Unbounded range represents the whole string.
-         - option: The regular expression search options.
-         - matchParam: Match parameter values (`matchStackLimit`, `retryLimitInMatch`, `retryLimitInSearch`)
-     - Returns: An array of all matching regions, empty array if no match is found.
-     - Throws: `OnigError`
-     */
-    public func matches<S>(in str: S,
-                           of range: UnboundedRange,
-                           options: SearchOptions = .none,
-                           matchParam: MatchParam = MatchParam()
-    ) throws -> [Region] where S: OnigurumaString {
-        try self.matches(in: str,
-                         of: 0...,
-                         options: options,
-                         matchParam: matchParam)
-    }
 
     /**
      Find all matching region in the string.
@@ -505,34 +436,6 @@ final public class Regex {
      - Throws: `OnigError`
      */
     @discardableResult public func enumerateMatches<S>(in str: S,
-                                                       options: SearchOptions = .none,
-                                                       matchParam: MatchParam = MatchParam(),
-                                                       body: (_ index: Int,  _ region: Region) -> Bool
-    ) throws -> Int where S: OnigurumaString {
-        try self.enumerateMatches(in: str,
-                                  of: 0...,
-                                  options: options,
-                                  matchParam: matchParam,
-                                  body: body)
-    }
-
-    /**
-     Scan the string and calling the closure with each matching region.
-
-     If `str` conforms to `StringProtocol`, will search against the UTF-8 bytes of the string. Do not pass invalid bytes in the regular expression encoding.
-     - Parameters:
-         - str: Target string to search against.
-         - range: Unbounded range represents the whole string.
-         - option: The regular expression search options.
-         - matchParam: Match parameter values (`matchStackLimit`, `retryLimitInMatch`, `retryLimitInSearch`)
-         - body: The closure to call on each match.
-         - index: The matched index of byte.
-         - region: The matching region.
-     - Returns: Number of matches.
-     - Throws: `OnigError`
-     */
-    @discardableResult public func enumerateMatches<S>(in str: S,
-                                                       of range: UnboundedRange,
                                                        options: SearchOptions = .none,
                                                        matchParam: MatchParam = MatchParam(),
                                                        body: (_ index: Int,  _ region: Region) -> Bool

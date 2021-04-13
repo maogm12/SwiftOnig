@@ -14,6 +14,9 @@ final class RegionTests: SwiftOnigTestsBase {
         let region = try! regex.firstMatch(in: "Phone number: 123-456-7890")!
         
         XCTAssertEqual(region.count, 1)
+        XCTAssertEqual(region.range, 14..<26)
+        XCTAssertEqual(region.string, "123-456-7890")
+
         XCTAssertEqual(region[0].range, 14..<26)
         XCTAssertEqual(region[0].string, "123-456-7890")
     }
@@ -24,6 +27,8 @@ final class RegionTests: SwiftOnigTestsBase {
         let region = try! regex.firstMatch(in: str)!
         
         XCTAssertEqual(region.count, 6)
+        XCTAssertEqual(region.range, 7..<23)
+        XCTAssertEqual(region.string, "test@foo.bar.com")
 
         XCTAssertEqual(region[0].range, 7..<23)
         XCTAssertEqual(region[0].string, "test@foo.bar.com")

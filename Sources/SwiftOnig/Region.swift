@@ -88,6 +88,27 @@ public class Region {
     public var count: Int {
         Int(self.rawValue.pointee.num_regs)
     }
+    
+
+    /**
+     Get the range of the region.
+
+     It's a convenient accessor of the range of the first `Subregion`.
+     */
+    public var range: Range<Int> {
+        precondition(self.count > 0, "Empty region")
+        return self.first!.range
+    }
+
+    /**
+     Get the matched string of the region.
+     
+     It's a convenient accessor of the string of the first `Subregion`.
+     */
+    public var string: String? {
+        precondition(self.count > 0, "Empty region")
+        return self.first!.string
+    }
 }
 
 // MARK: Subregion

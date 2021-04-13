@@ -7,242 +7,154 @@
 
 import COnig
 
+/**
+ A wrapper of oniguruma `OnigRegSet` which represents the a set of regular expressions.
+ 
+ In `SwiftOnig`, `RegexSet` is supposed to be immutable, thoses APIs in oniguruma are wrapped:
+ - `onig_regset_new`: wrapped in `init`.
+ - `onig_regset_free`: wrapped in `deinit`.
+ - `onig_regset_number_of_regex`, wrapped in `endIndex` of `RandomAccessCollection`.
+ - `onig_regset_get_regex`: wrapped in `subscription(position:)`.
+ - `onig_regset_get_region`: Used in `search(*)`.
+ - `onig_regset_search`, `onig_regset_search_with_param` : Wrapped in `search(*)`.
+
+ Those APIs are not wrapped.
+ - `onig_regset_add`: not exposed.
+ - `onig_regset_replace`: not exposed.
+ */
 final public class RegexSet {
     internal typealias OnigRegSet = OpaquePointer
     internal private(set) var rawValue: OnigRegSet!
     
-    /**
-     Cached regexes.
-     */
-    private var regexes = [Regex]()
-    
-    public init() {
-        onig_regset_new(&self.rawValue, 0, nil)
-    }
+    /// Cached `Regex` objects
+    private let regexes: [Regex]
 
-    public convenience init<S: Sequence>(_ regexes: S) throws where S.Element == Regex {
-        self.init()
+    // MARK: init & deinit
+
+    public init<S>(regexes: S) throws where S: Sequence, S.Element == Regex {
+        self.regexes = [Regex](regexes)
+
+        onig_regset_new(&self.rawValue, 0, nil)
         for reg in regexes {
             do {
                 try callOnigFunction{
                     onig_regset_add(self.rawValue, reg.rawValue)
                 }
-                
-                self.regexes.append(reg)
             } catch {
-                self.cleanUp()
+                self._cleanUp()
                 throw error
             }
         }
     }
-    
-    deinit {
-        self.cleanUp()
-    }
-    
-    /**
-     Remove all regex objects.
-     */
-    public func removeAll() {
-        if self.rawValue != nil {
-            for i in (0..<self.count).reversed() {
-                // mark all regex object in the regset to be nil
-                onig_regset_replace(self.rawValue, OnigInt(i), nil)
-            }
-        }
-        
-        if !self.regexes.isEmpty {
-            self.regexes.removeAll()
-        }
-    }
-    
-    /**
-     Remvoe the regex object at specific index.
-     - Parameter index: The index of the regex object to be removed.
-     */
-    public func remove(at index: Int) {
-        onig_regset_replace(self.rawValue, OnigInt(index), nil)
-        self.regexes.remove(at: index)
-    }
 
+    deinit {
+        self._cleanUp()
+    }
+    
+    // MARK: Search API
+    
     /**
-     Add a `Regex` object into the `RegexSet`.
-     - Note:
-         1. The `Regex` object must have the same character encoding with the `RegexSet`.
-         2. The `Regex` object is prohibited from having the `Regex.Options.findLongest` option.
+     Search a string and return the first matching region.
+
+     If `str` conforms to `StringProtocol`, will search against the UTF-8 bytes of the string. Do not pass invalid bytes in the regular expression encoding.
+
      - Parameters:
-        - newElement: The new `Regex` object to append to the `RegexSet`.
+        - str: The target string to search against.
+        - lead: Outer loop element, both `.positionLead` and `.regexLead` gurantee to return the *true* left most matched position, but in most cases `.positionLead` seems to be faster. `.priorityToRegexOrder` gurantee the returned regex index is the index of the *first* regular expression that coult match.
+        - option: The regular expression search options.
+        - matchParams: Match patameters, count **must** be equal to count of regular expressions.
+     - Returns: A tuple of matched regular expression index and matching region. Or `nil` if no match is found.
      - Throws: `OnigError`
      */
-    public func append(_ newElement: Regex) throws {
-        try callOnigFunction {
-            onig_regset_add(self.rawValue, newElement.rawValue)
-        }
-        self.regexes.append(newElement)
-    }
-    
-    /**
-     Replace regex object at specific index.
-     - TODO:
-     Swift as of now (04/02/2021) doesn't support throwing subscripts, here is the task tracking it: <https://bugs.swift.org/browse/SR-238>.
-     Once it's supported, should move this to `subscript`.
-     - Parameters:
-        - index: the index of the regex object to be replaced.
-        - newElement: the new element put in this index.
-     - Throws:
-        `OnigError` if `onig_regset_replace` falied.
-     */
-    public func replace(regexAt index: Int, with newElement: Regex) throws {
-        if index < 0 || index >= self.endIndex {
-            return
-        }
-
-        try callOnigFunction {
-            onig_regset_replace(self.rawValue, OnigInt(index), newElement.rawValue)
-        }
-        self.regexes[index] = newElement
+    public func firstMatch<S>(in str: S,
+                              lead: Lead = .positionLead,
+                              options: Regex.SearchOptions = .none,
+                              matchParams: [MatchParam]? = nil
+    ) throws -> (regexIndex: Int, region: Region)? where S: OnigurumaString {
+        try self.firstMatch(in: str,
+                            of: 0...,
+                            lead: lead,
+                            options: options,
+                            matchParams: matchParams)
     }
 
     /**
-     Get the region object corresponding to the regex at specific index..
+     Search a range of string and return the first matching region.
+
+     If `str` conforms to `StringProtocol`, will search against the UTF-8 bytes of the string. Do not pass invalid bytes in the regular expression encoding.
+
      - Parameters:
-        - index: the index.
+        - str: The target string to search against.
+        - range: The range of bytes to search against. It will be clamped to the range of the whole string first.
+        - lead: Outer loop element, both `.positionLead` and `.regexLead` gurantee to return the *true* left most matched position, but in most cases `.positionLead` seems to be faster. `.priorityToRegexOrder` gurantee the returned regex index is the index of the *first* regular expression that coult match.
+        - option: The regular expression search options.
+        - matchParams: Match patameters, count **must** be equal to count of regular expressions.
+     - Returns: A tuple of matched regular expression index and matching region. Or `nil` if no match is found.
+     - Throws: `OnigError`
      */
-    public func region(at index: Int) -> Region! {
-        precondition(self.isIndexValid(index: index), "Invalid index in RegexSet")
-        return try! Region(copying: onig_regset_get_region(self.rawValue, OnigInt(index)),
-                           regex: self.regexes[index],
-                           str: "")  // TODO: fix
-    }
-    
-    /**
-     Perform a search in the target string.
-     - Parameters:
-        - str: The target string to search in.
-        - lead: Outer loop element, Both `.positionLead` and `.regexLead` gurantee to return the *true* left most matched position, but in most cases `.positionLead` seems to be faster. `.priorityToRegexOrder` gurantee the returned regex index is the index of the *first* regex that coult match..
-        - option: Search time option
-        - matchParams: Match patams, count **must** be equal to count of regex, one match params for one regex in corresponding index.
-     - Returns:
-        A tuple of matched regex index and first matched index the string UTF-8 bytes. View `Lead` for more detailed information. `nil` if no regex matches.
-     - Throws:
-        `OnigError` if `matchParams` is not `nil` but count doesn't match the count of regex objects, or `onig_regset_search` returns error.
-     */
-    public func search<S: StringProtocol>(in str: S, lead: Lead, option: Regex.SearchOptions = .none, matchParams: [MatchParam]? = nil) throws -> (regexIndex: Int, utf8BytesIndex: Int)? {
-        try self.search(in: str,
-                        of: 0...,
-                        lead: lead,
-                        option: option,
-                        matchParams: nil)
-    }
-
-    /**
-     Perform a search in a range of the target string.
-     - Parameters:
-        - str: The target string to search in.
-        - utf8BytesRange: The range of UTF-8 byte index representation of the target string. It will be clamped to the range of the whole string first.
-        - lead: Outer loop element, Both `.positionLead` and `.regexLead` gurantee to return the *true* left most matched position, but in most cases `.positionLead` seems to be faster. `.priorityToRegexOrder` gurantee the returned regex index is the index of the *first* regex that coult match..
-        - option: Search time option
-        - matchParams: Match patams, count **must** be equal to count of regex, one match params for one regex in corresponding index.
-     - Returns:
-        A tuple of matched regex index and first matched index the string UTF-8 bytes. View `Lead` for more detailed information. `nil` if no regex matches.
-     - Throws:
-        `OnigError` if `matchParams` is not `nil` but count doesn't match the count of regex objects, or `onig_regset_search` returns error.
-     */
-    public func search<S: StringProtocol, R: RangeExpression>(in str: S, of utf8BytesRange: R, lead: Lead, option: Regex.SearchOptions = .none, matchParams: [MatchParam]? = nil) throws -> (regexIndex: Int, utf8BytesIndex: Int)? where R.Bound == Int {
-        try self.search(in: str,
-                        of: utf8BytesRange.relative(to: 0..<str.utf8.count),
-                        lead: lead,
-                        option: option,
-                        matchParams: nil)
-    }
-
-    /**
-     Perform a search in a range of the target string.
-     - Parameters:
-        - str: The target string to search in.
-        - utf8BytesRange: The range of UTF-8 byte index representation of the target string. It will be clamped to the range of the whole string first.
-        - lead: Outer loop element, Both `.positionLead` and `.regexLead` gurantee to return the *true* left most matched position, but in most cases `.positionLead` seems to be faster. `.priorityToRegexOrder` gurantee the returned regex index is the index of the *first* regex that coult match..
-        - option: Search time option
-        - matchParams: Match patams, count **must** be equal to count of regex, one match params for one regex in corresponding index.
-     - Returns:
-        A tuple of matched regex index and first matched index the string UTF-8 bytes. View `Lead` for more detailed information. `nil` if no regex matches.
-     - Throws:
-        `OnigError` if `matchParams` is not `nil` but count doesn't match the count of regex objects, or `onig_regset_search` returns error.
-     */
-    public func search<S: StringProtocol>(in str: S, of utf8BytesRange: Range<Int>, lead: Lead, option: Regex.SearchOptions = .none, matchParams: [MatchParam]? = nil) throws -> (regexIndex: Int, utf8BytesIndex: Int)? {
-        guard matchParams == nil || matchParams!.count == self.count else {
-            throw OnigError.invalidArgument
-        }
-
-        let byteCount = str.utf8.count
-        let range = utf8BytesRange.clamped(to: 0..<byteCount)
-        var bytesIndex: OnigInt = 0
-
-        let result = try callOnigFunction {
-            str.withCString {
-                $0.withMemoryRebound(to: OnigUChar.self, capacity: byteCount) { strPtr -> OnigInt in
-                    if let matchParams = matchParams {
-                        let mps = UnsafeMutableBufferPointer<OpaquePointer?>.allocate(capacity: matchParams.count)
-                        _ = mps.initialize(from: matchParams.map{ (matchParams) -> OpaquePointer? in
-                            matchParams.rawValue
-                        })
-                        defer {
-                            mps.deallocate()
-                        }
-
-                        return onig_regset_search_with_param(self.rawValue,
-                                                             strPtr,
-                                                             strPtr.advanced(by: byteCount),
-                                                             strPtr.advanced(by: range.lowerBound),
-                                                             strPtr.advanced(by: range.upperBound),
-                                                             lead.onigRegSetLead,
-                                                             option.rawValue,
-                                                             mps.baseAddress,
-                                                             &bytesIndex)
-                    } else {
-                        return onig_regset_search(self.rawValue,
-                                                  strPtr,
-                                                  strPtr.advanced(by: byteCount),
-                                                  strPtr.advanced(by: range.lowerBound),
-                                                  strPtr.advanced(by: range.upperBound),
-                                                  lead.onigRegSetLead,
-                                                  option.rawValue,
-                                                  &bytesIndex)
-                    }
+    public func firstMatch<S, R>(in str: S,
+                                 of range: R,
+                                 lead: Lead = .positionLead,
+                                 options: Regex.SearchOptions = .none,
+                                 matchParams: [MatchParam]? = nil
+    ) throws -> (regexIndex: Int, region: Region)? where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
+        let result = try str.withOnigurumaString { (start, count) throws -> OnigInt in
+            var bytesIndex: OnigInt = 0
+            let range = range.relative(to: 0..<count).clamped(to: 0..<count)
+            if let matchParams = matchParams {
+                let mps = UnsafeMutableBufferPointer<OpaquePointer?>.allocate(capacity: matchParams.count)
+                _ = mps.initialize(from: matchParams.map{ $0.rawValue })
+                defer {
+                    mps.deallocate()
                 }
+                
+                return onig_regset_search_with_param(self.rawValue,
+                                                     start,
+                                                     start.advanced(by: count),
+                                                     start.advanced(by: range.lowerBound),
+                                                     start.advanced(by: range.upperBound),
+                                                     lead.onigRegSetLead,
+                                                     options.rawValue,
+                                                     mps.baseAddress,
+                                                     &bytesIndex)
+            } else {
+                return onig_regset_search(self.rawValue,
+                                          start,
+                                          start.advanced(by: count),
+                                          start.advanced(by: range.lowerBound),
+                                          start.advanced(by: range.upperBound),
+                                          lead.onigRegSetLead,
+                                          options.rawValue,
+                                          &bytesIndex)
             }
         }
     
         if result == ONIG_MISMATCH {
             return nil
         } else {
-            return(regexIndex: Int(result), utf8BytesIndex: Int(bytesIndex))
+            let onigRegion = onig_regset_get_region(self.rawValue, result)
+            return(regexIndex: Int(result),
+                   region: try Region(copying: onigRegion,
+                                      regex: self.regexes[Int(result)],
+                                      str: str))
         }
     }
-    
-    
 
     /**
      Clean up oniruguma regset object and cached `Regex`.
      */
-    private func cleanUp() {
-        self.removeAll()
-
+    private func _cleanUp() {
         if self.rawValue != nil {
+            for i in (0..<self.count).reversed() {
+                // mark all regex object in the regset to be nil
+                onig_regset_replace(self.rawValue, OnigInt(i), nil)
+            }
+
             onig_regset_free(self.rawValue)
             self.rawValue = nil
         }
     }
-    
-    /**
-     Is given index a valid index.
-     - Parameters:
-        - index: the index to check.
-     */
-    private func isIndexValid(index: Int) -> Bool {
-        index >= self.startIndex && index < self.endIndex
-    }
-    
+
     /**
      Out loop element when performing search.
      */
@@ -272,6 +184,8 @@ final public class RegexSet {
         }
     }
 }
+
+// MARK: RandomAccessCollection
 
 extension RegexSet : RandomAccessCollection {
     public typealias Index = Int
