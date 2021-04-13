@@ -31,7 +31,6 @@ import Foundation
  - `onig_get_encoding`, `onig_get_syntax`, `onig_get_options`: implemented with cached value in `Regex`.
  
  Those APIs are in the TODO list:
- - `onig_name_to_backref_number`
  - `onig_get_case_fold_flag`
  - `onig_noname_group_capture_is_active`
  */

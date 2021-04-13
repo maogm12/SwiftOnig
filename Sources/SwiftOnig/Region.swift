@@ -109,6 +109,22 @@ public class Region {
         precondition(self.count > 0, "Empty region")
         return self.first!.string
     }
+    
+    /**
+     Get the backreferenced group number.
+     
+     - Parameters:
+        - name: Group name for backreference (`\k<name>`).
+     */
+    public func backReferencedGroupNumber(of name: OnigurumaString) -> Int {
+        let result = name.withOnigurumaString { start, count in
+            onig_name_to_backref_number(self.regex.rawValue,
+                                        start,
+                                        start.advanced(by:count),
+                                        self.rawValue)
+        }
+        return Int(result)
+    }
 }
 
 // MARK: Subregion

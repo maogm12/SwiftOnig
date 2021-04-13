@@ -31,5 +31,10 @@ let package = Package(
             name: "simple",
             dependencies: ["SwiftOnig"],
             path: "Examples/simple"),
+        .target(
+            name: "names",
+            dependencies: ["SwiftOnig"],
+            path: "Examples/names"),
+
     ]
 )
