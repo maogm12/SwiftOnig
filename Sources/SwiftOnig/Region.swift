@@ -97,7 +97,7 @@ public class Region {
      */
     public var range: Range<Int> {
         precondition(self.count > 0, "Empty region")
-        return self.first!.range
+        return self.first!!.range
     }
 
     /**
@@ -107,7 +107,7 @@ public class Region {
      */
     public var string: String? {
         precondition(self.count > 0, "Empty region")
-        return self.first!.string
+        return self.first!!.string
     }
     
     /**
@@ -136,13 +136,13 @@ public struct Subregion {
     /// The `Region` this `Subregion` belongs to.
     public let region: Region
 
-    /// The n-th capture group. `0` means the whole matching portition.
-    public let group: Int
+    /// The capture group number. `0` means the whole matching portition.
+    public let groupNumber: Int
 
     /// Get the range of the this capture group.
     public var range: Range<Int> {
-        let begin = Int(self.region.rawValue.pointee.beg[self.group])
-        let end = Int(self.region.rawValue.pointee.end[self.group])
+        let begin = Int(self.region.rawValue.pointee.beg[self.groupNumber])
+        let end = Int(self.region.rawValue.pointee.end[self.groupNumber])
         return begin ..< end
     }
 
@@ -159,7 +159,7 @@ public struct Subregion {
 
 extension Region: RandomAccessCollection {
     public typealias Index = Int
-    public typealias Element = Subregion
+    public typealias Element = Subregion?
 
     public var startIndex: Int {
         0
@@ -170,17 +170,27 @@ extension Region: RandomAccessCollection {
     }
 
     /**
-     Get the subregion of n-th capture group.
+     Get the subregion of n-th capture group. If the gropu doesn participate the match, `nil` will be returned.
      */
-    public subscript(group: Int) -> Subregion {
-        precondition(group >= 0 && group < self.count, "Group index \(group) out of range")
-        return Subregion(region: self, group: group)
+    public subscript(groupNumber: Int) -> Subregion? {
+        precondition(groupNumber >= 0 && groupNumber < self.count, "Group number \(groupNumber) out of range")
+        if self._isGroupActive(groupNumber: groupNumber) {
+            return Subregion(region: self, groupNumber: groupNumber)
+        } else {
+            return nil
+        }
     }
 
     /**
-     Get the subregions of named capture groups with the specified name.
+     Get the subregions of named capture groups with the specified name. Only groups participating match will be included in the result.
      */
-    public subscript(name: String) -> [Subregion] {
-        self.regex.namedCaptureGroupIndexes(of: name).map { Subregion(region: self, group: $0) }
+    public subscript(name: OnigurumaString) -> [Subregion] {
+        self.regex.captureGroupNumbers(of: name)
+            .filter { self._isGroupActive(groupNumber: $0) }
+            .map { Subregion(region: self, groupNumber: $0) }
+    }
+    
+    private func _isGroupActive(groupNumber: Int) -> Bool {
+        return self.rawValue.pointee.beg[groupNumber] != ONIG_REGION_NOTPOS
     }
 }

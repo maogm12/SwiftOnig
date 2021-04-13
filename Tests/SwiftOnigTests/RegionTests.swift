@@ -17,8 +17,8 @@ final class RegionTests: SwiftOnigTestsBase {
         XCTAssertEqual(region.range, 14..<26)
         XCTAssertEqual(region.string, "123-456-7890")
 
-        XCTAssertEqual(region[0].range, 14..<26)
-        XCTAssertEqual(region[0].string, "123-456-7890")
+        XCTAssertEqual(region[0]?.range, 14..<26)
+        XCTAssertEqual(region[0]?.string, "123-456-7890")
     }
     
     func testMultiRanges() {
@@ -30,23 +30,34 @@ final class RegionTests: SwiftOnigTestsBase {
         XCTAssertEqual(region.range, 7..<23)
         XCTAssertEqual(region.string, "test@foo.bar.com")
 
-        XCTAssertEqual(region[0].range, 7..<23)
-        XCTAssertEqual(region[0].string, "test@foo.bar.com")
+        XCTAssertEqual(region[0]?.range, 7..<23)
+        XCTAssertEqual(region[0]?.string, "test@foo.bar.com")
 
-        XCTAssertEqual(region[1].range, 7..<11)
-        XCTAssertEqual(region[1].string, "test")
+        XCTAssertEqual(region[1]?.range, 7..<11)
+        XCTAssertEqual(region[1]?.string, "test")
 
-        XCTAssertEqual(region[2].range, 12..<23)
-        XCTAssertEqual(region[2].string, "foo.bar.com")
+        XCTAssertEqual(region[2]?.range, 12..<23)
+        XCTAssertEqual(region[2]?.string, "foo.bar.com")
 
-        XCTAssertEqual(region[3].range, 12..<15)
-        XCTAssertEqual(region[3].string, "foo")
+        XCTAssertEqual(region[3]?.range, 12..<15)
+        XCTAssertEqual(region[3]?.string, "foo")
 
-        XCTAssertEqual(region[4].range, 19..<23)
-        XCTAssertEqual(region[4].string, ".com")
+        XCTAssertEqual(region[4]?.range, 19..<23)
+        XCTAssertEqual(region[4]?.string, ".com")
 
-        XCTAssertEqual(region[5].range, 20..<23)
-        XCTAssertEqual(region[5].string, "com")
+        XCTAssertEqual(region[5]?.range, 20..<23)
+        XCTAssertEqual(region[5]?.string, "com")
+    }
+    
+    func testNilSubRegion() {
+        let regex = try! Regex(pattern: #"(?<a>a+)(?<b>b+)?"#)
+        let str1 = "aaabbb"
+        let str2 = "bbbaaa"
+        let region1 = try! regex.firstMatch(in: str1)!
+        let region2 = try! regex.firstMatch(in: str2)!
+        
+        XCTAssertEqual(region1.map { $0?.range }, [0..<6, 0..<3, 3..<6])
+        XCTAssertEqual(region2.map { $0?.range }, [3..<6, 3..<6, nil])
     }
     
     func testString() {
@@ -54,20 +65,15 @@ final class RegionTests: SwiftOnigTestsBase {
         let str = "Email: test@foo.bar.com"
         let region = try! regex.firstMatch(in: str)!
         
-        XCTAssertEqual(region[2].string, "foo.bar.com")
+        XCTAssertEqual(region[2]?.string, "foo.bar.com")
     }
     
     func testIterator() {
         let regex = try! Regex(pattern: "(a+)(b+)(c+)")
         let region = try! regex.firstMatch(in: "aaaabbbbc")!
-
-        var ranges = [Subregion]()
-        for range in region {
-            ranges.append(range)
-        }
-        
-        XCTAssertEqual(ranges.map { $0.range }, [0..<9, 0..<4, 4..<8, 8..<9])
-        XCTAssertEqual(ranges.map { $0.string }, ["aaaabbbbc", "aaaa", "bbbb", "c"])
+        let subRegions = region.compactMap { $0 }
+        XCTAssertEqual(subRegions.map { $0.range }, [0..<9, 0..<4, 4..<8, 8..<9])
+        XCTAssertEqual(subRegions.map { $0.string }, ["aaaabbbbc", "aaaa", "bbbb", "c"])
     }
     
     func testRandomAccessCollection() {
@@ -77,10 +83,10 @@ final class RegionTests: SwiftOnigTestsBase {
         XCTAssertEqual(region.startIndex, 0)
         XCTAssertEqual(region.endIndex, 4)
 
-        XCTAssertEqual(region[0].range, 0..<6)
-        XCTAssertEqual(region[1].range, 0..<2)
-        XCTAssertEqual(region[2].range, 2..<4)
-        XCTAssertEqual(region[3].range, 4..<6)
+        XCTAssertEqual(region[0]?.range, 0..<6)
+        XCTAssertEqual(region[1]?.range, 0..<2)
+        XCTAssertEqual(region[2]?.range, 2..<4)
+        XCTAssertEqual(region[3]?.range, 4..<6)
     }
     
     func testNamedCaptureGroups() {
@@ -140,6 +146,7 @@ final class RegionTests: SwiftOnigTestsBase {
     static var allTests = [
         ("testSingleRange", testSingleRange),
         ("testMultiRanges", testMultiRanges),
+        ("testNilSubRegion", testNilSubRegion),
         ("testIterator", testIterator),
         ("testRandomAccessCollection", testRandomAccessCollection),
         ("testCaptureTree", testCaptureTree),

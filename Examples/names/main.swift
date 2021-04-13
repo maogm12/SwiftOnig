@@ -32,12 +32,14 @@ guard let region = region else {
     exit(EXIT_SUCCESS)
 }
 
-print("Number of names: \(regex.namedCaptureGroupCount)")
-regex.enumerateNamedCaptureGroups { (name, groupNumber) -> Bool in
+print("Number of names: \(regex.captureGroupNameCount)")
+regex.enumerateCaptureGroupNames { (name, groupNumber) -> Bool in
     for groupNumber in groupNumber {
         let backRefGroupNumber = region.backReferencedGroupNumber(of: name)
-        print("\(name) (\(groupNumber)): ", terminator: "")
-        print("\(region[groupNumber].range) \(backRefGroupNumber == groupNumber ? "*" : "")")
+        if let subRegion = region[groupNumber] {
+            print("\(name) (\(groupNumber)): ", terminator: "")
+            print("\(subRegion.range) \(backRefGroupNumber == groupNumber ? "*" : "")")
+        }
     }
 
     return true

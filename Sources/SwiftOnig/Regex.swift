@@ -17,10 +17,10 @@ import Foundation
  - `onig_match`, `onig_match_with_param`: wrapped with `isMatch(*)`, `matchedByteCount(*)` and `match(*)`.
  - `onig_search`, `onig_search_with_param`: wrapped with `firstIndex(*)` and `firstMatch(*)`.
  - `onig_scan`: wrapped with `matches(*)` and `enumerateMatches(*)`.
- - `onig_name_to_group_numbers`: wrapped with `namedCaptureGroupIndexes(of:)`.
- - `onig_foreach_name`: wrapped with `enumerateNamedCaptureGroups(:)`
- - `onig_number_of_names`: wrapped with `namedCaptureGroupCount`.
- - `onig_number_of_captures`: wrapped with `onig_number_of_captures`.
+ - `onig_name_to_group_numbers`: wrapped with `captureGroupNumbers(of:)`.
+ - `onig_foreach_name`: wrapped with `enumerateCaptureGroupNames(:)`
+ - `onig_number_of_names`: wrapped with `captureGroupNameCount`.
+ - `onig_number_of_captures`: wrapped with `captureGroupCount`.
  - `onig_number_of_capture_histories`: wrapped with `captureHistoryCount`.
 
  Those APIs are not wrapped.
@@ -667,18 +667,21 @@ extension Regex {
 
 extension Regex {
     /**
-     Get the count of named groups of the pattern.
+     Get the count of named groups of the pattern. Having multiple groups with the same name is allowed.
      */
-    public var namedCaptureGroupCount: Int {
+    public var captureGroupNameCount: Int {
         Int(onig_number_of_names(self.rawValue))
     }
     
     /**
-     Call `body` for each named capture group in the regular expression. Each callback gets the capture group name and capture group indexes.
-     - TODO:
-     Add iterator for named capture groups
+     Call `body` for each capture group name in the regular expression. Each callback gets the capture group name and capture group numbers.
+     
+     - Parameters:
+        - body: The closure to be called.
+        - name: Capture group name.
+        - numbers: Capture group numbers, having multiple groups with the same name is allowed.
      */
-    public func enumerateNamedCaptureGroups(_ body: @escaping (_ name: String, _ indexes: [Int]) -> Bool) {
+    public func enumerateCaptureGroupNames(_ body: @escaping (_ name: String, _ numbers: [Int]) -> Bool) {
         if self.rawValue == nil {
             return
         }
@@ -692,7 +695,7 @@ extension Regex {
             }
 
             if groupsPtr == nil {
-                fatalError("Group indexes are nil")
+                fatalError("Group numbers are nil")
             }
 
             guard let context = contextPtr?.assumingMemoryBound(to: ContextType.self).pointee else {
@@ -705,12 +708,12 @@ extension Regex {
                 fatalError("Fail to encode capture group name with encoding \(stringEncoding)")
             }
 
-            var groupIndexes = [Int]()
+            var groupNumbers = [Int]()
             for i in 0..<Int(groupCount) {
-                groupIndexes.append(Int(groupsPtr![i]))
+                groupNumbers.append(Int(groupsPtr![i]))
             }
 
-            if context.callback(name, groupIndexes) {
+            if context.callback(name, groupNumbers) {
                 return ONIG_NORMAL
             } else {
                 return ONIG_ABORT
@@ -719,11 +722,11 @@ extension Regex {
     }
     
     /**
-     Get the indexes of the named capture group with name.
-     - Parameter name: The name of the named capture group.
-     - Returns: An array of indexes of the named capture group, or `[]` if no such name is found.
+     Get the numbers of named capture groups with a specified name.
+     - Parameter name: The name of named capture groups.
+     - Returns: An array of named capture group numbers, or empty array if no such name is found.
      */
-    public func namedCaptureGroupIndexes(of name: String) -> [Int] {
+    public func captureGroupNumbers(of name: OnigurumaString) -> [Int] {
         name.withOnigurumaString { start, count in
             let nums = UnsafeMutablePointer<UnsafeMutablePointer<OnigInt>?>.allocate(capacity: 1)
             defer{
@@ -739,16 +742,11 @@ extension Regex {
                 return []
             }
             
-            guard let indexesPtr = nums.pointee else {
+            guard let numbersPtr = nums.pointee else {
                 return []
             }
             
-            var indexes = [Int]()
-            for i in 0..<Int(count) {
-                indexes.append(Int(indexesPtr[i]))
-            }
-            
-            return indexes
+            return [Int](UnsafeBufferPointer.init(start: numbersPtr, count: Int(count)).map { Int($0) })
         }
     }
 }

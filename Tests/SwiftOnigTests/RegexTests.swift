@@ -38,8 +38,8 @@ final class RegexTests: SwiftOnigTestsBase {
         var region = try! naiveEmailReg.firstMatch(in: target)!
         XCTAssertNotNil(region)
         XCTAssertEqual(region.count, 1)
-        XCTAssertEqual(region[0].range, 13..<29)
-        XCTAssertEqual(region[0].string, "test@example.com")
+        XCTAssertEqual(region[0]?.range, 13..<29)
+        XCTAssertEqual(region[0]?.string, "test@example.com")
         
         let gb18030Bytes: [UInt8] = [196, 227, 186, 195] // 你好
         let regGb18030 = try! Regex(patternBytes: gb18030Bytes, encoding: .gb18030)
@@ -47,15 +47,15 @@ final class RegexTests: SwiftOnigTestsBase {
         region = try! regGb18030.firstMatch(in: gb18030String)!
         XCTAssertNotNil(region)
         XCTAssertEqual(region.count, 1)
-        XCTAssertEqual(region[0].range, 0..<4)
-        XCTAssertEqual(region[0].string, "你好")
+        XCTAssertEqual(region[0]?.range, 0..<4)
+        XCTAssertEqual(region[0]?.string, "你好")
     }
     
     func testMatches() {
         let reg = try! Regex(pattern: #"\d+"#)
         let regions = try! reg.matches(in: "aa11bb22cc33dd44")
         XCTAssertEqual(regions.count, 4)
-        XCTAssertEqual(regions.map { $0[0].range }, [2..<4, 6..<8, 10..<12, 14..<16])
+        XCTAssertEqual(regions.map { $0[0]!.range }, [2..<4, 6..<8, 10..<12, 14..<16])
     }
     
     func testEnumerateMatches() {
@@ -67,8 +67,8 @@ final class RegexTests: SwiftOnigTestsBase {
         }
 
         XCTAssertEqual(result.map { $0.0 }, [2, 6, 10, 14])
-        XCTAssertEqual(result.map { $0.1[0].range }, [2..<4, 6..<8, 10..<12, 14..<16])
-        XCTAssertEqual(result.map { $0.1[0].string }, ["11", "22", "33", "44"])
+        XCTAssertEqual(result.map { $0.1[0]!.range }, [2..<4, 6..<8, 10..<12, 14..<16])
+        XCTAssertEqual(result.map { $0.1[0]!.string }, ["11", "22", "33", "44"])
 
         // Abort enumeration
         var resultFirst2 = [(Int, Region)]()
@@ -78,26 +78,26 @@ final class RegexTests: SwiftOnigTestsBase {
         }
 
         XCTAssertEqual(resultFirst2.map { $0.0 }, [2, 6])
-        XCTAssertEqual(resultFirst2.map { $0.1[0].range }, [2..<4, 6..<8])
-        XCTAssertEqual(resultFirst2.map { $0.1[0].string }, ["11", "22"])
+        XCTAssertEqual(resultFirst2.map { $0.1[0]!.range }, [2..<4, 6..<8])
+        XCTAssertEqual(resultFirst2.map { $0.1[0]!.string }, ["11", "22"])
     }
 
     func testNamedCaptureGroups() {
         let reg = try! Regex(pattern: "(?<a>a+)(?<b>b+(?<bc>c+))(?<a>a+)")
-        XCTAssertEqual(reg.namedCaptureGroupCount, 3)
+        XCTAssertEqual(reg.captureGroupNameCount, 3)
         
-        var result = [(name: String, indexes: [Int])]()
-        reg.enumerateNamedCaptureGroups { (name, indexes) -> Bool in
-            result.append((name: name, indexes: indexes))
+        var result = [(name: String, numbers: [Int])]()
+        reg.enumerateCaptureGroupNames { (name, numbers) -> Bool in
+            result.append((name: name, numbers: numbers))
             return true
         }
 
         XCTAssertEqual(result.map { $0.name }, ["a", "bc", "b"])
-        XCTAssertEqual(result.map { $0.indexes }, [[1, 4], [3], [2]])
+        XCTAssertEqual(result.map { $0.numbers }, [[1, 4], [3], [2]])
         
-        XCTAssertEqual(reg.namedCaptureGroupIndexes(of: "a"), [1, 4])
-        XCTAssertEqual(reg.namedCaptureGroupIndexes(of: "b"), [2])
-        XCTAssertEqual(reg.namedCaptureGroupIndexes(of: "c"), [])
+        XCTAssertEqual(reg.captureGroupNumbers(of: "a"), [1, 4])
+        XCTAssertEqual(reg.captureGroupNumbers(of: "b"), [2])
+        XCTAssertEqual(reg.captureGroupNumbers(of: "c"), [])
     }
     
     func testPattern() {
