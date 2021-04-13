@@ -31,6 +31,13 @@ final public class RegexSet {
 
     // MARK: init & deinit
 
+    /**
+     Create a `RegexSet` with a sequence of regular expressions.
+     
+     The encoding of each regular expressions should be the same.
+     - Parameter regexes: A sequence of regular expressions.
+     - Throws: `OnigError`
+     */
     public init<S>(regexes: S) throws where S: Sequence, S.Element == Regex {
         self.regexes = [Regex](regexes)
 
@@ -46,6 +53,69 @@ final public class RegexSet {
             }
         }
     }
+
+    /**
+     Create a `RegexSet` with a sequence of string patterns.
+
+     As swift string uses UTF-8 as internal storage from swift 5, UTF-8 encoding (`Encoding.utf8`) will be used for swift string pattern.
+     - Parameters:
+         - patterns: Patterns used to create these regular expressions.
+         - option: Options used to create these regular expressions.
+         - syntax: Syntax used to create these regular expressions.
+     - Throws: `OnigError`
+     */
+    public init<S, P>(patterns: S,
+                   options: Regex.Options = .none,
+                   syntax: Syntax = .default
+    ) throws where S: Sequence, S.Element == P, P: StringProtocol {
+        self.regexes = try patterns.map { try Regex(pattern: $0,
+                                                    options: options,
+                                                    syntax: syntax) }
+        onig_regset_new(&self.rawValue, 0, nil)
+        for reg in self.regexes {
+            do {
+                try callOnigFunction{
+                    onig_regset_add(self.rawValue, reg.rawValue)
+                }
+            } catch {
+                self._cleanUp()
+                throw error
+            }
+        }
+    }
+
+    /**
+     Create a `RegexSet` with a sequence of patterns.
+
+     - Parameters:
+         - patterns: Patterns used to create these regular expressions.
+         - encoding: Encoding used to create these regular expressions.
+         - option: Options used to create these regular expressions.
+         - syntax: Syntax used to create these regular expressions.
+     - Throws: `OnigError`
+     */
+    public init<S, P>(patternsBytes: S,
+                   encoding: Encoding,
+                   options: Regex.Options = .none,
+                   syntax: Syntax = .default
+    ) throws where S: Sequence, S.Element == P, P: Sequence, P.Element == UInt8 {
+        self.regexes = try patternsBytes.map { try Regex(patternBytes: $0,
+                                                         encoding: encoding,
+                                                         options: options,
+                                                         syntax: syntax) }
+        onig_regset_new(&self.rawValue, 0, nil)
+        for reg in self.regexes {
+            do {
+                try callOnigFunction{
+                    onig_regset_add(self.rawValue, reg.rawValue)
+                }
+            } catch {
+                self._cleanUp()
+                throw error
+            }
+        }
+    }
+
 
     deinit {
         self._cleanUp()

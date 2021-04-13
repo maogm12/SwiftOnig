@@ -87,7 +87,7 @@ final public class Regex {
      Create a `Regex` with given pattern, encoding, options and syntax.
      - Parameters:
          - pattern: Pattern used to create the regular expression, represented with a sequence of bytes.
-         - encoding: Encoding of the pattern.
+         - encoding: Encoding used to create the the regular expression.
          - option: Options used to create the regular expression.
          - syntax: Syntax used to create the regular expression.
      - Throws: `OnigError`
