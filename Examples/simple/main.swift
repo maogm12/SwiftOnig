@@ -23,6 +23,10 @@ guard let region = try! regex.firstMatch(in: str) else {
     exit(EXIT_SUCCESS)
 }
     
-for (index, subregion) in region.enumerated() {
-    print("Capture \(index) ==> range: \(subregion.range), content: \(subregion.string!))")
+for (index, subRegion) in region.enumerated() {
+    guard let subRegion = subRegion else {
+        print("Capture \(index) ==> nil")
+        continue
+    }
+    print("Capture \(index) ==> range: \(subRegion.range), content: \(subRegion.string!))")
 }

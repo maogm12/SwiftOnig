@@ -373,6 +373,62 @@ final public class Regex {
     }
     
     // MARK: Scan APIs
+
+    /**
+     Scan the string and count number of matches.
+
+     If `str` conforms to `StringProtocol`, will search against the UTF-8 bytes of the string. Do not pass invalid bytes in the regular expression encoding.
+     - Parameters:
+         - str: Target string to search against.
+         - option: The regular expression search options.
+         - matchParam: Match parameter values (`matchStackLimit`, `retryLimitInMatch`, `retryLimitInSearch`)
+     - Returns: Number of matches.
+     - Throws: `OnigError`
+     */
+    public func numberOfMatches<S>(in str: S,
+                                   options: SearchOptions = .none,
+                                   matchParam: MatchParam = MatchParam()
+    ) throws -> Int where S: OnigurumaString {
+        try self.numberOfMatches(in: str,
+                                 of: 0...,
+                                 options: options,
+                                 matchParam: matchParam)
+    }
+    
+    /**
+     Scan in a range of the string and count number of matches.
+
+     If `str` conforms to `StringProtocol`, will search against the UTF-8 bytes of the string. Do not pass invalid bytes in the regular expression encoding.
+     - Parameters:
+         - str: Target string to search against.
+         - range: The range of bytes to search against. It will be clamped to the range of the whole string first.
+         - option: The regular expression search options.
+         - matchParam: Match parameter values (`matchStackLimit`, `retryLimitInMatch`, `retryLimitInSearch`)
+     - Returns: Number of matches.
+     - Throws: `OnigError`
+     */
+    public func numberOfMatches<S, R>(in str: S,
+                                      of range: R,
+                                      options: SearchOptions = .none,
+                                      matchParam: MatchParam = MatchParam()
+    ) throws -> Int where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
+        let result = try str.withOnigurumaString { (start, count) throws -> OnigInt in
+            let range = range.relative(to: 0..<count).clamped(to: 0..<count)
+            let region = try Region(regex: self, str: str)
+
+            return try callOnigFunction {
+                onig_scan(self.rawValue,
+                          start.advanced(by: range.lowerBound),
+                          start.advanced(by: range.upperBound),
+                          region.rawValue,
+                          options.rawValue,
+                          { _,_,_,_ in ONIG_NORMAL } /* scan_callback */,
+                          nil /* callback_arg*/)
+            }
+        }
+
+        return Int(result)
+    }
     
     /**
      Find all matching region in the string.
@@ -416,7 +472,7 @@ final public class Regex {
         try self.enumerateMatches(in: str,
                                   of: range,
                                   options: options,
-                                  matchParam: matchParam) { regions.append($1); return true }
+                                  matchParam: matchParam) { regions.append($2); return true }
         return regions
     }
     
@@ -429,15 +485,16 @@ final public class Regex {
          - option: The regular expression search options.
          - matchParam: Match parameter values (`matchStackLimit`, `retryLimitInMatch`, `retryLimitInSearch`)
          - body: The closure to call on each match.
-         - index: The matched index of byte.
+         - order: The order of this match.
+         - matchedIndex: The matched index of byte.
          - region: The matching region.
-     - Returns: Number of matches.
+     - Returns: Number of matches. If only the number of matches is needed, `numberOfMatches(in:options:matchParams:body:)` is slightly faster.
      - Throws: `OnigError`
      */
     @discardableResult public func enumerateMatches<S>(in str: S,
                                                        options: SearchOptions = .none,
                                                        matchParam: MatchParam = MatchParam(),
-                                                       body: (_ index: Int,  _ region: Region) -> Bool
+                                                       body: (_ order: Int, _ matchedIndex: Int, _ region: Region) -> Bool
     ) throws -> Int where S: OnigurumaString {
         try self.enumerateMatches(in: str,
                                   of: 0...,
@@ -456,22 +513,23 @@ final public class Regex {
          - option: The regular expression search options.
          - matchParam: Match parameter values (`matchStackLimit`, `retryLimitInMatch`, `retryLimitInSearch`)
          - body: The closure to call on each match.
-         - index: The matched index of byte.
+         - order: The order of this match.
+         - matchedIndex: The matched index of byte.
          - region: The matching region.
-     - Returns: Number of matches.
+     - Returns: Number of matches. If only the number of matches is needed, `numberOfMatches(in:of:options:matchParams:body:)` is slightly faster.
      - Throws: `OnigError`
      */
     @discardableResult public func enumerateMatches<S, R>(in str: S,
                                                           of range: R,
                                                           options: SearchOptions = .none,
                                                           matchParam: MatchParam = MatchParam(),
-                                                          body: (_ index: Int, _ region: Region) -> Bool
+                                                          body: (_ order: Int, _ matchedIndex: Int, _ region: Region) -> Bool
     ) throws -> Int where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
         let result = try str.withOnigurumaString { (start, count) throws -> OnigInt in
             let range = range.relative(to: 0..<count).clamped(to: 0..<count)
             let region = try Region(regex: self, str: str)
 
-            typealias ContextType = (region: Region, callback: (Int, Region) -> Bool)
+            typealias ContextType = (region: Region, callback: (Int, Int, Region) -> Bool)
             var context = (region: region, callback: body)
 
             return try callOnigFunction {
@@ -480,7 +538,7 @@ final public class Regex {
                           start.advanced(by: range.upperBound),
                           region.rawValue,
                           options.rawValue,
-                          { (_, index, onigRegion, contextPtr) -> OnigInt in
+                          { (order, matchedIndex, onigRegion, contextPtr) -> OnigInt in
                             guard let context = contextPtr?.assumingMemoryBound(to: ContextType.self).pointee else {
                                 fatalError("Fail to retrive the context")
                             }
@@ -489,7 +547,7 @@ final public class Regex {
                                 fatalError("Fail to creating the region")
                             }
 
-                            if context.callback(Int(index), region) {
+                            if context.callback(Int(order), Int(matchedIndex), region) {
                                 return ONIG_NORMAL
                             } else {
                                 return ONIG_ABORT

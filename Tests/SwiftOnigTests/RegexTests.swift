@@ -23,6 +23,7 @@ final class RegexTests: SwiftOnigTestsBase {
 
         XCTAssertEqual(try! reg.matchedByteCount(in: "foo"), 3)
         XCTAssertEqual(try! reg.matchedByteCount(in: "foo bar"), 3)
+        XCTAssertEqual(try! reg.matchedByteCount(in: "afoo bar", at: 1), 3)
         XCTAssertNil(try! reg.matchedByteCount(in: "bar"))
 
         XCTAssertNil(try! reg.match(in: "bar foo"))
@@ -62,7 +63,7 @@ final class RegexTests: SwiftOnigTestsBase {
         let reg = try! Regex(pattern: #"\d+"#)
         var result = [(Int, Region)]()
         try! reg.enumerateMatches(in: "aa11bb22cc33dd44") {
-            result.append(($0, $1))
+            result.append(($1, $2))
             return true
         }
 
@@ -73,13 +74,20 @@ final class RegexTests: SwiftOnigTestsBase {
         // Abort enumeration
         var resultFirst2 = [(Int, Region)]()
         try! reg.enumerateMatches(in: "aa11bb22cc33dd44") {
-            resultFirst2.append(($0, $1))
+            resultFirst2.append(($1, $2))
             return resultFirst2.count < 2
         }
 
         XCTAssertEqual(resultFirst2.map { $0.0 }, [2, 6])
         XCTAssertEqual(resultFirst2.map { $0.1[0]!.range }, [2..<4, 6..<8])
         XCTAssertEqual(resultFirst2.map { $0.1[0]!.string }, ["11", "22"])
+    }
+    
+    func testNumberOfMatches() {
+        let reg = try! Regex(pattern: #"\d+"#)
+        XCTAssertEqual(try! reg.numberOfMatches(in: "aa11bb22ccccccc"), 2)
+        XCTAssertEqual(try! reg.numberOfMatches(in: "aa11bb22ccccccc", of: 8...), 0)
+        XCTAssertEqual(try! reg.numberOfMatches(in: "aa"), 0)
     }
 
     func testNamedCaptureGroups() {
@@ -130,6 +138,7 @@ final class RegexTests: SwiftOnigTestsBase {
         ("testSearch", testSearch),
         ("testMatches", testMatches),
         ("testEnumerateMatches", testEnumerateMatches),
+        ("testNumberOfMatches", testNumberOfMatches),
         ("testPattern", testPattern),
         ("testNamedCaptureGroups", testNamedCaptureGroups),
     ]

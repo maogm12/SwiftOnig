@@ -39,5 +39,9 @@ let package = Package(
             name: "listcap",
             dependencies: ["SwiftOnig"],
             path: "Examples/listcap"),
+        .target(
+            name: "scan",
+            dependencies: ["SwiftOnig"],
+            path: "Examples/scan"),
     ]
 )
