@@ -113,24 +113,25 @@ final class RegionTests: SwiftOnigTestsBase {
 
         let tree = region.captureTree!
         XCTAssertEqual(tree.childrenCount, 1)
-        XCTAssertEqual(tree.group, 0)
-        XCTAssertEqual(tree.bytesRange, 2..<4)
+        XCTAssertEqual(tree.groupNumber, 0)
+        XCTAssertEqual(tree.range, 2..<4)
 
-        XCTAssertEqual(tree[0].childrenCount, 1)
-        XCTAssertEqual(tree[0].group, 3)
-        XCTAssertEqual(tree[0].bytesRange, 2..<4)
         
-        XCTAssertEqual(tree[0][0].childrenCount, 0)
-        XCTAssertEqual(tree[0][0].group, 4)
-        XCTAssertEqual(tree[0][0].bytesRange, 3..<4)
+        XCTAssertEqual(tree.children[0].childrenCount, 1)
+        XCTAssertEqual(tree.children[0].groupNumber, 3)
+        XCTAssertEqual(tree.children[0].range, 2..<4)
+        
+        XCTAssertEqual(tree.children[0].children[0].childrenCount, 0)
+        XCTAssertEqual(tree.children[0].children[0].groupNumber, 4)
+        XCTAssertEqual(tree.children[0].children[0].range, 3..<4)
         
         var before = [(Int, Range<Int>, Int)]()
         var after = [(Int, Range<Int>, Int)]()
-        region.forEachCaptureTreeNode { (group, range, level) -> Bool in
-            before.append((group, range, level))
+        region.enumerateCaptureTreeNodes { (groupNumber, range, level) -> Bool in
+            before.append((groupNumber, range, level))
             return true
-        } afterTraversingChildren: { (group, range, level) -> Bool in
-            after.append((group, range, level))
+        } afterTraversingChildren: { (groupNumber, range, level) -> Bool in
+            after.append((groupNumber, range, level))
             return true
         }
         

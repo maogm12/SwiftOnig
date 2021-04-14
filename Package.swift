@@ -35,6 +35,9 @@ let package = Package(
             name: "names",
             dependencies: ["SwiftOnig"],
             path: "Examples/names"),
-
+        .target(
+            name: "listcap",
+            dependencies: ["SwiftOnig"],
+            path: "Examples/listcap"),
     ]
 )

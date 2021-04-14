@@ -13,72 +13,43 @@ public struct CaptureTreeNode {
     /**
      The capture group number for this capture group.
      */
-    public var group: Int {
+    public var groupNumber: Int {
         Int(self.rawValue.group)
     }
 
     /**
      The extent of this capture group.
      */
-    public var bytesRange: Range<Int> {
+    public var range: Range<Int> {
         Int(self.rawValue.beg) ..< Int(self.rawValue.end)
-    }
-    
-    /**
-     Does the node have any child capture groups?
-     */
-    public var hasChildren: Bool {
-        return self.childrenCount == 0
-    }
-    
-    subscript(index: Int) -> CaptureTreeNode {
-        if index >= self.childrenCount {
-            fatalError("Capture tree node index overflow")
-        }
-        
-        if let child = self.rawValue.childs.advanced(by: index).pointee?.pointee {
-            return CaptureTreeNode(rawValue: child)
-        }
-        
-        fatalError("Null capture tree node child")
     }
 }
 
 // Children
 extension CaptureTreeNode {
     /**
-     A sequence of child `CaptureTreeNode`.
+     A collection of children `CaptureTreeNode`.
      */
-    public struct ChildSequence: Sequence {
-        private let node: CaptureTreeNode
-        
-        public init(node: CaptureTreeNode) {
-            self.node = node
-        }
-        
-        public func makeIterator() -> CaptureTreeNode.ChildIterator {
-            return CaptureTreeNode.ChildIterator(node: self.node)
-        }
-    }
+    public struct ChildrenCollection: RandomAccessCollection {
+        public let parent: CaptureTreeNode
 
-    /**
-     A iterator of child `CaptureTreeNode`.
-     */
-    public struct ChildIterator: IteratorProtocol {
-        private let node: CaptureTreeNode
-        private var index: Int = 0
+        public typealias Index = Int
+        public typealias Element = CaptureTreeNode
         
-        public init(node: CaptureTreeNode) {
-            self.node = node
+        public var startIndex: Int {
+            0
         }
         
-        public mutating func next() -> CaptureTreeNode? {
-            if self.index < self.node.childrenCount {
-                self.index = self.index + 1
-                return self.node[self.index - 1]
-            } else {
-                return nil
+        public var endIndex: Int {
+            self.parent.childrenCount
+        }
+        
+        public subscript(position: Int) -> CaptureTreeNode {
+            guard let child = self.parent.rawValue.childs.advanced(by: position).pointee?.pointee else {
+                fatalError("Nil capture tree node child")
             }
+
+            return CaptureTreeNode(rawValue: child)
         }
     }
 
@@ -90,10 +61,17 @@ extension CaptureTreeNode {
     }
 
     /**
-     An iterator over thie children of this capture group.
+     Does the node have any child capture groups?
      */
-    public var children: ChildSequence {
-        ChildSequence(node: self)
+    public var hasChildren: Bool {
+        return self.childrenCount == 0
+    }
+
+    /**
+     Get the collection of children nodes of this capture group.
+     */
+    public var children: ChildrenCollection {
+        ChildrenCollection(parent: self)
     }
 }
 
@@ -115,16 +93,16 @@ extension Region {
      - Parameters:
         - beforeTraversingChildren: the callback will be called before traversing children tree nodes.
         - afterTraversingChildren: the callback will be called after traversing children tree nodes.
-        - group: The group number of of the capture.
+        - groupNumber: The group number of of the capture.
         - bytesRange: The range of this capture.
         - level: The level of the capture tree node.
      */
-    public func forEachCaptureTreeNode(beforeTraversingChildren: @escaping (_ group: Int, _ bytesRange: Range<Int>, _ level: Int) -> Bool = { _,_,_ in true },
-                                       afterTraversingChildren: @escaping (_ group: Int, _ bytesRange: Range<Int>, _ level: Int) -> Bool = { _,_,_ in true }) {
+    public func enumerateCaptureTreeNodes(beforeTraversingChildren: @escaping (_ groupNumber: Int, _ bytesRange: Range<Int>, _ level: Int) -> Bool = { _,_,_ in true },
+                                          afterTraversingChildren: @escaping (_ groupNumber: Int, _ bytesRange: Range<Int>, _ level: Int) -> Bool = { _,_,_ in true }) {
         typealias CallbackType = (Int, Range<Int>, Int) -> Bool
         var callbackRef = (beforeTraversingChildren, afterTraversingChildren)
 
-        onig_capture_tree_traverse(self.rawValue, ONIG_TRAVERSE_CALLBACK_AT_BOTH, { (group, start, end, level, at, refPtr) -> Int32 in
+        onig_capture_tree_traverse(self.rawValue, ONIG_TRAVERSE_CALLBACK_AT_BOTH, { (groupNumber, start, end, level, at, refPtr) -> Int32 in
             guard let (beforeChildren, afterChildren) = refPtr?.assumingMemoryBound(to: (CallbackType, CallbackType).self).pointee else {
                 fatalError("Failed to get callbacks")
             }
@@ -132,9 +110,9 @@ extension Region {
             var shouldContinue = false
             switch at {
             case ONIG_TRAVERSE_CALLBACK_AT_FIRST:
-                shouldContinue = beforeChildren(Int(group), Int(start) ..< Int(end), Int(level))
+                shouldContinue = beforeChildren(Int(groupNumber), Int(start) ..< Int(end), Int(level))
             case ONIG_TRAVERSE_CALLBACK_AT_LAST:
-                shouldContinue = afterChildren(Int(group), Int(start) ..< Int(end), Int(level))
+                shouldContinue = afterChildren(Int(groupNumber), Int(start) ..< Int(end), Int(level))
             default:
                 // Unexpected position, just go on
                 shouldContinue = true
