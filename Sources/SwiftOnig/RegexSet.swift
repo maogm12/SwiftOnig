@@ -18,17 +18,14 @@ import OnigurumaC
  - `onig_regset_get_region`: Used in `search(*)`.
  - `onig_regset_search`, `onig_regset_search_with_param` : Wrapped in `search(*)`.
 
- Those APIs are not wrapped.
- - `onig_regset_add`: not exposed.
- - `onig_regset_replace`: not exposed.
  */
-final public class RegexSet: Sendable, OnigOwnedResource {
+final public class RegexSet: @unchecked Sendable, OnigOwnedResource {
     internal typealias OnigRegSet = OpaquePointer
     private static let fullByteRange: PartialRangeFrom<Int> = 0...
     internal nonisolated(unsafe) var rawValue: OnigRegSet!
     
     /// Cached `Regex` objects
-    private let regexes: [Regex]
+    private var regexes: [Regex]
 
     // MARK: init & deinit
 
@@ -41,7 +38,7 @@ final public class RegexSet: Sendable, OnigOwnedResource {
      */
     public init<S>(regexes: S) async throws where S: Sequence, S.Element == Regex {
         self.regexes = [Regex](regexes)
-        try Self.validateEncodings(self.regexes)
+        try Self.validateRegexes(self.regexes)
         try await Self.initializeRuntime(for: self.regexes)
         try self.populateRawValue()
     }
@@ -67,7 +64,7 @@ final public class RegexSet: Sendable, OnigOwnedResource {
         }
         self.regexes = compiledRegexes
 
-        try Self.validateEncodings(self.regexes)
+        try Self.validateRegexes(self.regexes)
         try self.populateRawValue()
     }
 
@@ -93,7 +90,7 @@ final public class RegexSet: Sendable, OnigOwnedResource {
         }
         self.regexes = compiledRegexes
 
-        try Self.validateEncodings(self.regexes)
+        try Self.validateRegexes(self.regexes)
         try self.populateRawValue()
     }
 
@@ -101,12 +98,16 @@ final public class RegexSet: Sendable, OnigOwnedResource {
         self._cleanUp()
     }
 
-    private static func validateEncodings(_ regexes: [Regex]) throws {
+    private static func validateRegexes(_ regexes: [Regex]) throws {
         guard let firstEncoding = regexes.first?.encoding.rawValue else {
             return
         }
 
         guard regexes.dropFirst().allSatisfy({ $0.encoding.rawValue == firstEncoding }) else {
+            throw OnigError.invalidArgument
+        }
+
+        guard regexes.allSatisfy({ !$0.options.contains(.findLongest) }) else {
             throw OnigError.invalidArgument
         }
     }
@@ -133,11 +134,47 @@ final public class RegexSet: Sendable, OnigOwnedResource {
         }
     }
 
+    private func rebuildRawValue(with regexes: [Regex]) throws {
+        try Self.validateRegexes(regexes)
+        self.cleanUpRawValue()
+        self.regexes = regexes
+        try self.populateRawValue()
+    }
+
     /**
      The count of regular expressions.
      */
     public var count: Int {
         Int(onig_regset_number_of_regex(self.rawValue))
+    }
+
+    /**
+     Append a regex to the set.
+     */
+    public func append(_ regex: Regex) throws {
+        var updated = self.regexes
+        updated.append(regex)
+        try rebuildRawValue(with: updated)
+    }
+
+    /**
+     Replace the regex at the provided index.
+     */
+    public func replace(at index: Int, with regex: Regex) throws {
+        precondition(self.regexes.indices.contains(index), "Index out of bounds")
+        var updated = self.regexes
+        updated[index] = regex
+        try rebuildRawValue(with: updated)
+    }
+
+    /**
+     Remove the regex at the provided index.
+     */
+    public func remove(at index: Int) throws {
+        precondition(self.regexes.indices.contains(index), "Index out of bounds")
+        var updated = self.regexes
+        updated.remove(at: index)
+        try rebuildRawValue(with: updated)
     }
 
     // MARK: Match & Search

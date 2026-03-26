@@ -126,4 +126,4 @@ This section tracks the packaging refactor from a system-installed Oniguruma dep
 - [x] **Runtime Warning Hooks**: Add actor-isolated APIs for standard and verbose Oniguruma warning callbacks.
 - [x] **User Unicode Properties**: Add registration APIs for custom Unicode properties.
 - [x] **Swift-Native Callouts**: Add Swift-native registration and execution support for named/content callouts and per-match callout handlers.
-- [ ] **Mutable RegexSet Operations**: Add append, replace, and remove operations while preserving regset invariants.
+- [x] **Mutable RegexSet Operations**: Add append, replace, and remove operations while preserving regset invariants.

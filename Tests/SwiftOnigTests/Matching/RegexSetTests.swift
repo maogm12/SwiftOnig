@@ -71,4 +71,35 @@ struct RegexSetTests {
         #expect(result.region.range == 0..<4)
         #expect(result.region.string == "你好")
     }
+
+    @Test("Mutable operations")
+    func mutations() async throws {
+        let regSet = try await RegexSet(regexes: [try await Regex(pattern: "a+"), try await Regex(pattern: "b+")])
+        try regSet.append(try await Regex(pattern: "c+"))
+        #expect(regSet.count == 3)
+        #expect(try await regSet[2].matches("ccc"))
+
+        try regSet.replace(at: 1, with: try await Regex(pattern: "bb"))
+        #expect(try await regSet[1].matches("bb"))
+        #expect(try await regSet[1].wholeMatch(in: "bbb") == nil)
+
+        try regSet.remove(at: 0)
+        #expect(regSet.count == 2)
+        #expect(try await regSet.firstMatch(in: "bbcc")?.regexIndex == 0)
+    }
+
+    @Test("Reject invalid mutable operations")
+    func mutationValidation() async throws {
+        let regSet = try await RegexSet(regexes: [try await Regex(pattern: "a+")])
+        let gb18030Regex = try await Regex(patternBytes: [196, 227, 186, 195], encoding: .gb18030)
+        let longestRegex = try await Regex(pattern: "b+", options: .findLongest)
+
+        #expect(throws: OnigError.invalidArgument) {
+            try regSet.append(gb18030Regex)
+        }
+
+        #expect(throws: OnigError.invalidArgument) {
+            try regSet.append(longestRegex)
+        }
+    }
 }
