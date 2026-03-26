@@ -629,30 +629,30 @@ extension Regex {
         public static let ignoreCase = Regex.Options(rawValue: ONIG_OPTION_IGNORECASE)
         
         /// Extended pattern form.
-        public static let extend = Regex.Options(rawValue: get_onig_option_extend())
+        public static let extend = Regex.Options(rawValue: ONIG_OPTION_EXTEND)
         
         /// `'.'` match with newline.
-        public static let multiLine = Regex.Options(rawValue: get_onig_option_multiline());
+        public static let multiLine = Regex.Options(rawValue: ONIG_OPTION_MULTILINE);
         
         /// `'^'` -> `'\A'`, `'$'` -> `'\Z'`.
-        public static let singleLine = Regex.Options(rawValue: get_onig_option_singleline());
+        public static let singleLine = Regex.Options(rawValue: ONIG_OPTION_SINGLELINE);
         
         /// Find longest match.
-        public static let findLongest = Regex.Options(rawValue: get_onig_option_find_longest());
+        public static let findLongest = Regex.Options(rawValue: ONIG_OPTION_FIND_LONGEST);
         
         /// Ignore empty match.
-        public static let findNotEmpty = Regex.Options(rawValue: get_onig_option_find_not_empty());
+        public static let findNotEmpty = Regex.Options(rawValue: ONIG_OPTION_FIND_NOT_EMPTY);
         
         /// Clear `OPTION_SINGLELINE` which is enabled on
         /// `SYNTAX_POSIX_BASIC`, `SYNTAX_POSIX_EXTENDED`,
         /// `SYNTAX_PERL`, `SYNTAX_PERL_NG`, `SYNTAX_JAVA`.
-        public static let negateSingleLine = Regex.Options(rawValue: get_onig_option_negate_singleline());
+        public static let negateSingleLine = Regex.Options(rawValue: ONIG_OPTION_NEGATE_SINGLELINE);
         
         /// Only named group captured.
-        public static let dontCaptureGroup = Regex.Options(rawValue: get_onig_option_dont_capture_group());
+        public static let dontCaptureGroup = Regex.Options(rawValue: ONIG_OPTION_DONT_CAPTURE_GROUP);
         
         /// Named and no-named group captured.
-        public static let captureGroup = Regex.Options(rawValue: get_onig_option_capture_group());
+        public static let captureGroup = Regex.Options(rawValue: ONIG_OPTION_CAPTURE_GROUP);
     }
     
     /// Regex evaluation options.
@@ -667,18 +667,18 @@ extension Regex {
         public static let none = SearchOptions(rawValue: ONIG_OPTION_NONE)
         
         /// Do not regard the beginning of the (str) as the beginning of the line and the beginning of the string
-        public static let notBol = SearchOptions(rawValue: get_onig_option_notbol());
+        public static let notBol = SearchOptions(rawValue: ONIG_OPTION_NOTBOL);
         
         /// Do not regard the (end) as the end of a line and the end of a string
-        public static let notEol = SearchOptions(rawValue: get_onig_option_noteol());
+        public static let notEol = SearchOptions(rawValue: ONIG_OPTION_NOTEOL);
         
         /// Do not regard the beginning of the (str) as the beginning of a string  (* fail \A)
-        public static let notBeginString = SearchOptions(rawValue: get_onig_option_not_begin_string())
+        public static let notBeginString = SearchOptions(rawValue: ONIG_OPTION_NOT_BEGIN_STRING)
         
         /// Do not regard the (end) as a string endpoint  (* fail \z, \Z)
-        public static let notEndString = SearchOptions(rawValue: get_onig_option_not_end_string())
+        public static let notEndString = SearchOptions(rawValue: ONIG_OPTION_NOT_END_STRING)
         
         /// Do not regard the (start) as start position of search  (* fail \G)
-        public static let notBeginPosition = SearchOptions(rawValue: get_onig_option_not_begin_position())
+        public static let notBeginPosition = SearchOptions(rawValue: ONIG_OPTION_NOT_BEGIN_POSITION)
     }
 }
