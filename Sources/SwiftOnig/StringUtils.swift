@@ -2,7 +2,7 @@
 //  StringUtils.swift
 //  
 //
-//  Created by Gavin Mao on 4/1/21.
+//  Created by Guangming Mao on 4/1/21.
 //
 
 import COnig

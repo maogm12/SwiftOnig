@@ -2,7 +2,7 @@
 //  Error.swift
 //  
 //
-//  Created by Gavin Mao on 3/27/21.
+//  Created by Guangming Mao on 3/27/21.
 //
 
 import COnig

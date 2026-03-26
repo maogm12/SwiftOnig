@@ -2,7 +2,7 @@
 //  SyntaxTests.swift
 //  
 //
-//  Created by Gavin Mao on 4/4/21.
+//  Created by Guangming Mao on 4/4/21.
 //
 
 import Testing

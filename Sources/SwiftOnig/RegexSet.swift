@@ -2,7 +2,7 @@
 //  RegexSet.swift
 //  
 //
-//  Created by Gavin Mao on 4/2/21.
+//  Created by Guangming Mao on 4/2/21.
 //
 
 import COnig

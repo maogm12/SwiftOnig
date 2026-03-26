@@ -2,7 +2,7 @@
 //  Encoding.swift
 //  
 //
-//  Created by Gavin Mao on 4/3/21.
+//  Created by Guangming Mao on 4/3/21.
 //
 
 import COnig
