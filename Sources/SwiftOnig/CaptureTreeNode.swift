@@ -64,7 +64,7 @@ extension CaptureTreeNode {
      Does the node have any child capture groups?
      */
     public var hasChildren: Bool {
-        return self.childrenCount == 0
+        return self.childrenCount > 0
     }
 
     /**

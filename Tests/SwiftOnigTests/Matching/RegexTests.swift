@@ -150,6 +150,27 @@ struct RegexTests {
         #expect(results.items.map { $0.1[0]!.string } == ["11", "22", "33", "44"])
     }
 
+    @Test("Enumerate Matches can abort and ranges are clamped")
+    func enumerateAbortAndRangeClamping() async throws {
+        let regex = try await Regex(pattern: #"\d+"#)
+
+        final class Results: @unchecked Sendable {
+            var items = [(Int, String)]()
+        }
+        let results = Results()
+
+        let count = try await regex.enumerateMatches(in: "aa11bb22cc33", of: (-20)..<200) { order, matchedIndex, region in
+            results.items.append((matchedIndex, region[0]?.string ?? ""))
+            return order == 0
+        }
+
+        #expect(count == Int(ONIG_ABORT))
+        #expect(results.items.map(\.0) == [2, 6])
+        #expect(results.items.map(\.1) == ["11", "22"])
+        #expect(try await regex.matches("zz11yy", in: 2..<100))
+        #expect(try await regex.matchCount(in: "zz11yy", of: 2..<100) == 2)
+    }
+
     @Test("Capture Groups")
     func captureGroups() async throws {
         let reg = try await Regex(pattern: #"(?<name>\w+):\s+(?<id>\d+)(\s+)(//.*)"#)

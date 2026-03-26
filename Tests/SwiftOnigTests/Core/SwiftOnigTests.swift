@@ -65,6 +65,35 @@ struct SwiftOnigTests {
         #expect(try await !regex.matches("あう"))
     }
 
+    @Test("Reject invalid user Unicode property definitions")
+    func invalidUserUnicodeProperty() async throws {
+        await #expect(throws: OnigError.invalidArgument) {
+            try await defineUserUnicodeProperty(named: "", ranges: [OnigurumaUnicodePropertyRange(0x3042, 0x3042)])
+        }
+
+        await #expect(throws: OnigError.invalidArgument) {
+            try await defineUserUnicodeProperty(named: "名前", ranges: [OnigurumaUnicodePropertyRange(0x3042, 0x3042)])
+        }
+
+        await #expect(throws: OnigError.invalidArgument) {
+            try await defineUserUnicodeProperty(named: "SwiftOnigEmpty", ranges: [])
+        }
+
+        await #expect(throws: OnigError.invalidArgument) {
+            try await defineUserUnicodeProperty(named: "SwiftOnigReverse", ranges: [OnigurumaUnicodePropertyRange(0x3044, 0x3042)])
+        }
+
+        await #expect(throws: OnigError.invalidArgument) {
+            try await defineUserUnicodeProperty(
+                named: "SwiftOnigOverlap",
+                ranges: [
+                    OnigurumaUnicodePropertyRange(0x3042, 0x3044),
+                    OnigurumaUnicodePropertyRange(0x3044, 0x3046),
+                ]
+            )
+        }
+    }
+
     @Test("Named callout registration")
     func namedCallout() async throws {
         let phases = MessageBox()

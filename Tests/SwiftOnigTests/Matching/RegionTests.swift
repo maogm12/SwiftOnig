@@ -75,6 +75,7 @@ struct RegionTests {
         let bazRegions = region["baz"]
         #expect(bazRegions.count == 1)
         #expect(bazRegions[0].string == "cc")
+        #expect(region.backReferencedGroupNumber(of: "bar") == 2)
     }
     
     @Test("Nil Subregions")
@@ -108,5 +109,35 @@ struct RegionTests {
         
         let region = try await regex.firstMatch(in: "abab")
         #expect(region?.captureTree != nil)
+        guard let tree = region?.captureTree else { return }
+
+        #expect(tree.groupNumber == 0)
+        #expect(tree.range == 0..<4)
+        #expect(tree.hasChildren)
+        #expect(tree.childrenCount == 2)
+        #expect(tree.children[0].groupNumber == 1)
+        #expect(tree.children[0].range == 0..<2)
+        #expect(tree.children[0].hasChildren)
+        #expect(tree.children[0].childrenCount == 1)
+        #expect(tree.children[1].range == 2..<4)
+
+        final class Traversal: @unchecked Sendable {
+            var before = [(Int, Range<Int>, Int)]()
+            var after = [(Int, Range<Int>, Int)]()
+        }
+        let traversal = Traversal()
+        region?.enumerateCaptureTreeNodes(beforeTraversingChildren: { group, range, level in
+            traversal.before.append((group, range, level))
+            return true
+        }, afterTraversingChildren: { group, range, level in
+            traversal.after.append((group, range, level))
+            return true
+        })
+
+        #expect(traversal.before.count == traversal.after.count)
+        #expect(traversal.before.first?.0 == 0)
+        #expect(traversal.before.first?.1 == 0..<4)
+        #expect(traversal.before.contains { $0.0 == 1 && $0.1 == 0..<2 && $0.2 == 1 })
+        #expect(traversal.before.contains { $0.0 == 1 && $0.1 == 2..<4 && $0.2 == 1 })
     }
 }
