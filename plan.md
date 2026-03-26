@@ -25,7 +25,7 @@ If rebuilding `SwiftOnig` today, the architecture would focus on being a "Swift-
 - [x] **Swift Version**: Update `Package.swift` to `swift-tools-version:6.0`.
 - [x] **Strict Concurrency**: Enable `.enableUpcomingFeature("StrictConcurrency")` in `Package.swift`.
 - [x] **SwiftLint/SwiftFormat**: Integrate automated linting and formatting.
-- [ ] **CI/CD**: Ensure GitHub Actions test on macOS and Linux with the latest Swift toolchain.
+- [x] **CI/CD**: Ensure GitHub Actions test on macOS and Linux with the latest Swift toolchain.
 
 ## 4. Swift Concurrency & Thread Safety
 - [x] **Global Synchronization**: Replace `onigQueue` with `Mutex` or a `GlobalActor`.

@@ -133,6 +133,15 @@ make lint
 
 These commands expect local `swiftformat` and `swiftlint` installs and will fail fast with an install hint if the tools are missing.
 
+### Continuous Integration
+
+GitHub Actions validates the package on both `ubuntu-latest` and `macos-latest`, with submodules initialized and both test modes exercised:
+
+```bash
+swift test
+swift test --no-parallel
+```
+
 ## License
 
 SwiftOnig is available under the MIT license. See the LICENSE file for more info.

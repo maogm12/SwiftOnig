@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  test:
+    name: test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+        with:
+          submodules: recursive
+
+      - name: Set up Swift
+        uses: swift-actions/setup-swift@v3
+
+      - name: Show Swift version
+        run: swift --version
+
+      - name: Run test suite
+        run: swift test
+
+      - name: Run serial test suite
+        run: swift test --no-parallel
