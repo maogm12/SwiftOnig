@@ -62,3 +62,42 @@ If rebuilding `SwiftOnig` today, the architecture would focus on being a "Swift-
 3. **Phase 3: Refinement**: Rename APIs and improve collection conformances.
 4. **Phase 4: Ecosystem**: Add DocC, `RegexBuilder` support, and `swift-testing`.
 5. **Phase 5: Porting Tests**: Implement the testing DSL and port the Oniguruma test suites.
+
+## 10. Oniguruma Packaging Migration
+
+This section tracks the packaging refactor from a system-installed Oniguruma dependency to a vendored source build managed directly by SwiftPM.
+
+### Chosen Decisions
+
+- [x] Vendor Oniguruma as a Git submodule.
+- [x] Build Oniguruma from source instead of relying on `pkg-config`, `apt`, or `brew`.
+- [x] Merge the current `COnig` and `OnigInternal` targets into one C-facing target named `OnigurumaC`.
+- [x] Preserve the current public Swift API while restructuring the package internals.
+
+### Phased Implementation Checklist
+
+- [ ] **Step 1: Extend planning docs**
+  - Record the vendoring strategy and phased rollout in this document.
+  - Keep the package build unchanged in this step.
+
+- [ ] **Step 2: Add vendored source**
+  - Add the upstream Oniguruma repository as a pinned Git submodule under `Vendor/Oniguruma`.
+  - Document the need to initialize submodules for contributors.
+
+- [ ] **Step 3: Introduce merged `OnigurumaC` target**
+  - Add a new source-based C target in parallel with the legacy bridge layout.
+  - Move or copy the helper wrapper layer into the new target.
+  - Compile vendored Oniguruma source files through SwiftPM.
+
+- [ ] **Step 4: Switch Swift targets to `OnigurumaC`**
+  - Replace `COnig` and `OnigInternal` imports with `OnigurumaC`.
+  - Keep helper symbol names stable unless a compile fix requires a local rename.
+  - Validate all examples, benchmarks, and tests against the merged target.
+
+- [ ] **Step 5: Remove legacy bridge targets**
+  - Delete the `COnig` system-library target and the `OnigInternal` helper target.
+  - Remove old source directories and all package-manager wiring for system-installed Oniguruma.
+
+- [ ] **Step 6: Finalize source-build documentation**
+  - Update `README.md` to describe vendored-source builds and submodule setup.
+  - Mark this migration complete once all validation is green.
