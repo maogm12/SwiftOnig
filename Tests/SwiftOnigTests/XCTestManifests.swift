@@ -10,6 +10,7 @@ public func allTests() -> [XCTestCaseEntry] {
         testCase(RegexTests.allTests),
         testCase(RegexSetTests.allTests),
         testCase(EncodingTests.allTests),
+        testCase(RegexBuilderTests.allTests),
     ]
 }
 #endif

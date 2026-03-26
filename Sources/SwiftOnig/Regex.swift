@@ -8,6 +8,7 @@
 import COnig
 import OnigInternal
 import Foundation
+import _StringProcessing
 
 /**
  Regular Expression
@@ -18,7 +19,28 @@ import Foundation
  - `onig_get_case_fold_flag`
  - `onig_noname_group_capture_is_active`
  */
-final public class Regex: Sendable {
+final public class Regex: Sendable, CustomConsumingRegexComponent {
+    public typealias RegexOutput = Substring
+
+    public func consuming(_ input: String, startingAt index: String.Index, in bounds: Range<String.Index>) throws -> (upperBound: String.Index, output: Substring)? {
+        // SwiftOnig works with byte offsets.
+        // We need to convert String.Index to byte offset.
+        let startOffset = input.distance(from: input.startIndex, to: index)
+        let endOffset = input.distance(from: input.startIndex, to: bounds.upperBound)
+        
+        guard let region = try self._firstMatch(in: input, of: startOffset..<endOffset, options: .none) else {
+            return nil
+        }
+        
+        let matchRange = region.range
+        // Ensure the match starts exactly at the requested index
+        guard matchRange.lowerBound == startOffset else {
+            return nil
+        }
+        
+        let matchEndIndex = input.index(input.startIndex, offsetBy: matchRange.upperBound)
+        return (matchEndIndex, input[index..<matchEndIndex])
+    }
     // MARK: Private members
 
     internal private(set) nonisolated(unsafe) var rawValue: OnigRegex!
@@ -142,17 +164,16 @@ final public class Regex: Sendable {
     
     // MARK: Match & Search
     
-    /**
-     Search the string and find the first matching region.
-     
-     If `str` conforms to `StringProtocol`, will search against the UTF-8 bytes of the string. Do not pass invalid bytes in the regular expression encoding.
-     - Parameters:
-         - str: Target string to search against.
-         - range: The range of bytes to search against. It will be clamped to the range of the whole string first.
-         - option: The regular expression search options.
-     - Returns: The first matching region if there is any, otherwise `nil`.
-     - Throws: `OnigError`
-     */
+    /// Searches the string and returns the first matching region.
+    ///
+    /// If `str` conforms to `StringProtocol`, the search is performed against the UTF-8 bytes of the string.
+    ///
+    /// - Parameters:
+    ///   - str: The target string to search against.
+    ///   - range: The range of bytes to search against.
+    ///   - options: The regular expression search options.
+    /// - Returns: The first matching region if found, otherwise `nil`.
+    /// - Throws: `OnigError` if the search fails.
     public func firstMatch<S, R>(in str: S, of range: R, options: SearchOptions = .none) throws -> Region? where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
         return try _firstMatch(in: str, of: range, options: options)
     }
