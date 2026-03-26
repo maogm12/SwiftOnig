@@ -1,40 +1,38 @@
-import XCTest
-@testable import SwiftOnig
+//
+//  SwiftOnigTestsBase.swift
+//  
+//
+//  Created by Gavin Mao on 4/12/21.
+//
 
-internal class SwiftOnigTestsBase: XCTestCase {
-    override class func setUp() {
-        try! SwiftOnig.initialize(encodings: [.utf8])
+import XCTest
+import SwiftOnig
+
+@OnigurumaActor
+class SwiftOnigTestsBase: XCTestCase {
+    override func setUp() async throws {
+        try await super.setUp()
+        try await SwiftOnig.initialize(encodings: [.utf8, .ascii, .utf16LittleEndian, .gb18030])
     }
     
-    override class func tearDown() {
-        SwiftOnig.uninitialize()
+    override func tearDown() async throws {
+        await uninitialize()
+        try await super.tearDown()
     }
 }
 
-extension XCTestCase {
-    internal func XCTAssertThrowsSpecific<T, E: Error & Equatable>(
-        _ expression: @autoclosure () throws -> T,
-        _ error: E,
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        var thrownError: Error?
-
-        XCTAssertThrowsError(try expression(),
-                             file: file, line: line) {
-            thrownError = $0
-        }
-
-        XCTAssertTrue(
-            thrownError is E,
-            "Unexpected error type: \(type(of: thrownError))",
-            file: file, line: line
-        )
-
-        XCTAssertEqual(
-            thrownError as? E, error,
-            file: file, line: line
-        )
+@OnigurumaActor
+func XCTAssertThrowsSpecific<E: Error & Equatable>(_ expression: @autoclosure () async throws -> Any?,
+                                                  _ expectedError: E,
+                                                  _ message: String = "",
+                                                  file: StaticString = #filePath,
+                                                  line: UInt = #line) async {
+    do {
+        _ = try await expression()
+        XCTFail("Expression did not throw", file: file, line: line)
+    } catch let error as E {
+        XCTAssertEqual(error, expectedError, message, file: file, line: line)
+    } catch {
+        XCTFail("Expression threw \(error) instead of \(expectedError)", file: file, line: line)
     }
 }
-

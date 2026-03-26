@@ -8,25 +8,34 @@
 import Foundation
 import SwiftOnig
 
-try! initialize(encodings: [.utf8])
-defer {
-    uninitialize()
-}
+Task {
+    do {
+        try await initialize(encodings: [.utf8])
+        
+        let pattern = #"a(.*)b|[e-f]+"#
+        let str = "zzzzaffffffffb"
 
-let pattern = #"a(.*)b|[e-f]+"#
-let str = "zzzzaffffffffb"
+        let regex = try await Regex(pattern: pattern)
 
-let regex = try! Regex(pattern: pattern)
-
-guard let region = try! regex.firstMatch(in: str) else {
-    print("No match")
-    exit(EXIT_SUCCESS)
-}
-    
-for (index, subRegion) in region.enumerated() {
-    guard let subRegion = subRegion else {
-        print("Capture \(index) ==> nil")
-        continue
+        guard let region = try regex.firstMatch(in: str) else {
+            print("No match")
+            exit(EXIT_SUCCESS)
+        }
+            
+        for (index, subRegion) in region.enumerated() {
+            guard let subRegion = subRegion else {
+                print("Capture \(index) ==> nil")
+                continue
+            }
+            print("Capture \(index) ==> range: \(subRegion.range), content: \(subRegion.string!))")
+        }
+        
+        await uninitialize()
+        exit(EXIT_SUCCESS)
+    } catch {
+        print("Error: \(error)")
+        exit(EXIT_FAILURE)
     }
-    print("Capture \(index) ==> range: \(subRegion.range), content: \(subRegion.string!))")
 }
+
+dispatchMain()

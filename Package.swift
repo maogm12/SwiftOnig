@@ -1,9 +1,12 @@
-// swift-tools-version:5.3
+// swift-tools-version:6.0
 
 import PackageDescription
 
 let package = Package(
     name: "SwiftOnig",
+    platforms: [
+        .macOS(.v10_15)
+    ],
     products: [
         .library(
             name: "SwiftOnig",
@@ -20,8 +23,15 @@ let package = Package(
                 .brew(["oniguruma"])
             ]),
         .target(
+            name: "OnigInternal",
+            dependencies: ["COnig"],
+            path: "Sources/OnigInternal"),
+        .target(
             name: "SwiftOnig",
-            dependencies: ["COnig"]),
+            dependencies: ["COnig", "OnigInternal"],
+            swiftSettings: [
+                .enableUpcomingFeature("StrictConcurrency")
+            ]),
         .testTarget(
             name: "SwiftOnigTests",
             dependencies: ["SwiftOnig"]),

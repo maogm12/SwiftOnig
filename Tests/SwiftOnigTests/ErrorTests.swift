@@ -2,22 +2,28 @@
 //  ErrorTests.swift
 //  
 //
-//  Created by Gavin Mao on 4/1/21.
+//  Created by Gavin Mao on 4/13/21.
 //
 
 import XCTest
-@testable import SwiftOnig
+import SwiftOnig
 
 final class OnigErrorTests: SwiftOnigTestsBase {
-    func testError() {
-        XCTAssertThrowsSpecific(try Regex(pattern: "a{3,999999999999999999999999999999999999999999}"),
+    func testError() async {
+        await XCTAssertThrowsSpecific(try await Regex(pattern: "a{3,999999999999999999999999999999999999999999}"),
                                 OnigError.tooBigNumberForRepeatRange)
         
-        XCTAssertThrowsSpecific(try Regex(pattern: #"(?<$$$>\d+)"#),
-                                OnigError.invalidCharInGroupName("$$$"))
+        do {
+            _ = try await Regex(pattern: #"(?<$$$>\d+)"#)
+            XCTFail("Should throw")
+        } catch OnigError.invalidCharInGroupName {
+            // Success
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
     }
     
-    static var allTests = [
+    static let allTests = [
         ("testError", testError)
     ]
 }

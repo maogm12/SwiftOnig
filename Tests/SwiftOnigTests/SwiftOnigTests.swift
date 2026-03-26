@@ -1,14 +1,24 @@
+//
+//  SwiftOnigTests.swift
+//  
+//
+//  Created by Gavin Mao on 4/12/21.
+//
+
 import XCTest
-@testable import SwiftOnig
+import SwiftOnig
 
 final class SwiftOnigTests: SwiftOnigTestsBase {
-    func testVersion() {
-        let ver = SwiftOnig.version()
-        XCTAssertFalse(ver.isEmpty)
-        print("Oniguruma version is \(ver)")
+    func testVersion() async {
+        XCTAssertFalse(SwiftOnig.version().isEmpty)
+    }
+    
+    func testCopyright() async {
+        XCTAssertFalse(SwiftOnig.copyright().isEmpty)
     }
 
-    static var allTests = [
+    static let allTests = [
         ("testVersion", testVersion),
+        ("testCopyright", testCopyright),
     ]
 }

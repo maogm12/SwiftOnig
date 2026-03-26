@@ -7,8 +7,8 @@
 
 import COnig
 
-public struct CaptureTreeNode {
-    let rawValue: OnigCaptureTreeNode
+public struct CaptureTreeNode: Sendable {
+    nonisolated(unsafe) let rawValue: OnigCaptureTreeNode
     
     /**
      The capture group number for this capture group.
@@ -30,7 +30,7 @@ extension CaptureTreeNode {
     /**
      A collection of children `CaptureTreeNode`.
      */
-    public struct ChildrenCollection: RandomAccessCollection {
+    public struct ChildrenCollection: RandomAccessCollection, Sendable {
         public let parent: CaptureTreeNode
 
         public typealias Index = Int
@@ -93,32 +93,39 @@ extension Region {
      - Parameters:
         - beforeTraversingChildren: the callback will be called before traversing children tree nodes.
         - afterTraversingChildren: the callback will be called after traversing children tree nodes.
-        - groupNumber: The group number of of the capture.
-        - bytesRange: The range of this capture.
-        - level: The level of the capture tree node.
      */
     public func enumerateCaptureTreeNodes(beforeTraversingChildren: @escaping (_ groupNumber: Int, _ bytesRange: Range<Int>, _ level: Int) -> Bool = { _,_,_ in true },
                                           afterTraversingChildren: @escaping (_ groupNumber: Int, _ bytesRange: Range<Int>, _ level: Int) -> Bool = { _,_,_ in true }) {
         typealias CallbackType = (Int, Range<Int>, Int) -> Bool
-        var callbackRef = (beforeTraversingChildren, afterTraversingChildren)
+        
+        class Context {
+            let before: CallbackType
+            let after: CallbackType
+            init(before: @escaping CallbackType, after: @escaping CallbackType) {
+                self.before = before
+                self.after = after
+            }
+        }
+        
+        let context = Context(before: beforeTraversingChildren, after: afterTraversingChildren)
+        let contextPtr = Unmanaged.passUnretained(context).toOpaque()
 
         onig_capture_tree_traverse(self.rawValue, ONIG_TRAVERSE_CALLBACK_AT_BOTH, { (groupNumber, start, end, level, at, refPtr) -> Int32 in
-            guard let (beforeChildren, afterChildren) = refPtr?.assumingMemoryBound(to: (CallbackType, CallbackType).self).pointee else {
-                fatalError("Failed to get callbacks")
-            }
+            guard let refPtr = refPtr else { return ONIG_NORMAL }
+            let context = Unmanaged<Context>.fromOpaque(refPtr).takeUnretainedValue()
 
             var shouldContinue = false
             switch at {
             case ONIG_TRAVERSE_CALLBACK_AT_FIRST:
-                shouldContinue = beforeChildren(Int(groupNumber), Int(start) ..< Int(end), Int(level))
+                shouldContinue = context.before(Int(groupNumber), Int(start) ..< Int(end), Int(level))
             case ONIG_TRAVERSE_CALLBACK_AT_LAST:
-                shouldContinue = afterChildren(Int(groupNumber), Int(start) ..< Int(end), Int(level))
+                shouldContinue = context.after(Int(groupNumber), Int(start) ..< Int(end), Int(level))
             default:
                 // Unexpected position, just go on
                 shouldContinue = true
             }
             
             return shouldContinue ? ONIG_NORMAL : ONIG_ABORT
-        }, &callbackRef)
+        }, contextPtr)
     }
 }

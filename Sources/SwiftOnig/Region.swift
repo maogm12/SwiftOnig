@@ -20,19 +20,19 @@ import COnig
  - `onig_region_resize`
  - `onig_region_set`
  */
-public class Region {
+public final class Region: Sendable {
     internal typealias OnigRegionPointer = UnsafeMutablePointer<OnigRegion>
-    internal var rawValue: OnigRegionPointer!
+    internal nonisolated(unsafe) var rawValue: OnigRegionPointer!
     
     /**
      The regular expression used in match operation.
      */
-    internal var regex: Regex
+    internal let regex: Regex
 
     /**
      The string matched against.
      */
-    internal var str: OnigurumaString
+    internal let str: OnigurumaString
 
     // MARK: init and deinit
     
@@ -185,7 +185,7 @@ extension Region: RandomAccessCollection {
      Get the subregions of named capture groups with the specified name. Only groups participating match will be included in the result.
      */
     public subscript(name: OnigurumaString) -> [Subregion] {
-        self.regex.captureGroupNumbers(of: name)
+        self.regex.captureGroupNumbers(for: String(describing: name))
             .filter { self._isGroupActive(groupNumber: $0) }
             .map { Subregion(region: self, groupNumber: $0) }
     }

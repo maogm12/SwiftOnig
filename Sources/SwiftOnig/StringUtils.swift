@@ -8,7 +8,7 @@
 import COnig
 import Foundation
 
-public protocol OnigurumaString {
+public protocol OnigurumaString: Sendable {
     /**
      Call `body(start, count)` with underlying `OnigUChar` bytes, where `start` is a begining address of the bytes,`count`is the count of bytes.
      
@@ -81,10 +81,6 @@ extension Array : OnigurumaString where Element == UInt8 { }
 extension ArraySlice : OnigurumaString where Element == UInt8 { }
 
 extension ContiguousArray : OnigurumaString where Element == UInt8 { }
-
-extension UnsafeBufferPointer : OnigurumaString where Element == UInt8 { }
-
-extension UnsafeMutableBufferPointer : OnigurumaString where Element == UInt8 { }
 
 extension CollectionOfOne : OnigurumaString where Element == UInt8 { }
 

@@ -1,0 +1,64 @@
+# SwiftOnig Modernization Plan
+
+This document outlines the strategy for modernizing the `SwiftOnig` library to align with modern Swift standards (Swift 6.0+) and best practices.
+
+## 1. Current Implementation Review (The "Bad" Parts)
+The current implementation, while functional, suffers from several architectural and stylistic issues that hinder its usability in modern Swift environments:
+
+*   **Outdated Synchronization**: Uses a global `onigQueue: DispatchQueue` for thread safety. This is a "stop-the-world" approach that doesn't scale well with modern Swift Concurrency (`async/await`, `Task`, `Actors`).
+*   **C-Centric API Naming**: Many methods mirror the underlying `oniguruma` C functions (e.g., `matchedByteCount`, `isMatch`, `firstIndex`). These don't follow the [Swift API Design Guidelines](https://swift.org/documentation/api-design-guidelines/) (e.g., "prefer `matches` over `isMatch`").
+*   **Manual Memory Management**: Relies heavily on manual `init`/`deinit` cycles with raw pointers. While necessary for C-interop, it lacks higher-level Swift abstractions like `ManagedBuffer` to ensure memory safety and simplify the codebase.
+*   **Complex String Handling**: The `OnigurumaString` protocol and its `withOnigurumaString` implementation are verbose and could be simplified using modern Swift's `withUnsafeBytes` and `ContiguousBytes`.
+*   **Lack of Concurrency Support**: Core types like `Regex` and `Region` are not `Sendable`, making them difficult and unsafe to pass between concurrent tasks without manual synchronization.
+
+## 2. Clean Slate Approach (What I'd do from scratch)
+If rebuilding `SwiftOnig` today, the architecture would focus on being a "Swift-first" wrapper:
+
+*   **Synchronization**: Replace `DispatchQueue` with `Mutex` (Swift 6.0+) for low-level pointer access and `Actors` for high-level library state management (e.g., a `GlobalActor` for `onig_initialize`).
+*   **Concurrency**: Ensure all public-facing types conform to `Sendable`. Provide `async` versions of long-running operations (like `scan` or complex searches) to keep the calling thread responsive.
+*   **API Design**: Strictly follow Swift conventions. Use `some` and `any` types for better abstraction. Provide a `RegexBuilder` DSL implementation by conforming to `RegexComponent`.
+*   **Memory Safety**: Wrap all C pointers (`OnigRegex`, `OnigRegion`) in dedicated, private Swift classes or `ManagedBuffer` instances that handle their own lifecycle safely.
+*   **Collection Conformance**: Implement `RandomAccessCollection` for `Region` with a modern `Index` type, allowing for idiomatic Swift collection manipulations.
+*   **Modern Testing**: Use the new `Testing` framework (Swift 6.0+) for clearer, more expressive unit tests and better integration with Xcode's testing tools.
+
+## 3. Infrastructure & Tooling Upgrade
+- [ ] **Swift Version**: Update `Package.swift` to `swift-tools-version:6.0`.
+- [ ] **Strict Concurrency**: Enable `.enableUpcomingFeature("StrictConcurrency")` in `Package.swift`.
+- [ ] **SwiftLint/SwiftFormat**: Integrate automated linting and formatting.
+- [ ] **CI/CD**: Ensure GitHub Actions test on macOS and Linux with the latest Swift toolchain.
+
+## 4. Swift Concurrency & Thread Safety
+- [ ] **Global Synchronization**: Replace `onigQueue` with `Mutex` or a `GlobalActor`.
+- [ ] **Sendable Conformance**: Make `Regex`, `Syntax`, `Encoding`, and `Region` `Sendable`.
+- [ ] **Async APIs**: Introduce `async` versions of search and scan operations.
+
+## 5. API Modernization
+- [ ] **Naming Conventions**: Audit and rename public APIs (e.g., `isMatch` -> `matches(_:)`).
+- [ ] **Opaque Types**: Use `some` and `any` keywords where appropriate.
+- [ ] **Result & Error Handling**: Refine `OnigError` for better diagnostics.
+- [ ] **Collection Conformance**: Modernize `Region` collection conformance.
+
+## 6. Standard Library Integration
+- [ ] **Swift `Regex` Interop**: Explore bridging to `Swift.Regex`.
+- [ ] **Regex Builder**: Implement `RegexComponent` support.
+
+## 7. Porting Oniguruma Official Tests
+- [ ] **Testing DSL**: Create a Swift-based DSL (using `swift-testing`) that mirrors Oniguruma's C macros (`x2`, `x3`, `n`, `e`) for concise test definitions.
+- [ ] **Test Suites**: Port the following suites from the official Oniguruma repository:
+    - `test_utf8.c`: Comprehensive UTF-8 and regex feature tests.
+    - `test_syntax.c`: Different syntax modes and edge cases.
+    - `test_options.c`: Regex compilation and search options.
+    - `test_back.c`: Backtracking and recursion tests.
+- [ ] **Validation**: Ensure all ported tests pass against the modernized `SwiftOnig` implementation.
+
+## 8. Documentation & Quality
+- [ ] **DocC Integration**: Convert comments to DocC and add high-level articles.
+- [ ] **Unit Tests**: Migrate to or add tests using the new `Testing` framework.
+- [ ] **Benchmarks**: Implement performance benchmarks.
+
+## 9. Execution Strategy
+1. **Phase 1: Foundation**: Upgrade `Package.swift`, enable strict concurrency, and fix immediate compiler warnings.
+2. **Phase 2: Concurrency**: Implement `Sendable` and modern synchronization.
+3. **Phase 3: Refinement**: Rename APIs and improve collection conformances.
+4. **Phase 4: Ecosystem**: Add DocC, `RegexBuilder` support, and `swift-testing`.
+5. **Phase 5: Porting Tests**: Implement the testing DSL and port the Oniguruma test suites.

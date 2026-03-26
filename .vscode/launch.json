@@ -1,0 +1,84 @@
+{
+    "configurations": [
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:SwiftOnig}",
+            "name": "Debug simple",
+            "target": "simple",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug simple"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:SwiftOnig}",
+            "name": "Release simple",
+            "target": "simple",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release simple"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:SwiftOnig}",
+            "name": "Debug scan",
+            "target": "scan",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug scan"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:SwiftOnig}",
+            "name": "Release scan",
+            "target": "scan",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release scan"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:SwiftOnig}",
+            "name": "Debug names",
+            "target": "names",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug names"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:SwiftOnig}",
+            "name": "Release names",
+            "target": "names",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release names"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:SwiftOnig}",
+            "name": "Debug listcap",
+            "target": "listcap",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug listcap"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:SwiftOnig}",
+            "name": "Release listcap",
+            "target": "listcap",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release listcap"
+        }
+    ]
+}

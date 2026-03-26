@@ -22,9 +22,9 @@ import COnig
  - `onig_regset_add`: not exposed.
  - `onig_regset_replace`: not exposed.
  */
-final public class RegexSet {
+final public class RegexSet: Sendable {
     internal typealias OnigRegSet = OpaquePointer
-    internal private(set) var rawValue: OnigRegSet!
+    internal private(set) nonisolated(unsafe) var rawValue: OnigRegSet!
     
     /// Cached `Regex` objects
     private let regexes: [Regex]
@@ -61,16 +61,20 @@ final public class RegexSet {
      - Parameters:
          - patterns: Patterns used to create these regular expressions.
          - option: Options used to create these regular expressions.
-         - syntax: Syntax used to create these regular expressions.
+         - syntax: Syntax used to create these regular expressions. If `nil`, `Syntax.default` will be used.
      - Throws: `OnigError`
      */
+    @OnigurumaActor
     public init<S, P>(patterns: S,
                    options: Regex.Options = .none,
-                   syntax: Syntax = .default
-    ) throws where S: Sequence, S.Element == P, P: StringProtocol {
-        self.regexes = try patterns.map { try Regex(pattern: $0,
-                                                    options: options,
-                                                    syntax: syntax) }
+                   syntax: Syntax? = nil
+    ) async throws where S: Sequence, S.Element == P, P: StringProtocol {
+        var regexes = [Regex]()
+        for pattern in patterns {
+            regexes.append(try await Regex(pattern: pattern, options: options, syntax: syntax))
+        }
+        self.regexes = regexes
+        
         onig_regset_new(&self.rawValue, 0, nil)
         for reg in self.regexes {
             do {
@@ -91,18 +95,21 @@ final public class RegexSet {
          - patterns: Patterns used to create these regular expressions.
          - encoding: Encoding used to create these regular expressions.
          - option: Options used to create these regular expressions.
-         - syntax: Syntax used to create these regular expressions.
+         - syntax: Syntax used to create these regular expressions. If `nil`, `Syntax.default` will be used.
      - Throws: `OnigError`
      */
+    @OnigurumaActor
     public init<S, P>(patternsBytes: S,
                    encoding: Encoding,
                    options: Regex.Options = .none,
-                   syntax: Syntax = .default
-    ) throws where S: Sequence, S.Element == P, P: Sequence, P.Element == UInt8 {
-        self.regexes = try patternsBytes.map { try Regex(patternBytes: $0,
-                                                         encoding: encoding,
-                                                         options: options,
-                                                         syntax: syntax) }
+                   syntax: Syntax? = nil
+    ) async throws where S: Sequence, S.Element == P, P: Sequence, P.Element == UInt8 {
+        var regexes = [Regex]()
+        for patternBytes in patternsBytes {
+            regexes.append(try await Regex(patternBytes: patternBytes, encoding: encoding, options: options, syntax: syntax))
+        }
+        self.regexes = regexes
+        
         onig_regset_new(&self.rawValue, 0, nil)
         for reg in self.regexes {
             do {

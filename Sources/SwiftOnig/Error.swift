@@ -6,8 +6,9 @@
 //
 
 import COnig
+import Foundation
 
-public enum OnigError: Error, Equatable {
+public enum OnigError: Error, Equatable, Sendable {
     /* internal error */
     case memory
     case typeBug
@@ -425,7 +426,7 @@ extension OnigError {
     }
 }
 
-extension OnigErrorInfo: CustomStringConvertible {
+extension OnigErrorInfo: @retroactive CustomStringConvertible {
     /**
      Get the content of this `OnigErrorInfo`.
      - Returns: A string if the encoding is supposted by swfit string. Otherwise an array of raw bytes.
@@ -436,7 +437,10 @@ extension OnigErrorInfo: CustomStringConvertible {
         }
 
         let encoding = Encoding(rawValue: self.enc)
-        let buf = UnsafeBufferPointer(start: self.par, count: self.par.distance(to: self.par_end))
-        return String(bytes: buf, encoding: encoding.stringEncoding) ?? Array(buf).description
+        let count = self.par.distance(to: self.par_end)
+        let buf = UnsafeBufferPointer(start: self.par, count: count)
+        // Copy bytes to ensure they are not lost if the underlying buffer is freed
+        let bytes = Array(buf)
+        return String(bytes: bytes, encoding: encoding.stringEncoding) ?? bytes.description
     }
 }

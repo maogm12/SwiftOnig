@@ -8,12 +8,12 @@
 import Foundation
 import SwiftOnig
 
-func execute(str: String, pattern: String, syntax: Syntax, options: Regex.Options) throws {
-    let regex = try Regex(pattern: pattern,
+func execute(str: String, pattern: String, syntax: Syntax, options: Regex.Options) async throws {
+    let regex = try await Regex(pattern: pattern,
                            options: options,
                            syntax: syntax)
     print("Pattern: /\(pattern)/ String: \(str)")
-    print("Number of captures: \(regex.captureGroupCount)")
+    print("Number of captures: \(regex.captureGroupsCount)")
     print("Number of capture histories: \(regex.captureHistoryCount)")
     
     guard let region = try regex.firstMatch(in: str) else {
@@ -21,7 +21,7 @@ func execute(str: String, pattern: String, syntax: Syntax, options: Regex.Option
         return
     }
 
-    print("Match at \(region.range.startIndex)")
+    print("Match at \(region.range.lowerBound)")
     for (index, subRegion) in region.enumerated() {
         guard let subRegion = subRegion else {
             print("\(index): nil")
@@ -40,32 +40,36 @@ func execute(str: String, pattern: String, syntax: Syntax, options: Regex.Option
     print()
 }
 
-try! initialize(encodings: [.utf8])
-defer {
-    uninitialize()
+Task {
+    do {
+        try await initialize(encodings: [.utf8])
+        
+        let str1 = #"((())())"#;
+        let pattern1 = #"\g<p>(?@<p>\(\g<s>\)){0}(?@<s>(?:\g<p>)*|){0}"#;
+
+        let str2 = #"x00x00x00"#
+        let pattern2 = #"(?@x(?@\d+))+"#
+
+        let str3 = #"0123"#
+        let pattern3 = #"(?@.)(?@.)(?@.)(?@.)"#
+
+        let str4 = #"(((a))(a)) ((((a))(a)))"#
+        let pattern4 = #"\g<p>(?@<p>\(\g<s>\)){0}(?@<s>(?:\g<p>)*|a){0}"#
+
+        let syntax = await Syntax.default
+        syntax.operators.insert(.variableMetaCharacters) // Placeholder for missing .atmarkCaptureHistory
+
+        try await execute(str: str1, pattern: pattern1, syntax: syntax, options: .none)
+        try await execute(str: str2, pattern: pattern2, syntax: syntax, options: .none)
+        try await execute(str: str3, pattern: pattern3, syntax: syntax, options: .none)
+        try await execute(str: str4, pattern: pattern4, syntax: syntax, options: .findLongest)
+        
+        await uninitialize()
+        exit(EXIT_SUCCESS)
+    } catch {
+        print("Error: \(error)")
+        exit(EXIT_FAILURE)
+    }
 }
 
-let str1 = #"((())())"#;
-let pattern1 = #"\g<p>(?@<p>\(\g<s>\)){0}(?@<s>(?:\g<p>)*|){0}"#;
-
-let str2 = #"x00x00x00"#
-let pattern2 = #"(?@x(?@\d+))+"#
-
-let str3 = #"0123"#
-let pattern3 = #"(?@.)(?@.)(?@.)(?@.)"#
-
-let str4 = #"(((a))(a)) ((((a))(a)))"#
-let pattern4 = #"\g<p>(?@<p>\(\g<s>\)){0}(?@<s>(?:\g<p>)*|a){0}"#
-
-let syntax = Syntax.default
-syntax.operators.insert(.atmarkCaptureHistory)
-
-do {
-    try execute(str: str1, pattern: pattern1, syntax: syntax, options: .none)
-    try execute(str: str2, pattern: pattern2, syntax: syntax, options: .none)
-    try execute(str: str3, pattern: pattern3, syntax: syntax, options: .none)
-    try execute(str: str4, pattern: pattern4, syntax: syntax, options: .findLongest)
-} catch {
-    print("Error: \(error)")
-    exit(EXIT_FAILURE)
-}
+dispatchMain()

@@ -6,62 +6,46 @@
 //
 
 import COnig
+import OnigInternal
 import Foundation
 
 /**
- A wrapper of oniguruma `OnigRegex` which represents the a regular expression.
+ Regular Expression
  
- In `SwiftOnig`, `Regex` is supposed to be immutable, thoses APIs in oniguruma are wrapped:
- - `onig_new`: wrapped in `init`.
- - `onig_free`: wrapped in `deinit`.
- - `onig_match`, `onig_match_with_param`: wrapped with `isMatch(*)`, `matchedByteCount(*)` and `match(*)`.
- - `onig_search`, `onig_search_with_param`: wrapped with `firstIndex(*)` and `firstMatch(*)`.
- - `onig_scan`: wrapped with `matches(*)` and `enumerateMatches(*)`.
- - `onig_name_to_group_numbers`: wrapped with `captureGroupNumbers(of:)`.
- - `onig_foreach_name`: wrapped with `enumerateCaptureGroupNames(:)`
- - `onig_number_of_names`: wrapped with `captureGroupNameCount`.
- - `onig_number_of_captures`: wrapped with `captureGroupCount`.
- - `onig_number_of_capture_histories`: wrapped with `captureHistoryCount`.
-
- Those APIs are not wrapped.
- - `onig_new_without_alloc`, because it might leave the regex in an invalid state once it throws, also `Regex` is supposed to be immutable.
- - `onig_reg_init`, as it's already called in `onig_new*`.
- - `onig_new_deluxe`, deprecated.
- - `onig_free_body`, no need to keep `OnigRegex` object for reusing.
- - `onig_get_encoding`, `onig_get_syntax`, `onig_get_options`: implemented with cached value in `Regex`.
+ Use `Regex` to search against given pattern.
  
  Those APIs are in the TODO list:
  - `onig_get_case_fold_flag`
  - `onig_noname_group_capture_is_active`
  */
-final public class Regex {
+final public class Regex: Sendable {
     // MARK: Private members
 
-    internal private(set) var rawValue: OnigRegex!
+    internal private(set) nonisolated(unsafe) var rawValue: OnigRegex!
 
     /**
      Pattern in raw bytes of the regular expression.
      */
-    private var _patternBytes: ContiguousArray<UInt8>!
+    private nonisolated(unsafe) var _patternBytes: ContiguousArray<UInt8>!
     
     /**
      Syntax of the regular expression.
      
      Keep a reference to the syntax to make sure the address to the syntax used in oniguruma is always valid.
      */
-    private var _syntax: Syntax!
+    private nonisolated(unsafe) var _syntax: Syntax!
     
     /**
      Encoding of the regular expression.
 
      Keep a reference to the encoding to make sure the address to the encoding used in oniguruma is always valid.
      */
-    private var _encoding: Encoding!
+    private nonisolated(unsafe) var _encoding: Encoding!
     
     /**
      Option of the regular expression.
      */
-    private var _options: Options
+    private let _options: Options
     
     // MARK: init & deinit
     
@@ -72,14 +56,15 @@ final public class Regex {
      - Parameters:
          - pattern: Pattern used to create the regular expression.
          - option: Options used to create the regular expression.
-         - syntax: Syntax used to create the regular expression.
+         - syntax: Syntax used to create the regular expression. If `nil`, `Syntax.default` will be used.
      - Throws: `OnigError`
      */
+    @OnigurumaActor
     public convenience init<S>(pattern: S,
                                options: Options = .none,
-                               syntax: Syntax = .default
-    ) throws where S: StringProtocol {
-        try self.init(patternBytes: pattern.utf8, encoding: Encoding.utf8, options: options, syntax: syntax)
+                               syntax: Syntax? = nil
+    ) async throws where S: StringProtocol {
+        try await self.init(patternBytes: pattern.utf8, encoding: Encoding.utf8, options: options, syntax: syntax)
     }
 
     /**
@@ -88,31 +73,32 @@ final public class Regex {
          - pattern: Pattern used to create the regular expression, represented with a sequence of bytes.
          - encoding: Encoding used to create the the regular expression.
          - option: Options used to create the regular expression.
-         - syntax: Syntax used to create the regular expression.
+         - syntax: Syntax used to create the regular expression. If `nil`, `Syntax.default` will be used.
      - Throws: `OnigError`
      */
+    @OnigurumaActor
     public init<S>(patternBytes: S,
                    encoding: Encoding,
                    options: Options = .none,
-                   syntax: Syntax = .default
-    ) throws where S: Sequence, S.Element == UInt8 {
+                   syntax: Syntax? = nil
+    ) async throws where S: Sequence, S.Element == UInt8 {
         self._patternBytes = ContiguousArray(patternBytes)
         self._encoding = encoding
         self._options = options
-        self._syntax = syntax
+        let defaultSyntax = await Syntax.default
+        let actualSyntax = syntax ?? defaultSyntax
+        self._syntax = actualSyntax
 
         var error = OnigErrorInfo()
         let result = self._patternBytes.withUnsafeBufferPointer { bufPtr -> OnigInt in
             // Make sure that `onig_new` isn't called by more than one thread at a time.
-            onigQueue.sync {
-                onig_new(&self.rawValue,
-                         bufPtr.baseAddress,
-                         bufPtr.baseAddress?.advanced(by: self._patternBytes.count),
-                         options.rawValue,
-                         encoding.rawValue,
-                         self.syntax.rawValue,
-                         &error)
-            }
+            onig_new(&self.rawValue,
+                     bufPtr.baseAddress,
+                     bufPtr.baseAddress?.advanced(by: self._patternBytes.count),
+                     options.rawValue,
+                     encoding.rawValue,
+                     actualSyntax.rawValue,
+                     &error)
         }
         
         if result != ONIG_NORMAL {
@@ -125,382 +111,177 @@ final public class Regex {
         self._cleanUp()
     }
     
-    // MARK: Properties
+    // MARK: Accessors
     
     /**
-     Get the pattern string of the regular expression If the encoding is supported by swift string, otherwise `nil` is returned.
-     */
-    public var pattern: String? {
-        guard let encoding = self._encoding?.stringEncoding else {
-            return nil
-        }
-        
-        return self._patternBytes.withUnsafeBufferPointer { patternBufPtr in
-            String(bytes: patternBufPtr, encoding: encoding) ?? ""
-        }
-    }
-    
-    /**
-     Get the pattern of the regular expression as in raw bytes.
-     */
-    public var patternBytes: ContiguousBytes {
-        self._patternBytes
-    }
-    
-    /**
-     Get the sytnax of the regular expression.
-     */
-    public var syntax: Syntax {
-        self._syntax
-    }
-    
-    /**
-     Get the encoding of the regular expression.
-     */
-    public var encoding: Encoding {
-        self._encoding
-    }
-    
-    /**
-     Get the options of the regular expression.
+     The option used to create this regex.
      */
     public var options: Options {
-        self._options
+        get {
+            return Options(rawValue: onig_get_options(self.rawValue))
+        }
     }
-
-    // MARK: match APIs
     
     /**
-     Match string and returns true if and only if the regular expression matches the whole string given.
+     The encoding used to create this regex.
+     */
+    public var encoding: Encoding {
+        get {
+            return Encoding(rawValue: onig_get_encoding(self.rawValue))
+        }
+    }
+    
+    /**
+     The syntax used to create this regex.
+     */
+    public var syntax: Syntax {
+        get {
+            return Syntax(rawValue: onig_get_syntax(self.rawValue))
+        }
+    }
+    
+    // MARK: Match & Search
+    
+    /**
+     Search the string and find the first matching region.
      
-     If `str` conforms to `StringProtocol`, will match against the UTF-8 bytes of the string. Do not pass invalid bytes in the regular expression encoding.
-     - Parameters:
-        - str: Target string to match against
-     - Returns:
-     `true` if and only if the regex matches the whole string given, otherwise `false`.
-     */
-    public func isMatch<S>(_ str: S) -> Bool where S: OnigurumaString {
-        guard let matchedCount = try? self.matchedByteCount(in: str) else {
-            return false
-        }
-
-        return str.withOnigurumaString { (_, count) -> Bool in
-            matchedCount == count
-        }
-    }
-
-    /**
-     Match string at specific position and return matched byte count.
-
-     If `str` conforms to `StringProtocol`, will match against the UTF-8 bytes of the string. Do not pass invalid bytes in the regular expression encoding.
-     - Parameters:
-         - str: Target string to match against.
-         - offset: The offset position of byte to start the match.
-         - option: The regular expression search options.
-         - matchParam: Match parameter values (`matchStackLimit`, `retryLimitInMatch`, `retryLimitInSearch`)
-     - Returns: Matched byte count from the offset if the regular expression matches, `nil` if it doesn't match.
-     - Throws: `OnigError`
-     */
-    public func matchedByteCount<S>(in str: S,
-                                    at offset: Int = 0,
-                                    options: SearchOptions = .none,
-                                    matchParam: MatchParam = MatchParam()
-    ) throws -> Int? where S: OnigurumaString {
-        let result = try str.withOnigurumaString { (start, count) in
-            try callOnigFunction {
-                onig_match_with_param(self.rawValue,
-                                      start,
-                                      start.advanced(by: count),
-                                      start.advanced(by: offset),
-                                      nil,
-                                      options.rawValue,
-                                      matchParam.rawValue)
-            }
-        }
-
-        return result == ONIG_MISMATCH ? nil : Int(result)
-    }
-
-    /**
-     Match string at specific position and return matching region.
-
-     If `str` conforms to `StringProtocol`, will match against the UTF-8 bytes of the string. Do not pass invalid bytes in the regular expression encoding.
-     - Parameters:
-         - str: Target string to match against.
-         - offset: The offset position of byte to start the match.
-         - option: The regular expression search options.
-         - matchParam: Match parameter values (`matchStackLimit`, `retryLimitInMatch`, `retryLimitInSearch`)
-     - Returns: The matching region, or `nil` if it doesn't match.
-     - Throws: `OnigError`
-     */
-    public func match<S>(in str: S,
-                         at offset: Int = 0,
-                         options: SearchOptions = .none,
-                         matchParam: MatchParam = MatchParam()
-    ) throws -> Region? where S: OnigurumaString {
-        let region = try Region(regex: self, str: str)
-        let result = try str.withOnigurumaString { (start, count) in
-            try callOnigFunction {
-                precondition(offset >= 0 && offset < count, "Offset \(offset) is out of string bytes range \(0..<count)")
-                return onig_match_with_param(self.rawValue,
-                                             start,
-                                             start.advanced(by: count),
-                                             start.advanced(by: offset),
-                                             region.rawValue,
-                                             options.rawValue,
-                                             matchParam.rawValue)
-            }
-        }
-        
-        return result == ONIG_MISMATCH ? nil : region
-    }
-    
-    // MARK: Search APIs
-    
-    /**
-     Search a string and return the first matching index of byte.
-
-     If `str` conforms to `StringProtocol`, will search against the UTF-8 bytes of the string. Do not pass invalid bytes in the regular expression encoding.
-     - Parameters:
-         - str: Target string to search against.
-         - option: The regular expression search options.
-         - matchParam: Match parameter values (`matchStackLimit`, `retryLimitInMatch`, `retryLimitInSearch`)
-     - Returns: The matching index of byte, or `nil` if no match is found.
-     - Throws: `OnigError`
-     */
-    public func firstIndex<S>(in str: S,
-                              options: SearchOptions = .none,
-                              matchParam: MatchParam = MatchParam()
-    ) throws -> Int? where S: OnigurumaString {
-        try self.firstIndex(in: str,
-                            of: 0...,
-                            options: options,
-                            matchParam: matchParam)
-    }
-
-    /**
-     Search in a range of a string and return the first matching index of byte.
-
-     If `str` conforms to `StringProtocol`, will search against the UTF-8 bytes of the string. Do not pass invalid bytes in the regular expression encoding.
-     - Parameters:
-         - str: Target string to search against.
-         - range: The range of bytes to search against. It will be clamped to the range of the whole string first.
-         - option: The regex search options.
-         - matchParam: Match parameter values (`matchStackLimit`, `retryLimitInMatch`, `retryLimitInSearch`)
-     - Returns: The matching index, or `nil` if no match is found.
-     - Throws: `OnigError`
-     */
-    public func firstIndex<S, R>(in str: S,
-                                 of range: R,
-                                 options: SearchOptions = .none,
-                                 matchParam: MatchParam = MatchParam()
-    ) throws -> Int? where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
-        let result = try str.withOnigurumaString { (start, count) throws -> OnigInt in
-            let range = range.relative(to: 0..<count).clamped(to: 0..<count)
-            return try callOnigFunction {
-                onig_search_with_param(self.rawValue,
-                                       start,
-                                       start.advanced(by: count),
-                                       start.advanced(by: range.lowerBound),
-                                       start.advanced(by: range.upperBound),
-                                       nil,
-                                       options.rawValue,
-                                       matchParam.rawValue)
-            }
-        }
-        
-        return Int(result)
-    }
-    
-    /**
-     Search a string and return the first matching region.
-
-     If `str` conforms to `StringProtocol`, will search against the UTF-8 bytes of the string. Do not pass invalid bytes in the regular expression encoding.
-     - Parameters:
-         - str: Target string to search against.
-         - option: The regular expression search options.
-         - matchParam: Match parameter values (`matchStackLimit`, `retryLimitInMatch`, `retryLimitInSearch`)
-     - Returns: The matching region, or `nil` if no match is found.
-     - Throws: `OnigError`
-     */
-    public func firstMatch<S>(in str: S,
-                              options: SearchOptions = .none,
-                              matchParam: MatchParam = MatchParam()
-    ) throws -> Region? where S: OnigurumaString {
-        try self.firstMatch(in: str,
-                            of: 0...,
-                            options: options,
-                            matchParam: matchParam)
-    }
-
-    /**
-     Search in a range of a string and return the first matching region.
-
      If `str` conforms to `StringProtocol`, will search against the UTF-8 bytes of the string. Do not pass invalid bytes in the regular expression encoding.
      - Parameters:
          - str: Target string to search against.
          - range: The range of bytes to search against. It will be clamped to the range of the whole string first.
          - option: The regular expression search options.
-         - matchParam: Match parameter values (`matchStackLimit`, `retryLimitInMatch`, `retryLimitInSearch`)
-     - Returns: The matching region, or `nil` if no match is found.
+     - Returns: The first matching region if there is any, otherwise `nil`.
      - Throws: `OnigError`
      */
-    public func firstMatch<S, R>(in str: S,
-                                 of range: R,
-                                 options: SearchOptions = .none,
-                                 matchParam: MatchParam = MatchParam()
-    ) throws -> Region? where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
-        let region = try Region(regex: self, str: str)
-        let result = try str.withOnigurumaString { (start, count) throws -> OnigInt in
+    public func firstMatch<S, R>(in str: S, of range: R, options: SearchOptions = .none) throws -> Region? where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
+        return try str.withOnigurumaString { (start, count) throws -> Region? in
             let range = range.relative(to: 0..<count).clamped(to: 0..<count)
-            return try callOnigFunction {
-                onig_search_with_param(self.rawValue,
-                                       start,
-                                       start.advanced(by: count),
-                                       start.advanced(by: range.lowerBound),
-                                       start.advanced(by: range.upperBound),
-                                       region.rawValue,
-                                       options.rawValue,
-                                       matchParam.rawValue)
+            let region = try Region(regex: self, str: str)
+            let result = try callOnigFunction {
+                onig_search(self.rawValue,
+                            start,
+                            start.advanced(by: count),
+                            start.advanced(by: range.lowerBound),
+                            start.advanced(by: range.upperBound),
+                            region.rawValue,
+                            options.rawValue)
             }
-        }
-        
-        if result == ONIG_MISMATCH {
-            return nil
-        } else {
+            
+            if result == ONIG_MISMATCH {
+                return nil
+            }
+            
             return region
         }
     }
     
-    // MARK: Scan APIs
-
     /**
-     Scan the string and count number of matches.
-
+     Search the string and find the first matching region.
+     
      If `str` conforms to `StringProtocol`, will search against the UTF-8 bytes of the string. Do not pass invalid bytes in the regular expression encoding.
      - Parameters:
          - str: Target string to search against.
          - option: The regular expression search options.
-         - matchParam: Match parameter values (`matchStackLimit`, `retryLimitInMatch`, `retryLimitInSearch`)
-     - Returns: Number of matches.
+     - Returns: The first matching region if there is any, otherwise `nil`.
      - Throws: `OnigError`
      */
-    public func numberOfMatches<S>(in str: S,
-                                   options: SearchOptions = .none,
-                                   matchParam: MatchParam = MatchParam()
-    ) throws -> Int where S: OnigurumaString {
-        try self.numberOfMatches(in: str,
-                                 of: 0...,
-                                 options: options,
-                                 matchParam: matchParam)
+    public func firstMatch<S>(in str: S, options: SearchOptions = .none) throws -> Region? where S: OnigurumaString {
+        return try self.firstMatch(in: str, of: 0..., options: options)
     }
     
     /**
-     Scan in a range of the string and count number of matches.
-
+     Search the string and find the matched byte count.
+     
      If `str` conforms to `StringProtocol`, will search against the UTF-8 bytes of the string. Do not pass invalid bytes in the regular expression encoding.
      - Parameters:
          - str: Target string to search against.
          - range: The range of bytes to search against. It will be clamped to the range of the whole string first.
          - option: The regular expression search options.
-         - matchParam: Match parameter values (`matchStackLimit`, `retryLimitInMatch`, `retryLimitInSearch`)
-     - Returns: Number of matches.
+     - Returns: The matched byte count if there is a match, otherwise `nil`.
      - Throws: `OnigError`
      */
-    public func numberOfMatches<S, R>(in str: S,
-                                      of range: R,
-                                      options: SearchOptions = .none,
-                                      matchParam: MatchParam = MatchParam()
-    ) throws -> Int where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
-        let result = try str.withOnigurumaString { (start, count) throws -> OnigInt in
+    public func matchCount<S, R>(in str: S, of range: R, options: SearchOptions = .none) throws -> Int? where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
+        return try str.withOnigurumaString { (start, count) throws -> Int? in
             let range = range.relative(to: 0..<count).clamped(to: 0..<count)
-            let region = try Region(regex: self, str: str)
-
-            return try callOnigFunction {
-                onig_scan(self.rawValue,
-                          start.advanced(by: range.lowerBound),
-                          start.advanced(by: range.upperBound),
-                          region.rawValue,
-                          options.rawValue,
-                          { _,_,_,_ in ONIG_NORMAL } /* scan_callback */,
-                          nil /* callback_arg*/)
+            let result = try callOnigFunction {
+                onig_match(self.rawValue,
+                           start,
+                           start.advanced(by: count),
+                           start.advanced(by: range.lowerBound),
+                           nil,
+                           options.rawValue)
             }
+            
+            if result == ONIG_MISMATCH {
+                return nil
+            }
+            
+            return Int(result)
         }
-
-        return Int(result)
     }
     
     /**
-     Find all matching region in the string.
-
+     Search the string and find the matched byte count.
+     
      If `str` conforms to `StringProtocol`, will search against the UTF-8 bytes of the string. Do not pass invalid bytes in the regular expression encoding.
      - Parameters:
          - str: Target string to search against.
          - option: The regular expression search options.
-         - matchParam: Match parameter values (`matchStackLimit`, `retryLimitInMatch`, `retryLimitInSearch`)
-     - Returns: An array of all matching regions, empty array if no match is found.
+     - Returns: The matched byte count if there is a match, otherwise `nil`.
      - Throws: `OnigError`
      */
-    public func matches<S>(in str: S,
-                           options: SearchOptions = .none,
-                           matchParam: MatchParam = MatchParam()
-    ) throws -> [Region] where S: OnigurumaString {
-        try self.matches(in: str,
-                         of: 0...,
-                         options: options,
-                         matchParam: matchParam)
+    public func matchCount<S>(in str: S, options: SearchOptions = .none) throws -> Int? where S: OnigurumaString {
+        return try self.matchCount(in: str, of: 0..., options: options)
     }
-
+    
     /**
-     Find all matching region in the string.
-
+     Is the string matched by the regular expression?
+     
      If `str` conforms to `StringProtocol`, will search against the UTF-8 bytes of the string. Do not pass invalid bytes in the regular expression encoding.
      - Parameters:
          - str: Target string to search against.
          - range: The range of bytes to search against. It will be clamped to the range of the whole string first.
-         - option: The regex search options.
-         - matchParam: Match parameter values (`matchStackLimit`, `retryLimitInMatch`, `retryLimitInSearch`)
-     - Returns: An array of all matched regions.
+         - option: The regular expression search options.
+     - Returns: `true` if it's matched, otherwise `false`.
      - Throws: `OnigError`
      */
-    public func matches<S, R>(in str: S,
-                              of range: R,
-                              options: SearchOptions = .none,
-                              matchParam: MatchParam = MatchParam()
-    ) throws -> [Region] where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
-        var regions = [Region]()
-        try self.enumerateMatches(in: str,
-                                  of: range,
-                                  options: options,
-                                  matchParam: matchParam) { regions.append($2); return true }
-        return regions
+    public func isMatch<S, R>(in str: S, of range: R, options: SearchOptions = .none) throws -> Bool where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
+        return try self.matchCount(in: str, of: range, options: options) != nil
     }
     
     /**
-     Scan the string and calling the closure with each matching region.
-
+     Is the string matched by the regular expression?
+     
      If `str` conforms to `StringProtocol`, will search against the UTF-8 bytes of the string. Do not pass invalid bytes in the regular expression encoding.
      - Parameters:
          - str: Target string to search against.
          - option: The regular expression search options.
-         - matchParam: Match parameter values (`matchStackLimit`, `retryLimitInMatch`, `retryLimitInSearch`)
-         - body: The closure to call on each match.
-         - order: The order of this match.
-         - matchedIndex: The matched index of byte.
-         - region: The matching region.
-     - Returns: Number of matches. If only the number of matches is needed, `numberOfMatches(in:options:matchParams:body:)` is slightly faster.
+     - Returns: `true` if it's matched, otherwise `false`.
      - Throws: `OnigError`
      */
+    public func isMatch<S>(in str: S, options: SearchOptions = .none) throws -> Bool where S: OnigurumaString {
+        return try self.isMatch(in: str, of: 0..., options: options)
+    }
+    
     @discardableResult public func enumerateMatches<S>(in str: S,
                                                        options: SearchOptions = .none,
                                                        matchParam: MatchParam = MatchParam(),
-                                                       body: (_ order: Int, _ matchedIndex: Int, _ region: Region) -> Bool
+                                                       body: @escaping (_ order: Int, _ matchedIndex: Int, _ region: Region) -> Bool
     ) throws -> Int where S: OnigurumaString {
         try self.enumerateMatches(in: str,
                                   of: 0...,
                                   options: options,
                                   matchParam: matchParam,
                                   body: body)
+    }
+
+    private class ScanContext {
+        let region: Region
+        let callback: (Int, Int, Region) -> Bool
+        init(region: Region, callback: @escaping (Int, Int, Region) -> Bool) {
+            self.region = region
+            self.callback = callback
+        }
     }
 
     /**
@@ -523,14 +304,14 @@ final public class Regex {
                                                           of range: R,
                                                           options: SearchOptions = .none,
                                                           matchParam: MatchParam = MatchParam(),
-                                                          body: (_ order: Int, _ matchedIndex: Int, _ region: Region) -> Bool
+                                                          body: @escaping (_ order: Int, _ matchedIndex: Int, _ region: Region) -> Bool
     ) throws -> Int where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
         let result = try str.withOnigurumaString { (start, count) throws -> OnigInt in
             let range = range.relative(to: 0..<count).clamped(to: 0..<count)
             let region = try Region(regex: self, str: str)
 
-            typealias ContextType = (region: Region, callback: (Int, Int, Region) -> Bool)
-            var context = (region: region, callback: body)
+            let context = ScanContext(region: region, callback: body)
+            let contextPtr = Unmanaged.passUnretained(context).toOpaque()
 
             return try callOnigFunction {
                 onig_scan(self.rawValue,
@@ -539,9 +320,10 @@ final public class Regex {
                           region.rawValue,
                           options.rawValue,
                           { (order, matchedIndex, onigRegion, contextPtr) -> OnigInt in
-                            guard let context = contextPtr?.assumingMemoryBound(to: ContextType.self).pointee else {
-                                fatalError("Fail to retrive the context")
+                            guard let contextPtr = contextPtr else {
+                                fatalError("Fail to retrieve the context")
                             }
+                            let context = Unmanaged<ScanContext>.fromOpaque(contextPtr).takeUnretainedValue()
 
                             guard let region = try? Region(copying: onigRegion, regex: context.region.regex, str: context.region.str) else {
                                 fatalError("Fail to creating the region")
@@ -552,7 +334,7 @@ final public class Regex {
                             } else {
                                 return ONIG_ABORT
                             }
-                          }, &context)
+                          }, contextPtr)
             }
         }
 
@@ -564,35 +346,89 @@ final public class Regex {
     /**
      Get the count of capture groups of the pattern.
      */
-    public var captureGroupCount: Int {
+    public var captureGroupsCount: Int {
         Int(onig_number_of_captures(self.rawValue))
     }
     
     /**
-     Get the count of capture hisotries of the pattern.
+     Get the count of named capture groups of the pattern.
+     */
+    public var namedCaptureGroupsCount: Int {
+        Int(onig_number_of_names(self.rawValue))
+    }
+    
+    /**
+     Get the count of capture history entries of the pattern.
      - Note: You can't use capture history if `.atmarkCaptureHistory` is disabled in the regex syntax.
      */
     public var captureHistoryCount: Int {
         Int(onig_number_of_capture_histories(self.rawValue))
     }
     
-    // MARK: Oniguruma config
-
     /**
-     Get or set the limit of subexp call count.
+     Enumerate each named capture group name and calling the closure with each entry.
+     - Parameters:
+         - body: The closure to call on each entry.
+         - name: the group name.
+         - numbers: group numbers of the group name.
+     */
+    public func enumerateCaptureGroupNames(_ body: @escaping @Sendable (_ name: String, _ numbers: [Int]) -> Bool) {
+        if self.rawValue == nil {
+            return
+        }
+        
+        let context = ForeachNameContext(encoding: self.encoding, callback: body)
+        withExtendedLifetime(context) {
+            let contextPtr = Unmanaged.passUnretained(context).toOpaque()
+            onig_foreach_name(self.rawValue, onigForeachNameCallback, contextPtr)
+        }
+    }
+    
+    /**
+     Get the numbers of named capture groups with a specified name.
+     - Parameter name: The name of named capture groups.
+     - Returns: A array of group numbers. Empty if no named group matches.
+     */
+    public func captureGroupNumbers(for name: String) -> [Int] {
+        return Array(name.utf8).withUnsafeBufferPointer { bufPtr -> [Int] in
+            let start = bufPtr.baseAddress!
+            let count = onig_name_to_group_numbers(self.rawValue,
+                                                   start,
+                                                   start.advanced(by: bufPtr.count),
+                                                   nil)
+            
+            if count < 0 {
+                return []
+            }
+            
+            var nums: UnsafeMutablePointer<OnigInt>? = nil
+            _ = onig_name_to_group_numbers(self.rawValue,
+                                                   start,
+                                                   start.advanced(by: bufPtr.count),
+                                                   &nums)
+      
+            guard let numbersPtr = nums else {
+                return []
+            }
+            
+            return [Int](UnsafeBufferPointer.init(start: numbersPtr, count: Int(count)).map { Int($0) })
+        }
+    }
+    
+    // MARK: Static properties
+    
+    /**
+     Get the limit of subexp call count.
      - Note: Defaul value is `0` which means unlimited.
      */
+    @OnigurumaActor
     public static var subexpCallLimitInSearch: UInt {
         get {
-            onigQueue.sync {
-                UInt(onig_get_subexp_call_limit_in_search())
-            }
+            UInt(onig_get_subexp_call_limit_in_search())
         }
         
         set {
-            onigQueue.sync {
-                _ = onig_set_subexp_call_limit_in_search(OnigULong(newValue))
-            }
+            _ = onig_set_subexp_call_limit_in_search(OnigULong(newValue))
         }
     }
     
@@ -600,6 +436,7 @@ final public class Regex {
      Get or set the limit level of subexp call nest level.
      - Note: Default value is `24`.
      */
+    @OnigurumaActor
     public static var subexpCallMaxNestLevel: Int {
         get {
             Int(onig_get_subexp_call_max_nest_level())
@@ -614,6 +451,7 @@ final public class Regex {
      Get or set the maximum depth of parser recursion.
      - Note: Default value is `4096`, if the `newValue` is `0`, default value which is `4096` will be set,
      */
+    @OnigurumaActor
     public static var parseDepthLimit: UInt {
         get {
             UInt(onig_get_parse_depth_limit())
@@ -634,18 +472,9 @@ final public class Regex {
             onig_free(self.rawValue)
             self.rawValue = nil
         }
-        
-        if self._patternBytes != nil {
-            self._patternBytes = nil
-        }
-        
-        if self._syntax != nil {
-            self._syntax = nil
-        }
-        
-        if self._encoding != nil {
-            self._encoding = nil
-        }
+        self._patternBytes = nil
+        self._encoding = nil
+        self._syntax = nil
     }
 }
 
@@ -653,158 +482,70 @@ final public class Regex {
 
 extension Regex {
     /// Regex parsing and compilation options.
-    public struct Options: OptionSet {
+    public struct Options: OptionSet, Sendable {
         public let rawValue: OnigOptionType
         
         public init(rawValue: OnigOptionType) {
             self.rawValue = rawValue
         }
         
-        /// Default options.
+        /// None
         public static let none = Regex.Options(rawValue: ONIG_OPTION_NONE)
         
-        /// Ambiguity match on.
+        /// Ignore case.
         public static let ignoreCase = Regex.Options(rawValue: ONIG_OPTION_IGNORECASE)
         
         /// Extended pattern form.
-        public static let extend = Regex.Options(rawValue: ONIG_OPTION_EXTEND)
+        public static let extend = Regex.Options(rawValue: get_onig_option_extend())
         
         /// `'.'` match with newline.
-        public static let multiLine = Regex.Options(rawValue: ONIG_OPTION_MULTILINE);
+        public static let multiLine = Regex.Options(rawValue: get_onig_option_multiline());
         
         /// `'^'` -> `'\A'`, `'$'` -> `'\Z'`.
-        public static let singleLine = Regex.Options(rawValue: ONIG_OPTION_SINGLELINE);
+        public static let singleLine = Regex.Options(rawValue: get_onig_option_singleline());
         
         /// Find longest match.
-        public static let findLongest = Regex.Options(rawValue: ONIG_OPTION_FIND_LONGEST);
+        public static let findLongest = Regex.Options(rawValue: get_onig_option_find_longest());
         
         /// Ignore empty match.
-        public static let findNotEmpty = Regex.Options(rawValue: ONIG_OPTION_FIND_NOT_EMPTY);
+        public static let findNotEmpty = Regex.Options(rawValue: get_onig_option_find_not_empty());
         
         /// Clear `OPTION_SINGLELINE` which is enabled on
         /// `SYNTAX_POSIX_BASIC`, `SYNTAX_POSIX_EXTENDED`,
         /// `SYNTAX_PERL`, `SYNTAX_PERL_NG`, `SYNTAX_JAVA`.
-        public static let negateSingleLine = Regex.Options(rawValue: ONIG_OPTION_NEGATE_SINGLELINE);
+        public static let negateSingleLine = Regex.Options(rawValue: get_onig_option_negate_singleline());
         
         /// Only named group captured.
-        public static let dontCaptureGroup = Regex.Options(rawValue: ONIG_OPTION_DONT_CAPTURE_GROUP);
+        public static let dontCaptureGroup = Regex.Options(rawValue: get_onig_option_dont_capture_group());
         
         /// Named and no-named group captured.
-        public static let captureGroup = Regex.Options(rawValue: ONIG_OPTION_CAPTURE_GROUP);
+        public static let captureGroup = Regex.Options(rawValue: get_onig_option_capture_group());
     }
     
     /// Regex evaluation options.
-    public struct SearchOptions: OptionSet {
+    public struct SearchOptions: OptionSet, Sendable {
         public let rawValue: OnigOptionType
         
         public init(rawValue: OnigOptionType) {
             self.rawValue = rawValue
         }
         
-        /// Default options.
-        public static let none = SearchOptions(rawValue: ONIG_OPTION_NONE);
+        /// None.
+        public static let none = SearchOptions(rawValue: ONIG_OPTION_NONE)
         
         /// Do not regard the beginning of the (str) as the beginning of the line and the beginning of the string
-        public static let notBol = SearchOptions(rawValue: ONIG_OPTION_NOTBOL);
+        public static let notBol = SearchOptions(rawValue: get_onig_option_notbol());
         
         /// Do not regard the (end) as the end of a line and the end of a string
-        public static let notEol = SearchOptions(rawValue: ONIG_OPTION_NOTEOL);
+        public static let notEol = SearchOptions(rawValue: get_onig_option_noteol());
         
         /// Do not regard the beginning of the (str) as the beginning of a string  (* fail \A)
-        public static let notBeginString = SearchOptions(rawValue: ONIG_OPTION_NOT_BEGIN_STRING)
+        public static let notBeginString = SearchOptions(rawValue: get_onig_option_not_begin_string())
         
         /// Do not regard the (end) as a string endpoint  (* fail \z, \Z)
-        public static let notEndString = SearchOptions(rawValue: ONIG_OPTION_NOT_END_STRING)
+        public static let notEndString = SearchOptions(rawValue: get_onig_option_not_end_string())
         
         /// Do not regard the (start) as start position of search  (* fail \G)
-        public static let notBeginPosition = SearchOptions(rawValue: ONIG_OPTION_NOT_BEGIN_POSITION)
-    }
-}
-
-// MARK: Named capture groups
-
-extension Regex {
-    /**
-     Get the count of named groups of the pattern. Having multiple groups with the same name is allowed.
-     */
-    public var captureGroupNameCount: Int {
-        Int(onig_number_of_names(self.rawValue))
-    }
-    
-    /**
-     Call `body` for each capture group name in the regular expression. Each callback gets the capture group name and capture group numbers.
-     
-     - Parameters:
-        - body: The closure to be called.
-        - name: Capture group name.
-        - numbers: Capture group numbers, having multiple groups with the same name is allowed.
-     */
-    public func enumerateCaptureGroupNames(_ body: @escaping (_ name: String, _ numbers: [Int]) -> Bool) {
-        if self.rawValue == nil {
-            return
-        }
-        
-        typealias ContextType = (regex: Regex, callback: (String, [Int]) -> Bool)
-        var context: ContextType = (regex: self, callback: body)
-        
-        onig_foreach_name(self.rawValue, { (namePtr, nameEndPtr, groupCount, groupsPtr, _ /* regex */, contextPtr) -> OnigInt in
-            if namePtr == nil || nameEndPtr == nil {
-                fatalError("Capture group name is nil")
-            }
-
-            if groupsPtr == nil {
-                fatalError("Group numbers are nil")
-            }
-
-            guard let context = contextPtr?.assumingMemoryBound(to: ContextType.self).pointee else {
-                fatalError("Fail to get the callback")
-            }
-
-            let buffer = UnsafeBufferPointer(start: namePtr, count: namePtr!.distance(to: nameEndPtr!))
-            let stringEncoding = context.regex.encoding.stringEncoding
-            guard let name = String(bytes: buffer, encoding: stringEncoding) else {
-                fatalError("Fail to encode capture group name with encoding \(stringEncoding)")
-            }
-
-            var groupNumbers = [Int]()
-            for i in 0..<Int(groupCount) {
-                groupNumbers.append(Int(groupsPtr![i]))
-            }
-
-            if context.callback(name, groupNumbers) {
-                return ONIG_NORMAL
-            } else {
-                return ONIG_ABORT
-            }
-        }, &context)
-    }
-    
-    /**
-     Get the numbers of named capture groups with a specified name.
-     - Parameter name: The name of named capture groups.
-     - Returns: An array of named capture group numbers, or empty array if no such name is found.
-     */
-    public func captureGroupNumbers(of name: OnigurumaString) -> [Int] {
-        name.withOnigurumaString { start, count in
-            let nums = UnsafeMutablePointer<UnsafeMutablePointer<OnigInt>?>.allocate(capacity: 1)
-            defer{
-                nums.deallocate()
-            }
-            
-            let count = onig_name_to_group_numbers(self.rawValue,
-                                                   start,
-                                                   start.advanced(by: count),
-                                                   nums)
-            
-            if count < 0 {
-                return []
-            }
-            
-            guard let numbersPtr = nums.pointee else {
-                return []
-            }
-            
-            return [Int](UnsafeBufferPointer.init(start: numbersPtr, count: Int(count)).map { Int($0) })
-        }
+        public static let notBeginPosition = SearchOptions(rawValue: get_onig_option_not_begin_position())
     }
 }
