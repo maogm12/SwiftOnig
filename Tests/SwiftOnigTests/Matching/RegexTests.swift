@@ -155,4 +155,31 @@ struct RegexTests {
         let reg = try await Regex(pattern: #"(?<name>\w+):\s+(?<id>\d+)(\s+)(//.*)"#)
         #expect(reg.captureGroupsCount == 2)
     }
+
+    @Test("Noname group capture activity")
+    func nonameGroupCaptureActivity() async throws {
+        let unnamedOnlyRegex = try await Regex(pattern: #"(\w+)(\d+)"#)
+        #expect(unnamedOnlyRegex.nonameGroupCaptureIsActive)
+
+        let defaultNamedRegex = try await Regex(pattern: #"(?<name>\w+)(\d+)"#)
+        #expect(!defaultNamedRegex.nonameGroupCaptureIsActive)
+
+        let noUnnamedCapture = try await Regex(pattern: #"(\w+)(\d+)"#, options: .dontCaptureGroup)
+        #expect(!noUnnamedCapture.nonameGroupCaptureIsActive)
+
+        let syntax = await Syntax(copying: Syntax.default)
+        await configureCaptureOnlyNamedGroup(on: syntax)
+        let captureOnlyNamedRegex = try await Regex(pattern: #"(?<name>\w+)(\d+)"#, syntax: syntax)
+        #expect(!captureOnlyNamedRegex.nonameGroupCaptureIsActive)
+
+        let optInUnnamedCapture = try await Regex(pattern: #"(?<name>\w+)(\d+)"#, options: .captureGroup, syntax: syntax)
+        #expect(optInUnnamedCapture.nonameGroupCaptureIsActive)
+    }
+
+    @OnigurumaActor
+    private func configureCaptureOnlyNamedGroup(on syntax: Syntax) {
+        var behaviors = syntax.behaviors
+        behaviors.insert(.captureOnlyNamedGroup)
+        syntax.behaviors = behaviors
+    }
 }

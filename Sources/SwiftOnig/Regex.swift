@@ -651,6 +651,13 @@ final public class Regex: Sendable, CustomConsumingRegexComponent, OnigOwnedReso
     public var captureHistoryCount: Int {
         Int(onig_number_of_capture_histories(self.rawValue))
     }
+
+    /**
+     Whether unnamed capture groups are active for this regex under its current options and syntax.
+     */
+    public var nonameGroupCaptureIsActive: Bool {
+        onig_noname_group_capture_is_active(self.rawValue) != 0
+    }
     
     /**
      Enumerate each named capture group name and calling the closure with each entry.
