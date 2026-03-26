@@ -8,6 +8,7 @@
 import OnigurumaC
 import Foundation
 import _StringProcessing
+import RegexBuilder
 
 /**
  Regular Expression
@@ -20,6 +21,16 @@ import _StringProcessing
  */
 final public class Regex: Sendable, CustomConsumingRegexComponent {
     public typealias RegexOutput = Substring
+
+    /// A standard-library regex view of this `SwiftOnig.Regex`.
+    ///
+    /// This makes it easy to pass a compiled Oniguruma pattern into APIs that
+    /// expect Swift's native regex type, while preserving SwiftOnig's matching
+    /// behavior under the hood.
+    @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
+    public var swiftRegex: _StringProcessing.Regex<Substring> {
+        _StringProcessing.Regex { self }
+    }
 
     public func consuming(_ input: String, startingAt index: String.Index, in bounds: Range<String.Index>) throws -> (upperBound: String.Index, output: Substring)? {
         // SwiftOnig works with byte offsets.

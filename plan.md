@@ -39,7 +39,7 @@ If rebuilding `SwiftOnig` today, the architecture would focus on being a "Swift-
 - [x] **Collection Conformance**: Modernize `Region` collection conformance.
 
 ## 6. Standard Library Integration
-- [ ] **Swift `Regex` Interop**: Explore bridging to `Swift.Regex`.
+- [x] **Swift `Regex` Interop**: Explore bridging to `Swift.Regex`.
 - [x] **Regex Builder**: Implement `RegexComponent` support.
 
 ## 7. Porting Oniguruma Official Tests

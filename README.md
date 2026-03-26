@@ -64,6 +64,19 @@ if let match = "Item ID-12345! is ready.".firstMatch(of: combinedRegex) {
 }
 ```
 
+### Bridging to Swift Regex APIs
+
+You can also turn a compiled `SwiftOnig.Regex` into a standard-library regex value and use it with APIs like `firstMatch(of:)`.
+
+```swift
+let onigRegex = try await SwiftOnig.Regex(pattern: #"\d+"#)
+let swiftRegex = onigRegex.swiftRegex
+
+if let match = "The item ID-12345! is ready.".firstMatch(of: swiftRegex) {
+    print(match.output) // "12345"
+}
+```
+
 ### Capture Groups
 
 ```swift
