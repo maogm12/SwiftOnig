@@ -64,4 +64,45 @@ struct SwiftOnigTests {
         #expect(try await regex.matches("あい"))
         #expect(try await !regex.matches("あう"))
     }
+
+    @Test("Named callout registration")
+    func namedCallout() async throws {
+        let phases = MessageBox()
+        try await registerCallout(named: "swiftTestCallout") { context in
+            phases.append("\(context.phase):\(context.name ?? "")")
+            return .continue
+        }
+
+        let regex = try await Regex(pattern: #"\A(*swiftTestCallout)abc\z"#)
+        #expect(try await regex.matches("abc"))
+        #expect(phases.values.contains { $0.contains("swiftTestCallout") })
+    }
+
+    @Test("Per-match content callouts and user data")
+    func contentCallout() async throws {
+        final class CalloutBox: @unchecked Sendable {
+            private let lock = NSLock()
+            private(set) var payloads = [String]()
+
+            func append(_ value: String) {
+                lock.lock()
+                payloads.append(value)
+                lock.unlock()
+            }
+        }
+
+        let box = CalloutBox()
+        let matchParam = MatchParam()
+        matchParam.setCalloutUserData("payload")
+        matchParam.setProgressCallout { context in
+            if let userData = context.userData as? String {
+                box.append(userData)
+            }
+            return .continue
+        }
+
+        let regex = try await Regex(pattern: #"\Aa(?{swift-content}X)b\z"#)
+        #expect(try await regex.firstMatch(in: "ab", matchParam: matchParam) != nil)
+        #expect(box.payloads.contains("payload"))
+    }
 }
