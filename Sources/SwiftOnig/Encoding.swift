@@ -10,6 +10,11 @@ import CoreFoundation
 import Foundation
 
 public struct Encoding: Equatable, CustomStringConvertible, Sendable {
+    private struct BuiltInEncodingMapping: @unchecked Sendable {
+        let onigEncoding: OnigEncoding
+        let stringEncoding: String.Encoding
+    }
+
     internal nonisolated(unsafe) let rawValue: OnigEncoding!
 
     /// The `String.Encoding` of the corresponding oniguruma encoding.
@@ -132,72 +137,47 @@ public struct Encoding: Equatable, CustomStringConvertible, Sendable {
         self.stringEncoding.description
     }
 
+    private static let builtInEncodingMappings: [BuiltInEncodingMapping] = [
+        BuiltInEncodingMapping(onigEncoding: get_onig_ascii(), stringEncoding: .ascii),
+        BuiltInEncodingMapping(onigEncoding: get_onig_iso8859_1(), stringEncoding: .isoLatin1),
+        BuiltInEncodingMapping(onigEncoding: get_onig_iso8859_2(), stringEncoding: .isoLatin2),
+        BuiltInEncodingMapping(onigEncoding: get_onig_iso8859_3(), stringEncoding: String.Encoding.SwiftOnig.isoLatin3),
+        BuiltInEncodingMapping(onigEncoding: get_onig_iso8859_4(), stringEncoding: String.Encoding.SwiftOnig.isoLatin4),
+        BuiltInEncodingMapping(onigEncoding: get_onig_iso8859_5(), stringEncoding: String.Encoding.SwiftOnig.isoLatinCyrillic),
+        BuiltInEncodingMapping(onigEncoding: get_onig_iso8859_6(), stringEncoding: String.Encoding.SwiftOnig.isoLatinArabic),
+        BuiltInEncodingMapping(onigEncoding: get_onig_iso8859_7(), stringEncoding: String.Encoding.SwiftOnig.isoLatinGreek),
+        BuiltInEncodingMapping(onigEncoding: get_onig_iso8859_8(), stringEncoding: String.Encoding.SwiftOnig.isoLatinHebrew),
+        BuiltInEncodingMapping(onigEncoding: get_onig_iso8859_9(), stringEncoding: String.Encoding.SwiftOnig.isoLatin5),
+        BuiltInEncodingMapping(onigEncoding: get_onig_iso8859_10(), stringEncoding: String.Encoding.SwiftOnig.isoLatin6),
+        BuiltInEncodingMapping(onigEncoding: get_onig_iso8859_11(), stringEncoding: String.Encoding.SwiftOnig.isoLatinThai),
+        BuiltInEncodingMapping(onigEncoding: get_onig_iso8859_13(), stringEncoding: String.Encoding.SwiftOnig.isoLatin7),
+        BuiltInEncodingMapping(onigEncoding: get_onig_iso8859_14(), stringEncoding: String.Encoding.SwiftOnig.isoLatin8),
+        BuiltInEncodingMapping(onigEncoding: get_onig_iso8859_15(), stringEncoding: String.Encoding.SwiftOnig.isoLatin9),
+        BuiltInEncodingMapping(onigEncoding: get_onig_iso8859_16(), stringEncoding: String.Encoding.SwiftOnig.isoLatin10),
+        BuiltInEncodingMapping(onigEncoding: get_onig_utf8(), stringEncoding: .utf8),
+        BuiltInEncodingMapping(onigEncoding: get_onig_utf16be(), stringEncoding: .utf16BigEndian),
+        BuiltInEncodingMapping(onigEncoding: get_onig_utf16le(), stringEncoding: .utf16LittleEndian),
+        BuiltInEncodingMapping(onigEncoding: get_onig_utf32be(), stringEncoding: .utf32BigEndian),
+        BuiltInEncodingMapping(onigEncoding: get_onig_utf32le(), stringEncoding: .utf32LittleEndian),
+        BuiltInEncodingMapping(onigEncoding: get_onig_eucjp(), stringEncoding: .japaneseEUC),
+        BuiltInEncodingMapping(onigEncoding: get_onig_euctw(), stringEncoding: String.Encoding.SwiftOnig.eucTW),
+        BuiltInEncodingMapping(onigEncoding: get_onig_euckr(), stringEncoding: String.Encoding.SwiftOnig.euckr),
+        BuiltInEncodingMapping(onigEncoding: get_onig_euccn(), stringEncoding: String.Encoding.SwiftOnig.euccn),
+        BuiltInEncodingMapping(onigEncoding: get_onig_sjis(), stringEncoding: .shiftJIS),
+        BuiltInEncodingMapping(onigEncoding: get_onig_koi8r(), stringEncoding: String.Encoding.SwiftOnig.koi8r),
+        BuiltInEncodingMapping(onigEncoding: get_onig_cp1251(), stringEncoding: .windowsCP1251),
+        BuiltInEncodingMapping(onigEncoding: get_onig_big5(), stringEncoding: String.Encoding.SwiftOnig.big5),
+        BuiltInEncodingMapping(onigEncoding: get_onig_gb18030(), stringEncoding: String.Encoding.SwiftOnig.gb18030),
+    ]
+
     /**
      Map `Encoding`to `String.Encoding`, only built-in encodings are supported.
      */
     private static func _stringEncoding(from onigEncoding: OnigEncoding) -> String.Encoding {
-        if (onigEncoding == get_onig_ascii()) { // ACSII
-            return .ascii
-        } else if (onigEncoding == get_onig_iso8859_1()) { // ISO/IEC 8859-1, Latin-1, Western European
-            return .isoLatin1
-        } else if (onigEncoding == get_onig_iso8859_2()) { // ISO/IEC 8859-2, Latin-2, Central European
-            return .isoLatin2
-        } else if (onigEncoding == get_onig_iso8859_3()) { // ISO/IEC 8859-3, Latin-3, South European
-            return String.Encoding.SwiftOnig.isoLatin3
-        } else if (onigEncoding == get_onig_iso8859_4()) { // ISO/IEC 8859-4, Latin-4, North European
-            return String.Encoding.SwiftOnig.isoLatin4
-        } else if (onigEncoding == get_onig_iso8859_5()) { // ISO/IEC 8859-5, Latin/Cyrillic
-            return String.Encoding.SwiftOnig.isoLatinCyrillic
-        } else if (onigEncoding == get_onig_iso8859_6()) { // ISO/IEC 8859-6, Latin/Arabic
-            return String.Encoding.SwiftOnig.isoLatinArabic
-        } else if (onigEncoding == get_onig_iso8859_7()) { // ISO/IEC 8859-7, Latin/Greek
-            return String.Encoding.SwiftOnig.isoLatinGreek
-        } else if (onigEncoding == get_onig_iso8859_8()) { // ISO/IEC 8859-8, Latin/Hebrew
-            return String.Encoding.SwiftOnig.isoLatinHebrew
-        } else if (onigEncoding == get_onig_iso8859_9()) { // ISO/IEC 8859-9, Latin-5/Turkish
-            return String.Encoding.SwiftOnig.isoLatin5
-        } else if (onigEncoding == get_onig_iso8859_10()) { // ISO/IEC 8859-10, Latin-6, Nordic
-            return String.Encoding.SwiftOnig.isoLatin6
-        } else if (onigEncoding == get_onig_iso8859_11()) { // ISO/IEC 8859-11, Latin/Thai
-            return String.Encoding.SwiftOnig.isoLatinThai
-        } else if (onigEncoding == get_onig_iso8859_13()) { // ISO/IEC 8859-13, Latin-7, Baltic Rim
-            return String.Encoding.SwiftOnig.isoLatin7
-        } else if (onigEncoding == get_onig_iso8859_14()) { // ISO/IEC 8859-14, Latin-8, Celtic
-            return String.Encoding.SwiftOnig.isoLatin8
-        } else if (onigEncoding == get_onig_iso8859_15()) { // ISO/IEC 8859-15, Latin-9
-            return String.Encoding.SwiftOnig.isoLatin9
-        } else if (onigEncoding == get_onig_iso8859_16()) { // ISO/IEC 8859-16, Latin-10, South-Eastern European
-            return String.Encoding.SwiftOnig.isoLatin10
-        } else if (onigEncoding == get_onig_utf8()) { // UTF-8
-            return .utf8
-        } else if (onigEncoding == get_onig_utf16be()) { // UTF-16 big endian
-            return .utf16BigEndian
-        } else if (onigEncoding == get_onig_utf16le()) { // UTF-16 little endian
-            return .utf16LittleEndian
-        } else if (onigEncoding == get_onig_utf32be()) { // UTF-32 big endian
-            return .utf32BigEndian
-        } else if (onigEncoding == get_onig_utf32le()) { // UTF-32 little endian
-            return .utf32LittleEndian
-        } else if (onigEncoding == get_onig_eucjp()) { // EUC JP
-            return .japaneseEUC
-        } else if (onigEncoding == get_onig_euctw()) { // EUC TW
-            return String.Encoding.SwiftOnig.eucTW
-        } else if (onigEncoding == get_onig_euckr()) { // EUC KR
-            return String.Encoding.SwiftOnig.euckr
-        } else if (onigEncoding == get_onig_euccn()) { // EUC CN
-            return String.Encoding.SwiftOnig.euccn
-        } else if (onigEncoding == get_onig_sjis()) { // Shift JIS
-            return .shiftJIS
-        } else if (onigEncoding == get_onig_koi8r()) { // KOI8-R
-            return String.Encoding.SwiftOnig.koi8r
-        } else if (onigEncoding == get_onig_cp1251()) { // CP1251, Windows-1251
-            return .windowsCP1251
-        } else if (onigEncoding == get_onig_big5()) { // BIG 5
-            return String.Encoding.SwiftOnig.big5
-        } else if (onigEncoding == get_onig_gb18030()) { // GB 18030
-            return String.Encoding.SwiftOnig.gb18030
+        if let mapping = builtInEncodingMappings.first(where: { $0.onigEncoding == onigEncoding }) {
+            return mapping.stringEncoding
         }
-        
+
         fatalError("Unexpected encoding")
     }
 

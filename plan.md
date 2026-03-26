@@ -109,7 +109,7 @@ This section tracks the packaging refactor from a system-installed Oniguruma dep
 - [x] **Owned C Resource Abstraction**: Introduce a shared internal ownership pattern for `Regex`, `Region`, and `RegexSet` pointer-backed resources.
 - [x] **Sync/Async API Consolidation**: Remove duplicated sync and async wrapper bodies where both paths already share the same implementation.
 - [x] **String Input Adapters**: Split `StringUtils.swift` into more focused UTF-8, UTF-16, and raw-byte bridging layers.
-- [ ] **Encoding Registry Refactor**: Replace the large encoding mapping ladder in `Encoding.swift` with a clearer table-driven implementation.
+- [x] **Encoding Registry Refactor**: Replace the large encoding mapping ladder in `Encoding.swift` with a clearer table-driven implementation.
 - [ ] **Syntax Ownership Model**: Separate borrowed predefined syntax presets from owned mutable syntax values to make mutation rules explicit.
 - [ ] **Error Metadata Refactor**: Rework `OnigError` mapping into smaller metadata-driven components with clearer diagnostics plumbing.
 - [ ] **RegexSet Builder Cleanup**: Consolidate repeated `RegexSet` initialization logic and add earlier compatibility validation.
