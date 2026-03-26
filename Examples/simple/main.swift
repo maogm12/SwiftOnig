@@ -10,7 +10,7 @@ import SwiftOnig
 
 Task {
     do {
-        try await initialize(encodings: [.utf8])
+        // SwiftOnig now handles initialization automatically on first use.
         
         let pattern = #"a(.*)b|[e-f]+"#
         let str = "zzzzaffffffffb"

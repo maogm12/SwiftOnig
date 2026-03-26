@@ -31,7 +31,7 @@ func execute(pattern: String, str: String, options: Regex.SearchOptions) async t
 
 Task {
     do {
-        try await initialize(encodings: [.utf8])
+        // SwiftOnig now handles initialization automatically on first use.
         
         try await execute(pattern: #"\Ga+\s*"#, str: "a aa aaa baaa", options: .none)
         try await execute(pattern: #"\Ga+\s*"#, str: "a aa aaa baaa", options: .notBeginPosition)

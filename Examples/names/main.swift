@@ -10,7 +10,7 @@ import SwiftOnig
 
 Task {
     do {
-        try await initialize(encodings: [.ascii])
+        // SwiftOnig now handles initialization automatically on first use.
         
         let pattern = #"(?<foo>a*)(?<bar>b*)(?<foo>c*)"#;
         let str = "aaabbbbcc";

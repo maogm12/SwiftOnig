@@ -38,8 +38,14 @@ final public class RegexSet: Sendable {
      - Parameter regexes: A sequence of regular expressions.
      - Throws: `OnigError`
      */
-    public init<S>(regexes: S) throws where S: Sequence, S.Element == Regex {
+    public init<S>(regexes: S) async throws where S: Sequence, S.Element == Regex {
         self.regexes = [Regex](regexes)
+        
+        if let firstReg = self.regexes.first {
+            try await OnigurumaActor.shared.ensureInitialized(encoding: firstReg.encoding.rawValue)
+        } else {
+            try await OnigurumaActor.shared.ensureInitialized()
+        }
 
         onig_regset_new(&self.rawValue, 0, nil)
         for reg in regexes {

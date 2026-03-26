@@ -8,6 +8,27 @@ import Foundation
 @globalActor
 public actor OnigurumaActor {
     public static let shared = OnigurumaActor()
+    
+    private var isLibraryInitialized = false
+    private var initializedEncodings = Set<OnigEncoding>()
+    
+    /**
+     Ensures that the oniguruma library and the specified encoding are initialized.
+     */
+    internal func ensureInitialized(encoding: OnigEncoding? = nil) throws {
+        if !isLibraryInitialized {
+            onig_initialize(nil, 0)
+            isLibraryInitialized = true
+        }
+        
+        if let encoding = encoding, !initializedEncodings.contains(encoding) {
+            let result = onig_initialize_encoding(encoding)
+            if result != ONIG_NORMAL {
+                throw OnigError(onigErrorCode: result)
+            }
+            initializedEncodings.insert(encoding)
+        }
+    }
 }
 
 internal struct OnigCGlobals {
@@ -57,17 +78,16 @@ internal struct OnigCGlobals {
 }
 
 /**
- Initialize the library.
- - Note: You have to call it explicitly.
+ Initialize the library manually with specific encodings.
+ 
+ - Note: This is no longer required as initialization happens automatically on first use.
  - Parameter encodings: Encodings used in the application.
  */
 @OnigurumaActor
-public func initialize<S: Sequence>(encodings: S) throws where S.Element == Encoding {
-    onig_initialize(nil, 0)
+public func initialize<S: Sequence>(encodings: S) async throws where S.Element == Encoding {
+    try await OnigurumaActor.shared.ensureInitialized()
     for encoding in encodings {
-        try callOnigFunction {
-            onig_initialize_encoding(encoding.rawValue)
-        }
+        try await OnigurumaActor.shared.ensureInitialized(encoding: encoding.rawValue)
     }
 }
 

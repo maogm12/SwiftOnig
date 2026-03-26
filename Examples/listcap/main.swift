@@ -42,7 +42,7 @@ func execute(str: String, pattern: String, syntax: Syntax, options: Regex.Option
 
 Task {
     do {
-        try await initialize(encodings: [.utf8])
+        // SwiftOnig now handles initialization automatically on first use.
         
         let str1 = #"((())())"#;
         let pattern1 = #"\g<p>(?@<p>\(\g<s>\)){0}(?@<s>(?:\g<p>)*|){0}"#;

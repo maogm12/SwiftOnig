@@ -12,7 +12,7 @@ import SwiftOnig
 class SwiftOnigTestsBase: XCTestCase {
     override func setUp() async throws {
         try await super.setUp()
-        try await SwiftOnig.initialize(encodings: [.utf8, .ascii, .utf16LittleEndian, .gb18030])
+        // SwiftOnig now handles initialization automatically on first use.
     }
     
     override func tearDown() async throws {

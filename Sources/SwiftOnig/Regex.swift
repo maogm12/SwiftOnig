@@ -104,6 +104,8 @@ final public class Regex: Sendable, CustomConsumingRegexComponent {
                    options: Options = .none,
                    syntax: Syntax? = nil
     ) async throws where S: Sequence, S.Element == UInt8 {
+        try await OnigurumaActor.shared.ensureInitialized(encoding: encoding.rawValue)
+        
         self._patternBytes = ContiguousArray(patternBytes)
         self._encoding = encoding
         self._options = options
