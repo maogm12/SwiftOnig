@@ -1,6 +1,23 @@
 import OnigurumaC
 import Foundation
 
+public typealias OnigurumaWarningHandler = @Sendable (String) -> Void
+
+private enum OnigurumaWarningBridge {
+    nonisolated(unsafe) static var standardHandler: OnigurumaWarningHandler?
+    nonisolated(unsafe) static var verboseHandler: OnigurumaWarningHandler?
+}
+
+private func onigurumaStandardWarningCallback(_ message: UnsafePointer<CChar>?) {
+    guard let message else { return }
+    OnigurumaWarningBridge.standardHandler?(String(cString: message))
+}
+
+private func onigurumaVerboseWarningCallback(_ message: UnsafePointer<CChar>?) {
+    guard let message else { return }
+    OnigurumaWarningBridge.verboseHandler?(String(cString: message))
+}
+
 /**
  A global actor used to synchronize access to the underlying oniguruma library's global state.
  */
@@ -99,6 +116,32 @@ public func initialize<S: Sequence>(encodings: S) async throws where S.Element =
 @OnigurumaActor
 public func uninitialize() {
     _ = onig_end()
+}
+
+/**
+ Register the global standard warning handler used by Oniguruma during regex compilation.
+ */
+@OnigurumaActor
+public func setWarningHandler(_ handler: OnigurumaWarningHandler?) {
+    OnigurumaWarningBridge.standardHandler = handler
+    if handler == nil {
+        onig_set_warn_func(nil)
+    } else {
+        onig_set_warn_func(onigurumaStandardWarningCallback)
+    }
+}
+
+/**
+ Register the global verbose warning handler used by Oniguruma during regex compilation.
+ */
+@OnigurumaActor
+public func setVerboseWarningHandler(_ handler: OnigurumaWarningHandler?) {
+    OnigurumaWarningBridge.verboseHandler = handler
+    if handler == nil {
+        onig_set_verb_warn_func(nil)
+    } else {
+        onig_set_verb_warn_func(onigurumaVerboseWarningCallback)
+    }
 }
 
 /**
