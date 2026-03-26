@@ -41,24 +41,9 @@ final public class RegexSet: Sendable, OnigOwnedResource {
      */
     public init<S>(regexes: S) async throws where S: Sequence, S.Element == Regex {
         self.regexes = [Regex](regexes)
-        
-        if let firstReg = self.regexes.first {
-            try await OnigurumaActor.shared.ensureInitialized(encoding: firstReg.encoding.rawValue)
-        } else {
-            try await OnigurumaActor.shared.ensureInitialized()
-        }
-
-        onig_regset_new(&self.rawValue, 0, nil)
-        for reg in self.regexes {
-            do {
-                try callOnigFunction{
-                    onig_regset_add(self.rawValue, reg.rawValue)
-                }
-            } catch {
-                self.cleanUpRawValue()
-                throw error
-            }
-        }
+        try Self.validateEncodings(self.regexes)
+        try await Self.initializeRuntime(for: self.regexes)
+        try self.populateRawValue()
     }
 
     /**
@@ -76,23 +61,14 @@ final public class RegexSet: Sendable, OnigOwnedResource {
                    options: Regex.Options = .none,
                    syntax: Syntax? = nil
     ) async throws where S: Sequence, S.Element == P, P: StringProtocol {
-        var regexes = [Regex]()
+        var compiledRegexes = [Regex]()
         for pattern in patterns {
-            regexes.append(try await Regex(pattern: pattern, options: options, syntax: syntax))
+            compiledRegexes.append(try await Regex(pattern: pattern, options: options, syntax: syntax))
         }
-        self.regexes = regexes
-        
-        onig_regset_new(&self.rawValue, 0, nil)
-        for reg in self.regexes {
-            do {
-                try callOnigFunction{
-                    onig_regset_add(self.rawValue, reg.rawValue)
-                }
-            } catch {
-                self.cleanUpRawValue()
-                throw error
-            }
-        }
+        self.regexes = compiledRegexes
+
+        try Self.validateEncodings(self.regexes)
+        try self.populateRawValue()
     }
 
     /**
@@ -111,27 +87,50 @@ final public class RegexSet: Sendable, OnigOwnedResource {
                    options: Regex.Options = .none,
                    syntax: Syntax? = nil
     ) async throws where S: Sequence, S.Element == P, P: Sequence, P.Element == UInt8 {
-        var regexes = [Regex]()
+        var compiledRegexes = [Regex]()
         for patternBytes in patternsBytes {
-            regexes.append(try await Regex(patternBytes: patternBytes, encoding: encoding, options: options, syntax: syntax))
+            compiledRegexes.append(try await Regex(patternBytes: patternBytes, encoding: encoding, options: options, syntax: syntax))
         }
-        self.regexes = regexes
-        
+        self.regexes = compiledRegexes
+
+        try Self.validateEncodings(self.regexes)
+        try self.populateRawValue()
+    }
+
+    deinit {
+        self._cleanUp()
+    }
+
+    private static func validateEncodings(_ regexes: [Regex]) throws {
+        guard let firstEncoding = regexes.first?.encoding.rawValue else {
+            return
+        }
+
+        guard regexes.dropFirst().allSatisfy({ $0.encoding.rawValue == firstEncoding }) else {
+            throw OnigError.invalidArgument
+        }
+    }
+
+    private static func initializeRuntime(for regexes: [Regex]) async throws {
+        if let firstRegex = regexes.first {
+            try await OnigurumaActor.shared.ensureInitialized(encoding: firstRegex.encoding.rawValue)
+        } else {
+            try await OnigurumaActor.shared.ensureInitialized()
+        }
+    }
+
+    private func populateRawValue() throws {
         onig_regset_new(&self.rawValue, 0, nil)
-        for reg in self.regexes {
+        for regex in self.regexes {
             do {
-                try callOnigFunction{
-                    onig_regset_add(self.rawValue, reg.rawValue)
+                try callOnigFunction {
+                    onig_regset_add(self.rawValue, regex.rawValue)
                 }
             } catch {
                 self.cleanUpRawValue()
                 throw error
             }
         }
-    }
-
-    deinit {
-        self._cleanUp()
     }
 
     /**

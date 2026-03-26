@@ -23,6 +23,16 @@ struct RegexSetTests {
         regSet = try await RegexSet(patternsBytes: [gb18030Bytes], encoding: .gb18030)
         #expect(regSet.count == 1)
     }
+
+    @Test("Reject mixed regex encodings")
+    func rejectsMixedEncodings() async throws {
+        let utf8Regex = try await Regex(pattern: "a+")
+        let gb18030Regex = try await Regex(patternBytes: [196, 227, 186, 195], encoding: .gb18030)
+
+        await #expect(throws: OnigError.invalidArgument) {
+            _ = try await RegexSet(regexes: [utf8Regex, gb18030Regex])
+        }
+    }
     
     @Test("Property Access")
     func getter() async throws {
