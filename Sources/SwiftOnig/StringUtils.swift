@@ -90,13 +90,8 @@ extension ContiguousBytes {
      Requested encoding is ignored for raw byte types as they only have one representation.
      */
     public func withOnigurumaString<Result>(requestedEncoding: Encoding, _ body: (_ start: UnsafePointer<OnigUChar>, _ count: Int) throws -> Result) rethrows -> Result {
-        precondition(MemoryLayout<UInt8>.stride == MemoryLayout<OnigUChar>.stride, "UInt8 and OnigUChar should be the same size")
         return try self.withUnsafeBytes { bufPtr in
-            guard let start = bufPtr.baseAddress?.assumingMemoryBound(to: OnigUChar.self) else {
-                return try body(UnsafePointer<OnigUChar>(bitPattern: 1)!, 0)
-            }
-            
-            return try body(start, bufPtr.count)
+            try OnigurumaInputAdapters.withRawBytes(bufPtr, body: body)
         }
     }
 }
@@ -105,10 +100,7 @@ extension ContiguousBytes {
 extension ArraySlice : OnigurumaString where Element == UInt8 { 
     public func withOnigurumaString<Result>(requestedEncoding: Encoding, _ body: (UnsafePointer<OnigUChar>, Int) throws -> Result) rethrows -> Result {
         return try self.withUnsafeBytes { bufPtr in
-            guard let start = bufPtr.baseAddress?.assumingMemoryBound(to: OnigUChar.self) else {
-                return try body(UnsafePointer<OnigUChar>(bitPattern: 1)!, 0)
-            }
-            return try body(start, bufPtr.count)
+            try OnigurumaInputAdapters.withRawBytes(bufPtr, body: body)
         }
     }
 }
@@ -116,10 +108,7 @@ extension ArraySlice : OnigurumaString where Element == UInt8 {
 extension ContiguousArray : OnigurumaString where Element == UInt8 { 
     public func withOnigurumaString<Result>(requestedEncoding: Encoding, _ body: (UnsafePointer<OnigUChar>, Int) throws -> Result) rethrows -> Result {
         return try self.withUnsafeBytes { bufPtr in
-            guard let start = bufPtr.baseAddress?.assumingMemoryBound(to: OnigUChar.self) else {
-                return try body(UnsafePointer<OnigUChar>(bitPattern: 1)!, 0)
-            }
-            return try body(start, bufPtr.count)
+            try OnigurumaInputAdapters.withRawBytes(bufPtr, body: body)
         }
     }
 }
@@ -146,57 +135,20 @@ extension Slice : OnigurumaString where Base : OnigurumaString {
 extension Data: OnigurumaString { 
     public func withOnigurumaString<Result>(requestedEncoding: Encoding, _ body: (UnsafePointer<OnigUChar>, Int) throws -> Result) rethrows -> Result {
         return try self.withUnsafeBytes { bufPtr in
-            guard let start = bufPtr.baseAddress?.assumingMemoryBound(to: OnigUChar.self) else {
-                return try body(UnsafePointer<OnigUChar>(bitPattern: 1)!, 0)
-            }
-            return try body(start, bufPtr.count)
+            try OnigurumaInputAdapters.withRawBytes(bufPtr, body: body)
         }
     }
 }
 
 extension String.UTF16View: OnigurumaString {
     public func withOnigurumaString<Result>(requestedEncoding: Encoding, _ body: (UnsafePointer<OnigUChar>, Int) throws -> Result) rethrows -> Result {
-        let result = try self.withContiguousStorageIfAvailable { bufPtr -> Result in
-            let byteCount = bufPtr.count * MemoryLayout<UInt16>.size
-            return try bufPtr.baseAddress!.withMemoryRebound(to: OnigUChar.self, capacity: byteCount) {
-                try body($0, byteCount)
-            }
-        }
-        
-        if let result = result {
-            return result
-        }
-
-        let bytes = Array(self)
-        return try bytes.withUnsafeBufferPointer { bufPtr in
-            let byteCount = bufPtr.count * MemoryLayout<UInt16>.size
-            return try bufPtr.baseAddress!.withMemoryRebound(to: OnigUChar.self, capacity: byteCount) {
-                try body($0, byteCount)
-            }
-        }
+        try OnigurumaInputAdapters.withUTF16CodeUnits(self, body: body)
     }
 }
 
 extension Substring.UTF16View: OnigurumaString {
     public func withOnigurumaString<Result>(requestedEncoding: Encoding, _ body: (UnsafePointer<OnigUChar>, Int) throws -> Result) rethrows -> Result {
-        let result = try self.withContiguousStorageIfAvailable { bufPtr -> Result in
-            let byteCount = bufPtr.count * MemoryLayout<UInt16>.size
-            return try bufPtr.baseAddress!.withMemoryRebound(to: OnigUChar.self, capacity: byteCount) {
-                try body($0, byteCount)
-            }
-        }
-        
-        if let result = result {
-            return result
-        }
-
-        let bytes = Array(self)
-        return try bytes.withUnsafeBufferPointer { bufPtr in
-            let byteCount = bufPtr.count * MemoryLayout<UInt16>.size
-            return try bufPtr.baseAddress!.withMemoryRebound(to: OnigUChar.self, capacity: byteCount) {
-                try body($0, byteCount)
-            }
-        }
+        try OnigurumaInputAdapters.withUTF16CodeUnits(self, body: body)
     }
 }
 
@@ -204,10 +156,7 @@ extension Substring.UTF16View: OnigurumaString {
 extension Array: OnigurumaString where Element == UInt8 {
     public func withOnigurumaString<Result>(requestedEncoding: Encoding, _ body: (UnsafePointer<OnigUChar>, Int) throws -> Result) rethrows -> Result {
         return try self.withUnsafeBytes { bufPtr in
-            guard let start = bufPtr.baseAddress?.assumingMemoryBound(to: OnigUChar.self) else {
-                return try body(UnsafePointer<OnigUChar>(bitPattern: 1)!, 0)
-            }
-            return try body(start, bufPtr.count)
+            try OnigurumaInputAdapters.withRawBytes(bufPtr, body: body)
         }
     }
 }
