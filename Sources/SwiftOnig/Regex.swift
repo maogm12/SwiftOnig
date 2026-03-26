@@ -279,6 +279,48 @@ final public class Regex: Sendable, CustomConsumingRegexComponent, OnigOwnedReso
     public func firstMatch<S>(in str: S, options: SearchOptions = .none, matchParam: MatchParam) async throws -> Region? where S: OnigurumaString {
         try _firstMatch(in: str, of: Self.fullByteRange, options: options, matchParam: matchParam)
     }
+
+    /**
+     Search the full input and return a region only when the entire string matches.
+     */
+    public func wholeMatch<S>(in str: S, options: SearchOptions = .none) throws -> Region? where S: OnigurumaString {
+        try _wholeMatch(in: str, options: options, matchParam: nil)
+    }
+
+    /**
+     Search the full input and return a region only when the entire string matches.
+     */
+    public func wholeMatch<S>(in str: S, options: SearchOptions = .none, matchParam: MatchParam) throws -> Region? where S: OnigurumaString {
+        try _wholeMatch(in: str, options: options, matchParam: matchParam)
+    }
+
+    /**
+     Async version of `wholeMatch`.
+     */
+    public func wholeMatch<S>(in str: S, options: SearchOptions = .none) async throws -> Region? where S: OnigurumaString {
+        try _wholeMatch(in: str, options: options, matchParam: nil)
+    }
+
+    /**
+     Async version of `wholeMatch`.
+     */
+    public func wholeMatch<S>(in str: S, options: SearchOptions = .none, matchParam: MatchParam) async throws -> Region? where S: OnigurumaString {
+        try _wholeMatch(in: str, options: options, matchParam: matchParam)
+    }
+
+    private func _wholeMatch<S>(in str: S, options: SearchOptions = .none, matchParam: MatchParam?) throws -> Region? where S: OnigurumaString {
+        try str.withOnigurumaString(requestedEncoding: self.encoding) { (_, count) throws -> Region? in
+            guard let region = try _firstMatch(in: str,
+                                               of: Self.fullByteRange,
+                                               options: options.union(.matchWholeString),
+                                               matchParam: matchParam),
+                  region.range == 0..<count else {
+                return nil
+            }
+
+            return region
+        }
+    }
     
     /**
      Search the string and find the matched byte count.

@@ -118,6 +118,18 @@ struct RegexTests {
         #expect(Regex.Options.textSegmentExtendedGraphemeCluster.rawValue == ONIG_OPTION_TEXT_SEGMENT_EXTENDED_GRAPHEME_CLUSTER)
         #expect(Regex.Options.textSegmentWord.rawValue == ONIG_OPTION_TEXT_SEGMENT_WORD)
     }
+
+    @Test("Whole match convenience")
+    func wholeMatch() async throws {
+        let regex = try await Regex(pattern: #"foo"#)
+        let matchParam = MatchParam()
+        matchParam.setRetryLimitInSearch(to: 1_000)
+
+        let full = try await regex.wholeMatch(in: "foo", matchParam: matchParam)
+        #expect(full?[0]?.string == "foo")
+        #expect(try await regex.wholeMatch(in: "foo bar") == nil)
+        #expect(try await regex.wholeMatch(in: "bar foo") == nil)
+    }
     
     @Test("Enumerate Matches")
     func enumerateMatches() async throws {
