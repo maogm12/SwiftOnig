@@ -22,9 +22,9 @@ import OnigurumaC
  - `onig_regset_add`: not exposed.
  - `onig_regset_replace`: not exposed.
  */
-final public class RegexSet: Sendable {
+final public class RegexSet: Sendable, OnigOwnedResource {
     internal typealias OnigRegSet = OpaquePointer
-    internal private(set) nonisolated(unsafe) var rawValue: OnigRegSet!
+    internal nonisolated(unsafe) var rawValue: OnigRegSet!
     
     /// Cached `Regex` objects
     private let regexes: [Regex]
@@ -54,7 +54,7 @@ final public class RegexSet: Sendable {
                     onig_regset_add(self.rawValue, reg.rawValue)
                 }
             } catch {
-                self._cleanUp()
+                self.cleanUpRawValue()
                 throw error
             }
         }
@@ -88,7 +88,7 @@ final public class RegexSet: Sendable {
                     onig_regset_add(self.rawValue, reg.rawValue)
                 }
             } catch {
-                self._cleanUp()
+                self.cleanUpRawValue()
                 throw error
             }
         }
@@ -123,7 +123,7 @@ final public class RegexSet: Sendable {
                     onig_regset_add(self.rawValue, reg.rawValue)
                 }
             } catch {
-                self._cleanUp()
+                self.cleanUpRawValue()
                 throw error
             }
         }
@@ -272,15 +272,16 @@ final public class RegexSet: Sendable {
      Clean up oniruguma regset object and cached `Regex`.
      */
     private func _cleanUp() {
-        if self.rawValue != nil {
-            for i in (0..<self.count).reversed() {
-                // mark all regex object in the regset to be nil
-                onig_regset_replace(self.rawValue, OnigInt(i), nil)
-            }
+        self.cleanUpRawValue()
+    }
 
-            onig_regset_free(self.rawValue)
-            self.rawValue = nil
+    internal func releaseRawValue(_ rawValue: OnigRegSet) {
+        for index in (0..<self.count).reversed() {
+            // mark all regex object in the regset to be nil
+            onig_regset_replace(rawValue, OnigInt(index), nil)
         }
+
+        onig_regset_free(rawValue)
     }
 
     /**

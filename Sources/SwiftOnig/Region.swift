@@ -21,7 +21,7 @@ import Foundation
  - `onig_region_resize`
  - `onig_region_set`
  */
-public final class Region: Sendable {
+public final class Region: Sendable, OnigOwnedResource {
     internal typealias OnigRegionPointer = UnsafeMutablePointer<OnigRegion>
     internal nonisolated(unsafe) var rawValue: OnigRegionPointer!
     
@@ -77,8 +77,11 @@ public final class Region: Sendable {
     }
 
     deinit {
-        onig_region_free(self.rawValue, 1 /* free_self */)
-        self.rawValue = nil
+        self.cleanUpRawValue()
+    }
+
+    internal func releaseRawValue(_ rawValue: OnigRegionPointer) {
+        onig_region_free(rawValue, 1 /* free_self */)
     }
 
     /**

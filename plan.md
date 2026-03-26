@@ -106,7 +106,7 @@ This section tracks the packaging refactor from a system-installed Oniguruma dep
 
 - [x] **Runtime Layer Split**: Move global runtime state, initialization, version/copyright helpers, and low-level Oniguruma dispatch helpers out of `SwiftOnig.swift` into dedicated runtime-focused files.
 - [x] **C Globals Cleanup**: Reduce repetitive `OnigCGlobals` and `CGlobals.c` constant plumbing with a smaller or more data-driven bridge surface.
-- [ ] **Owned C Resource Abstraction**: Introduce a shared internal ownership pattern for `Regex`, `Region`, and `RegexSet` pointer-backed resources.
+- [x] **Owned C Resource Abstraction**: Introduce a shared internal ownership pattern for `Regex`, `Region`, and `RegexSet` pointer-backed resources.
 - [ ] **Sync/Async API Consolidation**: Remove duplicated sync and async wrapper bodies where both paths already share the same implementation.
 - [ ] **String Input Adapters**: Split `StringUtils.swift` into more focused UTF-8, UTF-16, and raw-byte bridging layers.
 - [ ] **Encoding Registry Refactor**: Replace the large encoding mapping ladder in `Encoding.swift` with a clearer table-driven implementation.

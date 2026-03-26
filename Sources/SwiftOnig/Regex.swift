@@ -19,7 +19,7 @@ import RegexBuilder
  - `onig_get_case_fold_flag`
  - `onig_noname_group_capture_is_active`
  */
-final public class Regex: Sendable, CustomConsumingRegexComponent {
+final public class Regex: Sendable, CustomConsumingRegexComponent, OnigOwnedResource {
     public typealias RegexOutput = Substring
 
     /// A standard-library regex view of this `SwiftOnig.Regex`.
@@ -53,7 +53,7 @@ final public class Regex: Sendable, CustomConsumingRegexComponent {
     }
     // MARK: Private members
 
-    internal private(set) nonisolated(unsafe) var rawValue: OnigRegex!
+    internal nonisolated(unsafe) var rawValue: OnigRegex!
 
     /**
      Pattern in raw bytes of the regular expression.
@@ -595,13 +595,14 @@ final public class Regex: Sendable, CustomConsumingRegexComponent {
      Clean up oniguruma regex object and cacahed pattern bytes.
      */
     private func _cleanUp() {
-        if self.rawValue != nil {
-            onig_free(self.rawValue)
-            self.rawValue = nil
-        }
+        self.cleanUpRawValue()
         self._patternBytes = nil
         self._encoding = nil
         self._syntax = nil
+    }
+
+    internal func releaseRawValue(_ rawValue: OnigRegex) {
+        onig_free(rawValue)
     }
 }
 
