@@ -101,3 +101,16 @@ This section tracks the packaging refactor from a system-installed Oniguruma dep
 - [x] **Step 6: Finalize source-build documentation**
   - Update `README.md` to describe vendored-source builds and submodule setup.
   - Mark this migration complete once all validation is green.
+
+## 11. Refactor Roadmap
+
+- [x] **Runtime Layer Split**: Move global runtime state, initialization, version/copyright helpers, and low-level Oniguruma dispatch helpers out of `SwiftOnig.swift` into dedicated runtime-focused files.
+- [ ] **C Globals Cleanup**: Reduce repetitive `OnigCGlobals` and `CGlobals.c` constant plumbing with a smaller or more data-driven bridge surface.
+- [ ] **Owned C Resource Abstraction**: Introduce a shared internal ownership pattern for `Regex`, `Region`, and `RegexSet` pointer-backed resources.
+- [ ] **Sync/Async API Consolidation**: Remove duplicated sync and async wrapper bodies where both paths already share the same implementation.
+- [ ] **String Input Adapters**: Split `StringUtils.swift` into more focused UTF-8, UTF-16, and raw-byte bridging layers.
+- [ ] **Encoding Registry Refactor**: Replace the large encoding mapping ladder in `Encoding.swift` with a clearer table-driven implementation.
+- [ ] **Syntax Ownership Model**: Separate borrowed predefined syntax presets from owned mutable syntax values to make mutation rules explicit.
+- [ ] **Error Metadata Refactor**: Rework `OnigError` mapping into smaller metadata-driven components with clearer diagnostics plumbing.
+- [ ] **RegexSet Builder Cleanup**: Consolidate repeated `RegexSet` initialization logic and add earlier compatibility validation.
+- [ ] **Test Suite Organization**: Reorganize tests by behavior layers so future refactors are easier to validate and localize.

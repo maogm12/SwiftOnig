@@ -7,10 +7,10 @@ import Foundation
 @globalActor
 public actor OnigurumaActor {
     public static let shared = OnigurumaActor()
-    
+
     private var isLibraryInitialized = false
     private var initializedEncodings = Set<OnigEncoding>()
-    
+
     /**
      Ensures that the oniguruma library and the specified encoding are initialized.
      */
@@ -19,7 +19,7 @@ public actor OnigurumaActor {
             onig_initialize(nil, 0)
             isLibraryInitialized = true
         }
-        
+
         if let encoding = encoding, !initializedEncodings.contains(encoding) {
             let result = onig_initialize_encoding(encoding)
             if result != ONIG_NORMAL {
@@ -78,13 +78,14 @@ internal struct OnigCGlobals {
 
 /**
  Initialize the library manually with specific encodings.
- 
+
  - Note: This is no longer required as initialization happens automatically on first use.
  - Parameter encodings: Encodings used in the application.
  */
 @OnigurumaActor
 public func initialize<S: Sequence>(encodings: S) async throws where S.Element == Encoding {
     try await OnigurumaActor.shared.ensureInitialized()
+
     for encoding in encodings {
         try await OnigurumaActor.shared.ensureInitialized(encoding: encoding.rawValue)
     }
@@ -107,7 +108,8 @@ public func uninitialize() {
     `OnigError` if `body` returns code not in following normal return codes:
     [`ONIG_NORMAL`, `ONIG_MISMATCH`, ``ONIG_NO_SUPPORT_CONFIG`, `ONIG_ABORT`]
  */
-@discardableResult internal func callOnigFunction(_ body: () throws -> OnigInt) throws -> OnigInt {
+@discardableResult
+internal func callOnigFunction(_ body: () throws -> OnigInt) throws -> OnigInt {
     let result = try body()
 
     switch result {
@@ -120,55 +122,16 @@ public func uninitialize() {
     }
 }
 
-internal typealias ForeachNameCallback = @Sendable (_ name: String, _ numbers: [Int]) -> Bool
-internal final class ForeachNameContext: @unchecked Sendable {
-    let encoding: Encoding
-    let callback: ForeachNameCallback
-    init(encoding: Encoding, callback: @escaping ForeachNameCallback) {
-        self.encoding = encoding
-        self.callback = callback
-    }
-}
-
-internal func onigForeachNameCallback(namePtr: UnsafePointer<OnigUChar>?,
-                                     nameEndPtr: UnsafePointer<OnigUChar>?,
-                                     groupCount: OnigInt,
-                                     groupsPtr: UnsafeMutablePointer<OnigInt>?,
-                                     regex: OnigRegex?,
-                                     contextPtr: UnsafeMutableRawPointer?) -> OnigInt {
-    guard let namePtr = namePtr, let nameEndPtr = nameEndPtr, let groupsPtr = groupsPtr, let contextPtr = contextPtr else {
-        return ONIG_ABORT
-    }
-
-    let context = Unmanaged<ForeachNameContext>.fromOpaque(contextPtr).takeUnretainedValue()
-
-    let buffer = UnsafeBufferPointer(start: namePtr, count: namePtr.distance(to: nameEndPtr))
-    guard let name = String(bytes: buffer, encoding: context.encoding.stringEncoding) else {
-        return ONIG_ABORT
-    }
-
-    var groupNumbers = [Int]()
-    for i in 0..<Int(groupCount) {
-        groupNumbers.append(Int(groupsPtr[i]))
-    }
-
-    if context.callback(name, groupNumbers) {
-        return ONIG_NORMAL
-    } else {
-        return ONIG_ABORT
-    }
-}
-
 /**
  Get the oniguruma library version string.
  */
 public func version() -> String {
-    return String(cString: onig_version())
+    String(cString: onig_version())
 }
 
 /**
  Get the oniguruma library copyright string.
  */
 public func copyright() -> String {
-    return String(cString: onig_copyright())
+    String(cString: onig_copyright())
 }
