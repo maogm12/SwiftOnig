@@ -1,3 +1,109 @@
 # SwiftOnig
 
-A description of this package.
+SwiftOnig is a modern, high-performance Swift wrapper for the [Oniguruma](https://github.com/kkos/oniguruma) regular expression library. It is designed for Swift 6.0+ with a focus on safety, concurrency, and ease of use.
+
+## Key Features
+
+- **Swift 6.0 Native**: Fully modernized with strict concurrency checking.
+- **Swift Concurrency**: Asynchronous APIs for regex compilation and searching.
+- **Thread Safe**: All core types (`Regex`, `Region`, `Encoding`, `Syntax`) are `Sendable`.
+- **RegexBuilder Support**: Seamlessly use SwiftOnig patterns within Swift's `RegexBuilder` DSL.
+- **Automatic Initialization**: No manual library setup required; encodings are initialized lazily on first use.
+- **Comprehensive Encoding Support**: Support for a wide range of character encodings (UTF-8, UTF-16, Big5, GB18030, etc.).
+- **DocC Documentation**: Rich, integrated documentation including guides and API references.
+
+## Installation
+
+Add SwiftOnig as a dependency in your `Package.swift`:
+
+```swift
+dependencies: [
+    .package(url: "https://github.com/maogm12/SwiftOnig", from: "1.0.0")
+]
+```
+
+## Quick Start
+
+### Basic Matching
+
+```swift
+import SwiftOnig
+
+// Regex creation is asynchronous and thread-safe
+let regex = try await Regex(pattern: #"\d+"#)
+
+let input = "The answer is 42."
+
+// Find the first match
+if let region = try await regex.firstMatch(in: input) {
+    print("Found: \(region.string!)") // "42"
+    print("Range: \(region.range)")   // 14..<16
+}
+```
+
+### Using RegexBuilder
+
+SwiftOnig integrates with Apple's `RegexBuilder` through `CustomConsumingRegexComponent`.
+
+```swift
+import RegexBuilder
+import SwiftOnig
+
+let onigRegex = try await SwiftOnig.Regex(pattern: #"\d+"#)
+
+let combinedRegex = Regex {
+    "ID-"
+    onigRegex
+    "!"
+}
+
+if let match = "Item ID-12345! is ready.".firstMatch(of: combinedRegex) {
+    print(match.0) // "ID-12345!"
+}
+```
+
+### Capture Groups
+
+```swift
+let regex = try await Regex(pattern: #"(\w+):\s+(\d+)"#)
+if let region = try await regex.firstMatch(in: "Age: 25") {
+    print("Field: \(region[1]!.string!)") // "Age"
+    print("Value: \(region[2]!.string!)") // "25"
+}
+```
+
+## Advanced Usage
+
+### Custom Encodings
+
+SwiftOnig excels at handling non-UTF8 data.
+
+```swift
+let gbBytes: [UInt8] = [196, 227, 186, 195] // "你好" in GB18030
+let regex = try await Regex(patternBytes: gbBytes, encoding: .gb18030)
+
+let input: [UInt8] = ... // GB18030 encoded data
+if let region = try await regex.firstMatch(in: input) {
+    // ...
+}
+```
+
+## Documentation
+
+For detailed guides and API documentation, build the DocC target:
+
+```bash
+swift package generate-documentation --target SwiftOnig
+```
+
+## Testing
+
+SwiftOnig includes a comprehensive test suite, including a port of the official Oniguruma UTF-8 tests.
+
+```bash
+swift test
+```
+
+## License
+
+SwiftOnig is available under the MIT license. See the LICENSE file for more info.
