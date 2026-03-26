@@ -34,7 +34,7 @@ If rebuilding `SwiftOnig` today, the architecture would focus on being a "Swift-
 
 ## 5. API Modernization
 - [x] **Naming Conventions**: Audit and rename public APIs (e.g., `isMatch` -> `matches(_:)`).
-- [ ] **Opaque Types**: Use `some` and `any` keywords where appropriate.
+- [x] **Opaque Types**: Use `some` and `any` keywords where appropriate.
 - [x] **Result & Error Handling**: Refine `OnigError` for better diagnostics.
 - [x] **Collection Conformance**: Modernize `Region` collection conformance.
 

@@ -33,7 +33,7 @@ public final class Region: Sendable {
     /**
      The string matched against.
      */
-    internal let str: OnigurumaString
+    internal let str: any OnigurumaString
 
     // MARK: init and deinit
     
@@ -43,7 +43,7 @@ public final class Region: Sendable {
      - Parameter text: The string matched against.
      - Throws: `OnigError.memory` when failing to allocated memory for the new `Region`.
      */
-    internal init(regex: Regex, str: OnigurumaString) throws {
+    internal init(regex: Regex, str: any OnigurumaString) throws {
         self.rawValue = onig_region_new()
         if self.rawValue == nil {
             throw OnigError.memory
@@ -71,7 +71,7 @@ public final class Region: Sendable {
         - rawValue: The oniguruma `OnigRegion` pointer.
         - regex: The associated `Regex` object.
      */
-    internal convenience init(copying rawValue: OnigRegionPointer!, regex: Regex, str: OnigurumaString) throws {
+    internal convenience init(copying rawValue: OnigRegionPointer!, regex: Regex, str: any OnigurumaString) throws {
         try self.init(regex: regex, str: str)
         onig_region_copy(self.rawValue, rawValue)
     }
@@ -117,7 +117,7 @@ public final class Region: Sendable {
      - Parameters:
         - name: Group name for backreference (`\k<name>`).
      */
-    public func backReferencedGroupNumber(of name: OnigurumaString) -> Int {
+    public func backReferencedGroupNumber(of name: any OnigurumaString) -> Int {
         let result = name.withOnigurumaString(requestedEncoding: self.regex.encoding) { start, count in
             onig_name_to_backref_number(self.regex.rawValue,
                                         start,
@@ -182,7 +182,7 @@ extension Region: RandomAccessCollection {
     /**
      Get the subregions of named capture groups with the specified name. Only groups participating match will be included in the result.
      */
-    public subscript(name: OnigurumaString) -> [Subregion] {
+    public subscript(name: any OnigurumaString) -> [Subregion] {
         let nameStr: String
         if let s = name as? String {
             nameStr = s
