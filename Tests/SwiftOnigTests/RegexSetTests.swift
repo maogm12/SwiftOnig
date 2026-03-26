@@ -25,9 +25,9 @@ final class RegexSetTests: SwiftOnigTestsBase {
     func testGetter() async {
         let regSet = try! await RegexSet(regexes: [try await Regex(pattern: "a+"), try await Regex(pattern: "b+")])
         let regex1 = regSet[0]
-        let m1 = try! await regex1.isMatch(in: "aaaa")
+        let m1 = try! await regex1.matches("aaaa")
         XCTAssertTrue(m1)
-        let m2 = try! await regex1.isMatch(in: "bbbb")
+        let m2 = try! await regex1.matches("bbbb")
         XCTAssertFalse(m2)
     }
 

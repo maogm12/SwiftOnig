@@ -21,20 +21,20 @@ final class SyntaxTests: SwiftOnigTestsBase {
         
         let syntax1 = await Syntax.ruby
         var reg = try! await Regex(pattern: "a?bbb", syntax: syntax1)
-        let m1 = try! await reg.isMatch(in: "abbb")
+        let m1 = try! await reg.matches("abbb")
         XCTAssertTrue(m1)
-        let m2 = try! await reg.isMatch(in: "bbb")
+        let m2 = try! await reg.matches("bbb")
         XCTAssertTrue(m2)
-        let m3 = try! await reg.isMatch(in: "a?bbb")
+        let m3 = try! await reg.matches("a?bbb")
         XCTAssertFalse(m3)
 
         syntax1.operators.remove(.questionOneOrZero) // disable `?`
         reg = try! await Regex(pattern: "a?bbb", syntax: syntax1)
-        let m4 = try! await reg.isMatch(in: "abbb")
+        let m4 = try! await reg.matches("abbb")
         XCTAssertFalse(m4)
-        let m5 = try! await reg.isMatch(in: "bbb")
+        let m5 = try! await reg.matches("bbb")
         XCTAssertFalse(m5)
-        let m6 = try! await reg.isMatch(in: "a?bbb")
+        let m6 = try! await reg.matches("a?bbb")
         XCTAssertTrue(m6)
     }
     
@@ -61,9 +61,9 @@ final class SyntaxTests: SwiftOnigTestsBase {
         let syntax = await Syntax.ruby
         XCTAssertEqual(syntax.metaCharTable[.Escape].description, #"\"#)
         let reg = try! await Regex(pattern: #"\w`w"#, syntax: syntax)
-        let m1 = try! await reg.isMatch(in: #"a`w"#)
+        let m1 = try! await reg.matches(#"a`w"#)
         XCTAssertTrue(m1)
-        let m2 = try! await reg.isMatch(in: #"\wb"#)
+        let m2 = try! await reg.matches(#"\wb"#)
         XCTAssertFalse(m2)
 
         // Note: metaCharTable is a property that returns a struct. To modify, we need a different approach or make it a class.

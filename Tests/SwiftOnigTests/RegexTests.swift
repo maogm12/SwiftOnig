@@ -20,9 +20,9 @@ final class RegexTests: SwiftOnigTestsBase {
     func testMatch() async {
         let reg = try! await Regex(pattern: "foo")
 
-        let m1 = try! await reg.isMatch(in: "foo")
+        let m1 = try! await reg.matches("foo")
         XCTAssertTrue(m1)
-        let m2 = try! await reg.isMatch(in: "bar")
+        let m2 = try! await reg.matches("bar")
         XCTAssertFalse(m2)
 
         let c1 = try! await reg.matchCount(in: "foo")

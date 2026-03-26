@@ -281,7 +281,7 @@ final public class Regex: Sendable {
      - Returns: `true` if it's matched, otherwise `false`.
      - Throws: `OnigError`
      */
-    public func isMatch<S, R>(in str: S, of range: R, options: SearchOptions = .none) throws -> Bool where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
+    public func matches<S, R>(_ str: S, in range: R, options: SearchOptions = .none) throws -> Bool where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
         return try self.matchCount(in: str, of: range, options: options) != nil
     }
     
@@ -295,22 +295,42 @@ final public class Regex: Sendable {
      - Returns: `true` if it's matched, otherwise `false`.
      - Throws: `OnigError`
      */
-    public func isMatch<S>(in str: S, options: SearchOptions = .none) throws -> Bool where S: OnigurumaString {
-        return try self.isMatch(in: str, of: 0..., options: options)
+    public func matches<S>(_ str: S, options: SearchOptions = .none) throws -> Bool where S: OnigurumaString {
+        return try self.matches(str, in: 0..., options: options)
     }
 
     /**
-     Async version of `isMatch`.
+     Async version of `matches`.
      */
-    public func isMatch<S, R>(in str: S, of range: R, options: SearchOptions = .none) async throws -> Bool where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
+    public func matches<S, R>(_ str: S, in range: R, options: SearchOptions = .none) async throws -> Bool where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
         return try await self.matchCount(in: str, of: range, options: options) != nil
     }
 
     /**
-     Async version of `isMatch`.
+     Async version of `matches`.
      */
+    public func matches<S>(_ str: S, options: SearchOptions = .none) async throws -> Bool where S: OnigurumaString {
+        return try await self.matches(str, in: 0..., options: options)
+    }
+
+    @available(*, deprecated, renamed: "matches(_:in:options:)")
+    public func isMatch<S, R>(in str: S, of range: R, options: SearchOptions = .none) throws -> Bool where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
+        return try matches(str, in: range, options: options)
+    }
+
+    @available(*, deprecated, renamed: "matches(_:options:)")
+    public func isMatch<S>(in str: S, options: SearchOptions = .none) throws -> Bool where S: OnigurumaString {
+        return try matches(str, options: options)
+    }
+
+    @available(*, deprecated, renamed: "matches(_:in:options:)")
+    public func isMatch<S, R>(in str: S, of range: R, options: SearchOptions = .none) async throws -> Bool where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
+        return try await matches(str, in: range, options: options)
+    }
+
+    @available(*, deprecated, renamed: "matches(_:options:)")
     public func isMatch<S>(in str: S, options: SearchOptions = .none) async throws -> Bool where S: OnigurumaString {
-        return try await self.isMatch(in: str, of: 0..., options: options)
+        return try await matches(str, options: options)
     }
     
     @discardableResult public func enumerateMatches<S>(in str: S,
