@@ -21,6 +21,7 @@ import RegexBuilder
  */
 final public class Regex: Sendable, CustomConsumingRegexComponent, OnigOwnedResource {
     public typealias RegexOutput = Substring
+    private static let fullByteRange: PartialRangeFrom<Int> = 0...
 
     /// A standard-library regex view of this `SwiftOnig.Regex`.
     ///
@@ -223,21 +224,21 @@ final public class Regex: Sendable, CustomConsumingRegexComponent, OnigOwnedReso
      - Throws: `OnigError`
      */
     public func firstMatch<S>(in str: S, options: SearchOptions = .none) throws -> Region? where S: OnigurumaString {
-        return try self.firstMatch(in: str, of: 0..., options: options)
+        try _firstMatch(in: str, of: Self.fullByteRange, options: options)
     }
 
     /**
      Async version of `firstMatch`.
      */
     public func firstMatch<S, R>(in str: S, of range: R, options: SearchOptions = .none) async throws -> Region? where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
-        return try _firstMatch(in: str, of: range, options: options)
+        try _firstMatch(in: str, of: range, options: options)
     }
 
     /**
      Async version of `firstMatch`.
      */
     public func firstMatch<S>(in str: S, options: SearchOptions = .none) async throws -> Region? where S: OnigurumaString {
-        return try await self.firstMatch(in: str, of: 0..., options: options)
+        try _firstMatch(in: str, of: Self.fullByteRange, options: options)
     }
     
     /**
@@ -286,21 +287,25 @@ final public class Regex: Sendable, CustomConsumingRegexComponent, OnigOwnedReso
      - Throws: `OnigError`
      */
     public func matchCount<S>(in str: S, options: SearchOptions = .none) throws -> Int? where S: OnigurumaString {
-        return try self.matchCount(in: str, of: 0..., options: options)
+        try _matchCount(in: str, of: Self.fullByteRange, options: options)
     }
 
     /**
      Async version of `matchCount`.
      */
     public func matchCount<S, R>(in str: S, of range: R, options: SearchOptions = .none) async throws -> Int? where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
-        return try _matchCount(in: str, of: range, options: options)
+        try _matchCount(in: str, of: range, options: options)
     }
 
     /**
      Async version of `matchCount`.
      */
     public func matchCount<S>(in str: S, options: SearchOptions = .none) async throws -> Int? where S: OnigurumaString {
-        return try await self.matchCount(in: str, of: 0..., options: options)
+        try _matchCount(in: str, of: Self.fullByteRange, options: options)
+    }
+
+    private func _matches<S, R>(_ str: S, in range: R, options: SearchOptions = .none) throws -> Bool where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
+        try _matchCount(in: str, of: range, options: options) != nil
     }
     
     /**
@@ -315,7 +320,7 @@ final public class Regex: Sendable, CustomConsumingRegexComponent, OnigOwnedReso
      - Throws: `OnigError`
      */
     public func matches<S, R>(_ str: S, in range: R, options: SearchOptions = .none) throws -> Bool where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
-        return try self.matchCount(in: str, of: range, options: options) != nil
+        try _matches(str, in: range, options: options)
     }
     
     /**
@@ -329,21 +334,21 @@ final public class Regex: Sendable, CustomConsumingRegexComponent, OnigOwnedReso
      - Throws: `OnigError`
      */
     public func matches<S>(_ str: S, options: SearchOptions = .none) throws -> Bool where S: OnigurumaString {
-        return try self.matches(str, in: 0..., options: options)
+        try _matches(str, in: Self.fullByteRange, options: options)
     }
 
     /**
      Async version of `matches`.
      */
     public func matches<S, R>(_ str: S, in range: R, options: SearchOptions = .none) async throws -> Bool where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
-        return try await self.matchCount(in: str, of: range, options: options) != nil
+        try _matches(str, in: range, options: options)
     }
 
     /**
      Async version of `matches`.
      */
     public func matches<S>(_ str: S, options: SearchOptions = .none) async throws -> Bool where S: OnigurumaString {
-        return try await self.matches(str, in: 0..., options: options)
+        try _matches(str, in: Self.fullByteRange, options: options)
     }
 
     @available(*, deprecated, renamed: "matches(_:in:options:)")
@@ -371,11 +376,11 @@ final public class Regex: Sendable, CustomConsumingRegexComponent, OnigOwnedReso
                                                        matchParam: MatchParam = MatchParam(),
                                                        body: @escaping @Sendable (_ order: Int, _ matchedIndex: Int, _ region: Region) -> Bool
     ) throws -> Int where S: OnigurumaString {
-        try self.enumerateMatches(in: str,
-                                  of: 0...,
-                                  options: options,
-                                  matchParam: matchParam,
-                                  body: body)
+        try _enumerateMatches(in: str,
+                              of: Self.fullByteRange,
+                              options: options,
+                              matchParam: matchParam,
+                              body: body)
     }
 
     private class ScanContext {
@@ -462,7 +467,7 @@ final public class Regex: Sendable, CustomConsumingRegexComponent, OnigOwnedReso
                                                           matchParam: MatchParam = MatchParam(),
                                                           body: @escaping @Sendable (_ order: Int, _ matchedIndex: Int, _ region: Region) -> Bool
     ) async throws -> Int where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
-        return try _enumerateMatches(in: str, of: range, options: options, matchParam: matchParam, body: body)
+        try _enumerateMatches(in: str, of: range, options: options, matchParam: matchParam, body: body)
     }
 
     /**
@@ -473,7 +478,7 @@ final public class Regex: Sendable, CustomConsumingRegexComponent, OnigOwnedReso
                                                        matchParam: MatchParam = MatchParam(),
                                                        body: @escaping @Sendable (_ order: Int, _ matchedIndex: Int, _ region: Region) -> Bool
     ) async throws -> Int where S: OnigurumaString {
-        return try await self.enumerateMatches(in: str, of: 0..., options: options, matchParam: matchParam, body: body)
+        try _enumerateMatches(in: str, of: Self.fullByteRange, options: options, matchParam: matchParam, body: body)
     }
 
     // MARK: Capture groups

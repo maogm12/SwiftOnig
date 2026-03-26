@@ -24,6 +24,7 @@ import OnigurumaC
  */
 final public class RegexSet: Sendable, OnigOwnedResource {
     internal typealias OnigRegSet = OpaquePointer
+    private static let fullByteRange: PartialRangeFrom<Int> = 0...
     internal nonisolated(unsafe) var rawValue: OnigRegSet!
     
     /// Cached `Regex` objects
@@ -160,11 +161,11 @@ final public class RegexSet: Sendable, OnigOwnedResource {
                               options: Regex.SearchOptions = .none,
                               matchParams: [MatchParam]? = nil
     ) throws -> (regexIndex: Int, region: Region)? where S: OnigurumaString {
-        try self.firstMatch(in: str,
-                            of: 0...,
-                            lead: lead,
-                            options: options,
-                            matchParams: matchParams)
+        try _firstMatch(in: str,
+                        of: Self.fullByteRange,
+                        lead: lead,
+                        options: options,
+                        matchParams: matchParams)
     }
 
     /**
@@ -253,7 +254,7 @@ final public class RegexSet: Sendable, OnigOwnedResource {
                               options: Regex.SearchOptions = .none,
                               matchParams: [MatchParam]? = nil
     ) async throws -> (regexIndex: Int, region: Region)? where S: OnigurumaString {
-        return try _firstMatch(in: str, of: 0..., lead: lead, options: options, matchParams: matchParams)
+        try _firstMatch(in: str, of: Self.fullByteRange, lead: lead, options: options, matchParams: matchParams)
     }
 
     /**
@@ -265,7 +266,7 @@ final public class RegexSet: Sendable, OnigOwnedResource {
                                  options: Regex.SearchOptions = .none,
                                  matchParams: [MatchParam]? = nil
     ) async throws -> (regexIndex: Int, region: Region)? where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
-        return try _firstMatch(in: str, of: range, lead: lead, options: options, matchParams: matchParams)
+        try _firstMatch(in: str, of: range, lead: lead, options: options, matchParams: matchParams)
     }
 
     /**
