@@ -5,8 +5,7 @@
 //  Created by Guangming Mao on 4/4/21.
 //
 
-import COnig
-import OnigInternal
+import OnigurumaC
 
 /**
  A wrapper of oniguruma `OnigSyntaxType`.

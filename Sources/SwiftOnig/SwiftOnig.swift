@@ -1,5 +1,4 @@
-import COnig
-import OnigInternal
+import OnigurumaC
 import Foundation
 
 /**

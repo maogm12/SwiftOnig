@@ -5,8 +5,7 @@
 //  Created by Guangming Mao on 4/2/21.
 //
 
-import COnig
-import OnigInternal
+import OnigurumaC
 
 /**
  A wrapper of oniguruma `OnigRegSet` which represents the a set of regular expressions.

@@ -5,8 +5,7 @@
 //  Created by Guangming Mao on 3/27/21.
 //
 
-import COnig
-import OnigInternal
+import OnigurumaC
 import Foundation
 import _StringProcessing
 

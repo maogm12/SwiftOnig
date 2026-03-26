@@ -5,7 +5,7 @@
 //  Created by Guangming Mao on 3/29/21.
 //
 
-import COnig
+import OnigurumaC
 
 public struct CaptureTreeNode: Sendable {
     nonisolated(unsafe) let rawValue: OnigCaptureTreeNode

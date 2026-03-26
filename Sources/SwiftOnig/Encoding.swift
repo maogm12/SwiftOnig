@@ -5,8 +5,7 @@
 //  Created by Guangming Mao on 4/3/21.
 //
 
-import COnig
-import OnigInternal
+import OnigurumaC
 import CoreFoundation
 import Foundation
 

@@ -90,7 +90,7 @@ let package = Package(
             ]),
         .target(
             name: "SwiftOnig",
-            dependencies: ["COnig", "OnigInternal"],
+            dependencies: ["OnigurumaC"],
             swiftSettings: [
                 .enableUpcomingFeature("StrictConcurrency")
             ]),

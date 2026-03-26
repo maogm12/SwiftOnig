@@ -5,8 +5,7 @@
 //  Created by Guangming Mao on 4/1/21.
 //
 
-import COnig
-import OnigInternal
+import OnigurumaC
 import Foundation
 
 public protocol OnigurumaString: Sendable {

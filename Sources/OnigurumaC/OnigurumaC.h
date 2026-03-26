@@ -1,6 +1,7 @@
 #ifndef SWIFTONIG_ONIGURUMAC_H
 #define SWIFTONIG_ONIGURUMAC_H
 
+#include "config.h"
 #include "vendor/oniguruma.h"
 #include "CGlobals.h"
 

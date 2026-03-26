@@ -5,7 +5,7 @@
 //  Created by Guangming Mao on 3/27/21.
 //
 
-import COnig
+import OnigurumaC
 import Foundation
 
 public enum OnigError: Error, Equatable, Sendable {
