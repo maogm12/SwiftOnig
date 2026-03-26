@@ -154,6 +154,10 @@ final public class Regex: Sendable {
      - Throws: `OnigError`
      */
     public func firstMatch<S, R>(in str: S, of range: R, options: SearchOptions = .none) throws -> Region? where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
+        return try _firstMatch(in: str, of: range, options: options)
+    }
+
+    private func _firstMatch<S, R>(in str: S, of range: R, options: SearchOptions = .none) throws -> Region? where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
         return try str.withOnigurumaString { (start, count) throws -> Region? in
             let range = range.relative(to: 0..<count).clamped(to: 0..<count)
             let region = try Region(regex: self, str: str)
@@ -188,6 +192,20 @@ final public class Regex: Sendable {
     public func firstMatch<S>(in str: S, options: SearchOptions = .none) throws -> Region? where S: OnigurumaString {
         return try self.firstMatch(in: str, of: 0..., options: options)
     }
+
+    /**
+     Async version of `firstMatch`.
+     */
+    public func firstMatch<S, R>(in str: S, of range: R, options: SearchOptions = .none) async throws -> Region? where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
+        return try _firstMatch(in: str, of: range, options: options)
+    }
+
+    /**
+     Async version of `firstMatch`.
+     */
+    public func firstMatch<S>(in str: S, options: SearchOptions = .none) async throws -> Region? where S: OnigurumaString {
+        return try await self.firstMatch(in: str, of: 0..., options: options)
+    }
     
     /**
      Search the string and find the matched byte count.
@@ -201,6 +219,10 @@ final public class Regex: Sendable {
      - Throws: `OnigError`
      */
     public func matchCount<S, R>(in str: S, of range: R, options: SearchOptions = .none) throws -> Int? where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
+        return try _matchCount(in: str, of: range, options: options)
+    }
+
+    private func _matchCount<S, R>(in str: S, of range: R, options: SearchOptions = .none) throws -> Int? where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
         return try str.withOnigurumaString { (start, count) throws -> Int? in
             let range = range.relative(to: 0..<count).clamped(to: 0..<count)
             let result = try callOnigFunction {
@@ -233,6 +255,20 @@ final public class Regex: Sendable {
     public func matchCount<S>(in str: S, options: SearchOptions = .none) throws -> Int? where S: OnigurumaString {
         return try self.matchCount(in: str, of: 0..., options: options)
     }
+
+    /**
+     Async version of `matchCount`.
+     */
+    public func matchCount<S, R>(in str: S, of range: R, options: SearchOptions = .none) async throws -> Int? where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
+        return try _matchCount(in: str, of: range, options: options)
+    }
+
+    /**
+     Async version of `matchCount`.
+     */
+    public func matchCount<S>(in str: S, options: SearchOptions = .none) async throws -> Int? where S: OnigurumaString {
+        return try await self.matchCount(in: str, of: 0..., options: options)
+    }
     
     /**
      Is the string matched by the regular expression?
@@ -262,11 +298,25 @@ final public class Regex: Sendable {
     public func isMatch<S>(in str: S, options: SearchOptions = .none) throws -> Bool where S: OnigurumaString {
         return try self.isMatch(in: str, of: 0..., options: options)
     }
+
+    /**
+     Async version of `isMatch`.
+     */
+    public func isMatch<S, R>(in str: S, of range: R, options: SearchOptions = .none) async throws -> Bool where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
+        return try await self.matchCount(in: str, of: range, options: options) != nil
+    }
+
+    /**
+     Async version of `isMatch`.
+     */
+    public func isMatch<S>(in str: S, options: SearchOptions = .none) async throws -> Bool where S: OnigurumaString {
+        return try await self.isMatch(in: str, of: 0..., options: options)
+    }
     
     @discardableResult public func enumerateMatches<S>(in str: S,
                                                        options: SearchOptions = .none,
                                                        matchParam: MatchParam = MatchParam(),
-                                                       body: @escaping (_ order: Int, _ matchedIndex: Int, _ region: Region) -> Bool
+                                                       body: @escaping @Sendable (_ order: Int, _ matchedIndex: Int, _ region: Region) -> Bool
     ) throws -> Int where S: OnigurumaString {
         try self.enumerateMatches(in: str,
                                   of: 0...,
@@ -277,8 +327,8 @@ final public class Regex: Sendable {
 
     private class ScanContext {
         let region: Region
-        let callback: (Int, Int, Region) -> Bool
-        init(region: Region, callback: @escaping (Int, Int, Region) -> Bool) {
+        let callback: @Sendable (Int, Int, Region) -> Bool
+        init(region: Region, callback: @escaping @Sendable (Int, Int, Region) -> Bool) {
             self.region = region
             self.callback = callback
         }
@@ -304,7 +354,16 @@ final public class Regex: Sendable {
                                                           of range: R,
                                                           options: SearchOptions = .none,
                                                           matchParam: MatchParam = MatchParam(),
-                                                          body: @escaping (_ order: Int, _ matchedIndex: Int, _ region: Region) -> Bool
+                                                          body: @escaping @Sendable (_ order: Int, _ matchedIndex: Int, _ region: Region) -> Bool
+    ) throws -> Int where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
+        return try _enumerateMatches(in: str, of: range, options: options, matchParam: matchParam, body: body)
+    }
+
+    private func _enumerateMatches<S, R>(in str: S,
+                                         of range: R,
+                                         options: SearchOptions = .none,
+                                         matchParam: MatchParam = MatchParam(),
+                                         body: @escaping @Sendable (_ order: Int, _ matchedIndex: Int, _ region: Region) -> Bool
     ) throws -> Int where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
         let result = try str.withOnigurumaString { (start, count) throws -> OnigInt in
             let range = range.relative(to: 0..<count).clamped(to: 0..<count)
@@ -339,6 +398,29 @@ final public class Regex: Sendable {
         }
 
         return Int(result)
+    }
+
+    /**
+     Async version of `enumerateMatches`.
+     */
+    @discardableResult public func enumerateMatches<S, R>(in str: S,
+                                                          of range: R,
+                                                          options: SearchOptions = .none,
+                                                          matchParam: MatchParam = MatchParam(),
+                                                          body: @escaping @Sendable (_ order: Int, _ matchedIndex: Int, _ region: Region) -> Bool
+    ) async throws -> Int where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
+        return try _enumerateMatches(in: str, of: range, options: options, matchParam: matchParam, body: body)
+    }
+
+    /**
+     Async version of `enumerateMatches`.
+     */
+    @discardableResult public func enumerateMatches<S>(in str: S,
+                                                       options: SearchOptions = .none,
+                                                       matchParam: MatchParam = MatchParam(),
+                                                       body: @escaping @Sendable (_ order: Int, _ matchedIndex: Int, _ region: Region) -> Bool
+    ) async throws -> Int where S: OnigurumaString {
+        return try await self.enumerateMatches(in: str, of: 0..., options: options, matchParam: matchParam, body: body)
     }
 
     // MARK: Capture groups

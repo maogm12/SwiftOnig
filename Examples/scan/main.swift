@@ -11,7 +11,7 @@ import SwiftOnig
 func execute(pattern: String, str: String, options: Regex.SearchOptions) async throws {
     print("Pattern: /\(pattern)/ String: \(str)")
     let regex = try await Regex(pattern: pattern)
-    let numberOfMatches = try regex.enumerateMatches(in: str, options: options) { (order, index, region) -> Bool in
+    let numberOfMatches = try await regex.enumerateMatches(in: str, options: options) { (order, index, region) -> Bool in
         print("Scan: \(order)")
         
         print("Match at \(index)")

@@ -16,7 +16,7 @@ func execute(str: String, pattern: String, syntax: Syntax, options: Regex.Option
     print("Number of captures: \(regex.captureGroupsCount)")
     print("Number of capture histories: \(regex.captureHistoryCount)")
     
-    guard let region = try regex.firstMatch(in: str) else {
+    guard let region = try await regex.firstMatch(in: str) else {
         print("Search fail")
         return
     }

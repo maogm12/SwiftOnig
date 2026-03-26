@@ -11,7 +11,7 @@ import XCTest
 final class RegionTests: SwiftOnigTestsBase {
     func testSingleRange() async {
         let regex = try! await Regex(pattern: #"[\d-]+"#)
-        let region = try! regex.firstMatch(in: "Phone number: 123-456-7890")!
+        let region = try! await regex.firstMatch(in: "Phone number: 123-456-7890")!
         
         XCTAssertEqual(region.count, 1)
         XCTAssertEqual(region.range, 14..<26)
@@ -24,7 +24,7 @@ final class RegionTests: SwiftOnigTestsBase {
     func testMultiRanges() async {
         let regex = try! await Regex(pattern: #"(\w+)@((\w+)(\.(\w+))+)"#)
         let str = "Email: test@foo.bar.com"
-        let region = try! regex.firstMatch(in: str)!
+        let region = try! await regex.firstMatch(in: str)!
         
         XCTAssertEqual(region.count, 6)
         XCTAssertEqual(region.range, 7..<23)
@@ -53,8 +53,8 @@ final class RegionTests: SwiftOnigTestsBase {
         let regex = try! await Regex(pattern: #"(?<a>a+)(?<b>b+)?"#)
         let str1 = "aaabbb"
         let str2 = "bbbaaa"
-        let region1 = try! regex.firstMatch(in: str1)!
-        let region2 = try! regex.firstMatch(in: str2)!
+        let region1 = try! await regex.firstMatch(in: str1)!
+        let region2 = try! await regex.firstMatch(in: str2)!
         
         XCTAssertEqual(region1.map { $0?.range }, [0..<6, 0..<3, 3..<6])
         XCTAssertEqual(region2.map { $0?.range }, [3..<6, 3..<6, nil])
@@ -63,14 +63,14 @@ final class RegionTests: SwiftOnigTestsBase {
     func testString() async {
         let regex = try! await Regex(pattern: #"(\w+)@((\w+)(\.(\w+))+)"#)
         let str = "Email: test@foo.bar.com"
-        let region = try! regex.firstMatch(in: str)!
+        let region = try! await regex.firstMatch(in: str)!
         
         XCTAssertEqual(region[2]?.string, "foo.bar.com")
     }
     
     func testIterator() async {
         let regex = try! await Regex(pattern: "(a+)(b+)(c+)")
-        let region = try! regex.firstMatch(in: "aaaabbbbc")!
+        let region = try! await regex.firstMatch(in: "aaaabbbbc")!
         let subRegions = region.compactMap { $0 }
         XCTAssertEqual(subRegions.map { $0.range }, [0..<9, 0..<4, 4..<8, 8..<9])
         XCTAssertEqual(subRegions.map { $0.string }, ["aaaabbbbc", "aaaa", "bbbb", "c"])
@@ -78,7 +78,7 @@ final class RegionTests: SwiftOnigTestsBase {
     
     func testRandomAccessCollection() async {
         let regex = try! await Regex(pattern: "(a+)(b+)(c+)")
-        let region = try! regex.firstMatch(in: "aabbcc")!
+        let region = try! await regex.firstMatch(in: "aabbcc")!
         
         XCTAssertEqual(region.startIndex, 0)
         XCTAssertEqual(region.endIndex, 4)
@@ -111,7 +111,7 @@ final class RegionTests: SwiftOnigTestsBase {
         
         do {
             let reg = try await Regex(pattern: #"(?@a+(?@b+))|(?@c+(?@d+))"#, syntax: syntax)
-            guard let region = try reg.firstMatch(in: "- cd aaabbb -") else {
+            guard let region = try await reg.firstMatch(in: "- cd aaabbb -") else {
                 return // Skip if no match
             }
 

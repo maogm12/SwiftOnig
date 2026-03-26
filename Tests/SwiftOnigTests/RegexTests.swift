@@ -20,20 +20,26 @@ final class RegexTests: SwiftOnigTestsBase {
     func testMatch() async {
         let reg = try! await Regex(pattern: "foo")
 
-        XCTAssertTrue(try! reg.isMatch(in: "foo"))
-        XCTAssertFalse(try! reg.isMatch(in: "bar"))
+        let m1 = try! await reg.isMatch(in: "foo")
+        XCTAssertTrue(m1)
+        let m2 = try! await reg.isMatch(in: "bar")
+        XCTAssertFalse(m2)
 
-        XCTAssertEqual(try! reg.matchCount(in: "foo"), 3)
-        XCTAssertEqual(try! reg.matchCount(in: "foo bar"), 3)
-        XCTAssertEqual(try! reg.matchCount(in: "afoo bar", of: 1...), 3)
-        XCTAssertNil(try! reg.matchCount(in: "bar"))
+        let c1 = try! await reg.matchCount(in: "foo")
+        XCTAssertEqual(c1, 3)
+        let c2 = try! await reg.matchCount(in: "foo bar")
+        XCTAssertEqual(c2, 3)
+        let c3 = try! await reg.matchCount(in: "afoo bar", of: 1...)
+        XCTAssertEqual(c3, 3)
+        let c4 = try! await reg.matchCount(in: "bar")
+        XCTAssertNil(c4)
     }
     
     func testSearch() async {
         let naiveEmailReg = try! await Regex(pattern: #"\w+@\w+\.com"#)
         let target = "Naive email: test@example.com. :)"
 
-        var region = try! naiveEmailReg.firstMatch(in: target)!
+        var region = try! await naiveEmailReg.firstMatch(in: target)!
         XCTAssertNotNil(region)
         XCTAssertEqual(region.count, 1)
         XCTAssertEqual(region[0]?.range, 13..<29)
@@ -42,7 +48,7 @@ final class RegexTests: SwiftOnigTestsBase {
         let gb18030Bytes: [UInt8] = [196, 227, 186, 195] // 你好
         let regGb18030 = try! await Regex(patternBytes: gb18030Bytes, encoding: .gb18030)
         let gb18030String: [UInt8] = [196, 227, 186, 195, 163, 172, 202, 192, 189, 231] // 你好，世界
-        region = try! regGb18030.firstMatch(in: gb18030String)!
+        region = try! await regGb18030.firstMatch(in: gb18030String)!
         XCTAssertNotNil(region)
         XCTAssertEqual(region.count, 1)
         XCTAssertEqual(region[0]?.range, 0..<4)
@@ -51,26 +57,31 @@ final class RegexTests: SwiftOnigTestsBase {
     
     func testEnumerateMatches() async {
         let reg = try! await Regex(pattern: #"\d+"#)
-        var result = [(Int, Region)]()
-        try! reg.enumerateMatches(in: "aa11bb22cc33dd44") {
-            result.append(($1, $2))
+        
+        final class Results: @unchecked Sendable {
+            var items = [(Int, Region)]()
+        }
+        let results = Results()
+        
+        try! await reg.enumerateMatches(in: "aa11bb22cc33dd44") {
+            results.items.append(($1, $2))
             return true
         }
 
-        XCTAssertEqual(result.map { $0.0 }, [2, 6, 10, 14])
-        XCTAssertEqual(result.map { $0.1[0]!.range }, [2..<4, 6..<8, 10..<12, 14..<16])
-        XCTAssertEqual(result.map { $0.1[0]!.string }, ["11", "22", "33", "44"])
+        XCTAssertEqual(results.items.map { $0.0 }, [2, 6, 10, 14])
+        XCTAssertEqual(results.items.map { $0.1[0]!.range }, [2..<4, 6..<8, 10..<12, 14..<16])
+        XCTAssertEqual(results.items.map { $0.1[0]!.string }, ["11", "22", "33", "44"])
 
         // Abort enumeration
-        var resultFirst2 = [(Int, Region)]()
-        try! reg.enumerateMatches(in: "aa11bb22cc33dd44") {
-            resultFirst2.append(($1, $2))
-            return resultFirst2.count < 2
+        let resultsFirst2 = Results()
+        try! await reg.enumerateMatches(in: "aa11bb22cc33dd44") {
+            resultsFirst2.items.append(($1, $2))
+            return resultsFirst2.items.count < 2
         }
 
-        XCTAssertEqual(resultFirst2.map { $0.0 }, [2, 6])
-        XCTAssertEqual(resultFirst2.map { $0.1[0]!.range }, [2..<4, 6..<8])
-        XCTAssertEqual(resultFirst2.map { $0.1[0]!.string }, ["11", "22"])
+        XCTAssertEqual(resultsFirst2.items.map { $0.0 }, [2, 6])
+        XCTAssertEqual(resultsFirst2.items.map { $0.1[0]!.range }, [2..<4, 6..<8])
+        XCTAssertEqual(resultsFirst2.items.map { $0.1[0]!.string }, ["11", "22"])
     }
 
     func testNamedCaptureGroups() async {
@@ -110,7 +121,7 @@ final class RegexTests: SwiftOnigTestsBase {
         ("testMatch", testMatch),
         ("testSearch", testSearch),
         ("testEnumerateMatches", testEnumerateMatches),
-        // ("testNamedCaptureGroups", testNamedCaptureGroups),
+        ("testNamedCaptureGroups", testNamedCaptureGroups),
         ("testCaptureGroups", testCaptureGroups),
     ]
 }
