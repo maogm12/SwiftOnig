@@ -1,0 +1,4 @@
+module OnigurumaC {
+    umbrella header "OnigurumaC.h"
+    export *
+}
