@@ -11,6 +11,7 @@ public func allTests() -> [XCTestCaseEntry] {
         testCase(RegexSetTests.allTests),
         testCase(EncodingTests.allTests),
         testCase(RegexBuilderTests.allTests),
+        testCase(OnigOfficialTests.allTests),
     ]
 }
 #endif
