@@ -1,0 +1,83 @@
+# Workspace Agent Guidance
+
+This file captures repo-specific working rules for agents collaborating in this workspace.
+
+## Overview
+
+- This repository is a Swift 6 package wrapping the Oniguruma regex library.
+- The main library code lives in `Sources/SwiftOnig`.
+- C interop support lives in `Sources/COnig` and `Sources/OnigInternal`.
+- Tests live in `Tests/SwiftOnigTests` and use `swift-testing`, not XCTest manifests.
+- Example executables live in `Examples/`.
+- Benchmarks live in `Benchmarks/`.
+
+## Git
+
+- Preferred prefixes:
+  - `feat:` for new features
+  - `fix:` for bug fixes
+  - `chore:` for maintenance or repo housekeeping
+  - `test:` for test-only changes
+  - `docs:` for documentation-only changes
+  - `refactor:` for behavior-preserving code reshaping
+- Do not create bare commit titles such as `Add X`; use `feat: add X` instead.
+- Keep commits scoped to a single logical step whenever possible.
+- Do not include unrelated user files in commits.
+- Leave untracked or unrelated files alone unless explicitly asked to handle them.
+
+## Versioning
+
+
+- Use Semantic Versioning.
+- Track the current package version in the repo root `VERSION` file.
+- Track release notes in `CHANGELOG.md`.
+- For every commit, explicitly decide whether the change requires a version bump.
+- If a bump is needed, update both:
+  - `VERSION`
+  - the top `Unreleased` or new release section in `CHANGELOG.md`
+- Bump rules:
+  - `MAJOR` for breaking public API or CLI contract changes, always ask for approval for MAJOR version bump
+  - `MINOR` for backward-compatible features
+  - `PATCH` for backward-compatible fixes, docs-affecting packaging changes, or release housekeeping tied to published artifacts
+- If a commit is purely local workflow guidance and does not affect the library or release artifacts, note that no bump is needed.
+
+## Testing
+
+- Run `swift test` before each commit.
+- If you suspect concurrency or discovery issues, also run `swift test --no-parallel`.
+- Do not reintroduce `Tests/LinuxMain.swift` or XCTest manifest files unless the user explicitly asks for legacy XCTest support.
+- Prefer adding or updating `swift-testing` suites in `Tests/SwiftOnigTests`.
+- When changing behavior around encodings, named captures, syntax flags, or search semantics, add or update targeted tests.
+
+## Oniguruma and C Interop
+
+- Treat changes in `Sources/COnig` and `Sources/OnigInternal` as high risk.
+- Preserve pointer lifetime and ownership rules carefully.
+- Prefer existing safe wrapper paths over adding new direct C API calls unless necessary.
+- Be cautious with APIs that hand back borrowed pointers or arrays from Oniguruma.
+- When changing regex or region internals, verify both native `swift test` runs and the affected targeted tests.
+
+## Concurrency and API Design
+
+- This package is written for Swift 6 with strict concurrency enabled.
+- Avoid introducing non-`Sendable` state into public APIs without a strong reason.
+- Respect the `OnigurumaActor` isolation model for global library state and syntax mutation.
+- If a synchronous access pattern works inside actor isolation, do not add unnecessary `await`s.
+
+## Editing
+
+- Prefer focused, minimal edits.
+- Preserve the existing Swift-first wrapper style rather than mirroring C naming unnecessarily.
+- Keep public API changes deliberate and well-tested.
+- Avoid adding compatibility shims that duplicate test execution or mask native runner failures.
+
+## Documentation and Planning
+
+- Update `README.md` or DocC content when user-facing behavior materially changes.
+- `plan.md` exists, but it is a modernization notes document, not a required per-task checklist.
+
+## Practical Checks
+
+- If `swift test` fails unexpectedly, confirm Oniguruma is available via the system package configuration.
+- Watch for behavior drift caused by different Oniguruma versions, especially in syntax flags, encodings, named groups, and capture history features.
+- Prefer verifying assumptions with small targeted tests over relying on comments from older implementations.
