@@ -6,6 +6,7 @@
 //
 
 import COnig
+import OnigInternal
 
 /**
  A wrapper of oniguruma `OnigRegSet` which represents the a set of regular expressions.
@@ -48,7 +49,7 @@ final public class RegexSet: Sendable {
         }
 
         onig_regset_new(&self.rawValue, 0, nil)
-        for reg in regexes {
+        for reg in self.regexes {
             do {
                 try callOnigFunction{
                     onig_regset_add(self.rawValue, reg.rawValue)
@@ -129,15 +130,21 @@ final public class RegexSet: Sendable {
         }
     }
 
-
     deinit {
         self._cleanUp()
     }
-    
-    // MARK: Search API
-    
+
     /**
-     Search a string and return the first matching region.
+     The count of regular expressions.
+     */
+    public var count: Int {
+        Int(onig_regset_number_of_regex(self.rawValue))
+    }
+
+    // MARK: Match & Search
+
+    /**
+     Search string and return the first matching region.
 
      If `str` conforms to `StringProtocol`, will search against the UTF-8 bytes of the string. Do not pass invalid bytes in the regular expression encoding.
 
@@ -181,7 +188,19 @@ final public class RegexSet: Sendable {
                                  options: Regex.SearchOptions = .none,
                                  matchParams: [MatchParam]? = nil
     ) throws -> (regexIndex: Int, region: Region)? where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
-        let result = try str.withOnigurumaString { (start, count) throws -> OnigInt in
+        return try _firstMatch(in: str, of: range, lead: lead, options: options, matchParams: matchParams)
+    }
+
+    private func _firstMatch<S, R>(in str: S,
+                                  of range: R,
+                                  lead: Lead = .positionLead,
+                                  options: Regex.SearchOptions = .none,
+                                  matchParams: [MatchParam]? = nil
+    ) throws -> (regexIndex: Int, region: Region)? where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
+        guard let firstRegex = self.regexes.first else {
+            return nil
+        }
+        let result = try str.withOnigurumaString(requestedEncoding: firstRegex.encoding) { (start, count) throws -> OnigInt in
             var bytesIndex: OnigInt = 0
             let range = range.relative(to: 0..<count).clamped(to: 0..<count)
             if let matchParams = matchParams {
@@ -211,9 +230,13 @@ final public class RegexSet: Sendable {
                                           &bytesIndex)
             }
         }
-    
-        if result == ONIG_MISMATCH {
-            return nil
+        
+        if result < 0 {
+            if result == ONIG_MISMATCH {
+                return nil
+            } else {
+                throw OnigError(onigErrorCode: result)
+            }
         } else {
             let onigRegion = onig_regset_get_region(self.rawValue, result)
             return(regexIndex: Int(result),
@@ -221,6 +244,29 @@ final public class RegexSet: Sendable {
                                       regex: self.regexes[Int(result)],
                                       str: str))
         }
+    }
+
+    /**
+     Async version of `firstMatch`.
+     */
+    public func firstMatch<S>(in str: S,
+                              lead: Lead = .positionLead,
+                              options: Regex.SearchOptions = .none,
+                              matchParams: [MatchParam]? = nil
+    ) async throws -> (regexIndex: Int, region: Region)? where S: OnigurumaString {
+        return try _firstMatch(in: str, of: 0..., lead: lead, options: options, matchParams: matchParams)
+    }
+
+    /**
+     Async version of `firstMatch`.
+     */
+    public func firstMatch<S, R>(in str: S,
+                                 of range: R,
+                                 lead: Lead = .positionLead,
+                                 options: Regex.SearchOptions = .none,
+                                 matchParams: [MatchParam]? = nil
+    ) async throws -> (regexIndex: Int, region: Region)? where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
+        return try _firstMatch(in: str, of: range, lead: lead, options: options, matchParams: matchParams)
     }
 
     /**

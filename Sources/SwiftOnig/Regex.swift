@@ -181,7 +181,7 @@ final public class Regex: Sendable, CustomConsumingRegexComponent {
     }
 
     private func _firstMatch<S, R>(in str: S, of range: R, options: SearchOptions = .none) throws -> Region? where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
-        return try str.withOnigurumaString { (start, count) throws -> Region? in
+        return try str.withOnigurumaString(requestedEncoding: self.encoding) { (start, count) throws -> Region? in
             let range = range.relative(to: 0..<count).clamped(to: 0..<count)
             let region = try Region(regex: self, str: str)
             let result = try callOnigFunction {
@@ -246,7 +246,7 @@ final public class Regex: Sendable, CustomConsumingRegexComponent {
     }
 
     private func _matchCount<S, R>(in str: S, of range: R, options: SearchOptions = .none) throws -> Int? where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
-        return try str.withOnigurumaString { (start, count) throws -> Int? in
+        return try str.withOnigurumaString(requestedEncoding: self.encoding) { (start, count) throws -> Int? in
             let range = range.relative(to: 0..<count).clamped(to: 0..<count)
             let result = try callOnigFunction {
                 onig_match(self.rawValue,
@@ -408,7 +408,7 @@ final public class Regex: Sendable, CustomConsumingRegexComponent {
                                          matchParam: MatchParam = MatchParam(),
                                          body: @escaping @Sendable (_ order: Int, _ matchedIndex: Int, _ region: Region) -> Bool
     ) throws -> Int where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
-        let result = try str.withOnigurumaString { (start, count) throws -> OnigInt in
+        let result = try str.withOnigurumaString(requestedEncoding: self.encoding) { (start, count) throws -> OnigInt in
             let range = range.relative(to: 0..<count).clamped(to: 0..<count)
             let region = try Region(regex: self, str: str)
 

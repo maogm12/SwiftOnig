@@ -118,7 +118,7 @@ public final class Region: Sendable {
         - name: Group name for backreference (`\k<name>`).
      */
     public func backReferencedGroupNumber(of name: OnigurumaString) -> Int {
-        let result = name.withOnigurumaString { start, count in
+        let result = name.withOnigurumaString(requestedEncoding: self.regex.encoding) { start, count in
             onig_name_to_backref_number(self.regex.rawValue,
                                         start,
                                         start.advanced(by:count),
@@ -167,7 +167,7 @@ extension Region: RandomAccessCollection {
             let end = Int(self.rawValue.pointee.end[groupNumber])
             let range = begin ..< end
             
-            let subString = self.str.withOnigurumaString { (start, count) -> String? in
+            let subString = self.str.withOnigurumaString(requestedEncoding: self.regex.encoding) { (start, count) -> String? in
                 String(bytes: UnsafeBufferPointer(start: start.advanced(by: range.lowerBound),
                                                   count: range.count),
                        encoding: self.regex.encoding.stringEncoding)
@@ -187,7 +187,7 @@ extension Region: RandomAccessCollection {
         if let s = name as? String {
             nameStr = s
         } else {
-            nameStr = name.withOnigurumaString { (start, count) -> String in
+            nameStr = name.withOnigurumaString(requestedEncoding: self.regex.encoding) { (start, count) -> String in
                 String(bytes: UnsafeBufferPointer(start: start, count: count), encoding: self.regex.encoding.stringEncoding) ?? ""
             }
         }
