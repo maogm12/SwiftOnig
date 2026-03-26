@@ -68,17 +68,6 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-testing.git", exact: "0.10.0"),
     ],
     targets: [
-        .systemLibrary(
-            name: "COnig",
-            pkgConfig: "oniguruma",
-            providers: [
-                .apt(["libonig-dev"]),
-                .brew(["oniguruma"])
-            ]),
-        .target(
-            name: "OnigInternal",
-            dependencies: ["COnig"],
-            path: "Sources/OnigInternal"),
         .target(
             name: "OnigurumaC",
             path: "Sources/OnigurumaC",

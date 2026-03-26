@@ -1,5 +1,0 @@
-module COnig [system] {
-    umbrella header "conig.h"
-    link "onig"
-    export *
-}
