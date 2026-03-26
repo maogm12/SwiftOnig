@@ -92,7 +92,7 @@ struct SwiftOnigTests {
         }
 
         let box = CalloutBox()
-        let matchParam = MatchParam()
+        var matchParam = MatchParam()
         matchParam.setCalloutUserData("payload")
         matchParam.setProgressCallout { context in
             if let userData = context.userData as? String {

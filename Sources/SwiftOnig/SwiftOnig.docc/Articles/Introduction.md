@@ -13,7 +13,7 @@ While Swift provides built-in regular expression support, SwiftOnig offers sever
 ## Key Concepts
 
 ### Regex
-The core class used to compile and execute regular expressions.
+The core struct used to compile and execute regular expressions.
 
 ### Region
 Represents the result of a match, including all capture groups and their ranges.

@@ -74,7 +74,7 @@ struct RegexSetTests {
 
     @Test("Mutable operations")
     func mutations() async throws {
-        let regSet = try await RegexSet(regexes: [try await Regex(pattern: "a+"), try await Regex(pattern: "b+")])
+        var regSet = try await RegexSet(regexes: [try await Regex(pattern: "a+"), try await Regex(pattern: "b+")])
         try regSet.append(try await Regex(pattern: "c+"))
         #expect(regSet.count == 3)
         #expect(try await regSet[2].matches("ccc"))
@@ -90,7 +90,7 @@ struct RegexSetTests {
 
     @Test("Reject invalid mutable operations")
     func mutationValidation() async throws {
-        let regSet = try await RegexSet(regexes: [try await Regex(pattern: "a+")])
+        var regSet = try await RegexSet(regexes: [try await Regex(pattern: "a+")])
         let gb18030Regex = try await Regex(patternBytes: [196, 227, 186, 195], encoding: .gb18030)
         let longestRegex = try await Regex(pattern: "b+", options: .findLongest)
 

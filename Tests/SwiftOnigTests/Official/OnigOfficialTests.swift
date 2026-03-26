@@ -72,8 +72,8 @@ struct OnigOfficialTests {
 
     @Test("Syntax Suite (test_syntax.c)")
     func syntax() async throws {
-        let java = await Syntax.java
-        let posix = await Syntax.posixExtended
+        let java = Syntax.java
+        let posix = Syntax.posixExtended
         
         await verify([
             // Java syntax

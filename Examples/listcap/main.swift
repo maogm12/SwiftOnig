@@ -38,8 +38,10 @@ func runListcap() async throws {
     let str2 = #"x00x00x00"#
     let pattern2 = #"(?@a)x(?@a)0(?@a)0"#
 
-    let syntax = await Syntax.default
-    syntax.operators.insert(.variableMetaCharacters) 
+    var syntax = Syntax.default
+    var operators = syntax.operators
+    operators.insert(.variableMetaCharacters)
+    syntax.operators = operators
 
     try await execute(str: str1, pattern: pattern1, syntax: syntax, options: .none)
     print()

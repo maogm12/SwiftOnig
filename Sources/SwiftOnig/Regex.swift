@@ -19,9 +19,65 @@ import RegexBuilder
  - `onig_get_case_fold_flag`
  - `onig_noname_group_capture_is_active`
  */
-final public class Regex: Sendable, CustomConsumingRegexComponent, OnigOwnedResource {
+public struct Regex: Sendable, CustomConsumingRegexComponent {
     public typealias RegexOutput = Substring
     private static let fullByteRange: PartialRangeFrom<Int> = 0...
+
+    internal final class Storage: @unchecked Sendable {
+        let rawValue: OnigRegex
+        let patternBytes: ContiguousArray<UInt8>
+        let rawSyntax: UnsafeMutablePointer<OnigSyntaxType>
+        let syntax: Syntax
+        let encoding: Encoding
+        let options: Options
+
+        init<S>(patternBytes: S,
+                encoding: Encoding,
+                options: Options,
+                syntax: Syntax) throws where S: Sequence, S.Element == UInt8 {
+            let compiledPatternBytes = ContiguousArray(patternBytes)
+            let rawSyntax = syntax.allocateRawValueCopy()
+
+            var rawValue: OnigRegex?
+            var error = OnigErrorInfo()
+            let result = compiledPatternBytes.withUnsafeBufferPointer { bufPtr -> OnigInt in
+                onig_new(&rawValue,
+                         bufPtr.baseAddress,
+                         bufPtr.baseAddress?.advanced(by: compiledPatternBytes.count),
+                         options.rawValue,
+                         encoding.rawValue,
+                         rawSyntax,
+                         &error)
+            }
+
+            if result != ONIG_NORMAL {
+                rawSyntax.deinitialize(count: 1)
+                rawSyntax.deallocate()
+                throw OnigError(onigErrorCode: result, onigErrorInfo: error)
+            }
+
+            guard let rawValue else {
+                rawSyntax.deinitialize(count: 1)
+                rawSyntax.deallocate()
+                throw OnigError.memory
+            }
+
+            self.rawValue = rawValue
+            self.patternBytes = compiledPatternBytes
+            self.rawSyntax = rawSyntax
+            self.syntax = syntax
+            self.encoding = encoding
+            self.options = options
+        }
+
+        deinit {
+            onig_free(rawValue)
+            rawSyntax.deinitialize(count: 1)
+            rawSyntax.deallocate()
+        }
+    }
+
+    private let storage: Storage
 
     /// A standard-library regex view of this `SwiftOnig.Regex`.
     ///
@@ -52,33 +108,9 @@ final public class Regex: Sendable, CustomConsumingRegexComponent, OnigOwnedReso
         let matchEndIndex = input.index(input.startIndex, offsetBy: matchRange.upperBound)
         return (matchEndIndex, input[index..<matchEndIndex])
     }
-    // MARK: Private members
-
-    internal nonisolated(unsafe) var rawValue: OnigRegex!
-
-    /**
-     Pattern in raw bytes of the regular expression.
-     */
-    private nonisolated(unsafe) var _patternBytes: ContiguousArray<UInt8>!
-    
-    /**
-     Syntax of the regular expression.
-     
-     Keep a reference to the syntax to make sure the address to the syntax used in oniguruma is always valid.
-     */
-    private nonisolated(unsafe) var _syntax: Syntax!
-    
-    /**
-     Encoding of the regular expression.
-
-     Keep a reference to the encoding to make sure the address to the encoding used in oniguruma is always valid.
-     */
-    private nonisolated(unsafe) var _encoding: Encoding!
-    
-    /**
-     Option of the regular expression.
-     */
-    private let _options: Options
+    internal var rawValue: OnigRegex {
+        storage.rawValue
+    }
     
     // MARK: init & deinit
     
@@ -93,9 +125,9 @@ final public class Regex: Sendable, CustomConsumingRegexComponent, OnigOwnedReso
      - Throws: `OnigError`
      */
     @OnigurumaActor
-    public convenience init<S>(pattern: S,
-                               options: Options = .none,
-                               syntax: Syntax? = nil
+    public init<S>(pattern: S,
+                   options: Options = .none,
+                   syntax: Syntax? = nil
     ) async throws where S: StringProtocol {
         try await self.init(patternBytes: pattern.utf8, encoding: Encoding.utf8, options: options, syntax: syntax)
     }
@@ -116,34 +148,11 @@ final public class Regex: Sendable, CustomConsumingRegexComponent, OnigOwnedReso
                    syntax: Syntax? = nil
     ) async throws where S: Sequence, S.Element == UInt8 {
         try await OnigurumaActor.shared.ensureInitialized(encoding: encoding.rawValue)
-        
-        self._patternBytes = ContiguousArray(patternBytes)
-        self._encoding = encoding
-        self._options = options
-        let defaultSyntax = Syntax.default
-        let actualSyntax = syntax ?? defaultSyntax
-        self._syntax = actualSyntax
-
-        var error = OnigErrorInfo()
-        let result = self._patternBytes.withUnsafeBufferPointer { bufPtr -> OnigInt in
-            // Make sure that `onig_new` isn't called by more than one thread at a time.
-            onig_new(&self.rawValue,
-                     bufPtr.baseAddress,
-                     bufPtr.baseAddress?.advanced(by: self._patternBytes.count),
-                     options.rawValue,
-                     encoding.rawValue,
-                     actualSyntax.rawValue,
-                     &error)
-        }
-        
-        if result != ONIG_NORMAL {
-            self._cleanUp()
-            throw OnigError(onigErrorCode: result, onigErrorInfo: error)
-        }
-    }
-    
-    deinit {
-        self._cleanUp()
+        let actualSyntax = syntax ?? Syntax.default
+        self.storage = try Storage(patternBytes: patternBytes,
+                                   encoding: encoding,
+                                   options: options,
+                                   syntax: actualSyntax)
     }
     
     // MARK: Accessors
@@ -153,7 +162,7 @@ final public class Regex: Sendable, CustomConsumingRegexComponent, OnigOwnedReso
      */
     public var options: Options {
         get {
-            return Options(rawValue: onig_get_options(self.rawValue))
+            storage.options
         }
     }
     
@@ -162,7 +171,7 @@ final public class Regex: Sendable, CustomConsumingRegexComponent, OnigOwnedReso
      */
     public var encoding: Encoding {
         get {
-            return Encoding(rawValue: onig_get_encoding(self.rawValue))
+            storage.encoding
         }
     }
     
@@ -171,7 +180,7 @@ final public class Regex: Sendable, CustomConsumingRegexComponent, OnigOwnedReso
      */
     public var syntax: Syntax {
         get async {
-            return await Syntax(rawValue: onig_get_syntax(self.rawValue))
+            storage.syntax
         }
     }
     
@@ -197,14 +206,16 @@ final public class Regex: Sendable, CustomConsumingRegexComponent, OnigOwnedReso
             let region = try Region(regex: self, str: str)
             let result = try callOnigFunction {
                 if let matchParam {
-                    return onig_search_with_param(self.rawValue,
-                                                  start,
-                                                  start.advanced(by: count),
-                                                  start.advanced(by: range.lowerBound),
-                                                  start.advanced(by: range.upperBound),
-                                                  region.rawValue,
-                                                  options.rawValue,
-                                                  matchParam.rawValue)
+                    return try matchParam.withRawValue { rawMatchParam in
+                        onig_search_with_param(self.rawValue,
+                                               start,
+                                               start.advanced(by: count),
+                                               start.advanced(by: range.lowerBound),
+                                               start.advanced(by: range.upperBound),
+                                               region.rawValue,
+                                               options.rawValue,
+                                               rawMatchParam)
+                    }
                 }
 
                 return onig_search(self.rawValue,
@@ -342,13 +353,15 @@ final public class Regex: Sendable, CustomConsumingRegexComponent, OnigOwnedReso
             let range = range.relative(to: 0..<count).clamped(to: 0..<count)
             let result = try callOnigFunction {
                 if let matchParam {
-                    return onig_match_with_param(self.rawValue,
-                                                 start,
-                                                 start.advanced(by: count),
-                                                 start.advanced(by: range.lowerBound),
-                                                 nil,
-                                                 options.rawValue,
-                                                 matchParam.rawValue)
+                    return try matchParam.withRawValue { rawMatchParam in
+                        onig_match_with_param(self.rawValue,
+                                              start,
+                                              start.advanced(by: count),
+                                              start.advanced(by: range.lowerBound),
+                                              nil,
+                                              options.rawValue,
+                                              rawMatchParam)
+                    }
                 }
 
                 return onig_match(self.rawValue,
@@ -667,10 +680,6 @@ final public class Regex: Sendable, CustomConsumingRegexComponent, OnigOwnedReso
          - numbers: group numbers of the group name.
      */
     public func enumerateCaptureGroupNames(_ body: @escaping @Sendable (_ name: String, _ numbers: [Int]) -> Bool) {
-        if self.rawValue == nil {
-            return
-        }
-        
         let context = ForeachNameContext(encoding: self.encoding, callback: body)
         withExtendedLifetime(context) {
             let contextPtr = Unmanaged.passUnretained(context).toOpaque()
@@ -748,21 +757,6 @@ final public class Regex: Sendable, CustomConsumingRegexComponent, OnigOwnedReso
         }
     }
     
-    // MARK: Private methods
-    
-    /**
-     Clean up oniguruma regex object and cacahed pattern bytes.
-     */
-    private func _cleanUp() {
-        self.cleanUpRawValue()
-        self._patternBytes = nil
-        self._encoding = nil
-        self._syntax = nil
-    }
-
-    internal func releaseRawValue(_ rawValue: OnigRegex) {
-        onig_free(rawValue)
-    }
 }
 
 // MARK: Regex options and search options

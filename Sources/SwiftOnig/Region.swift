@@ -11,32 +11,73 @@ import Foundation
 /**
  A wrapper of oniguruma `OnigRegion` which represents the results of a single regular expression match.
  
- In `SwiftOnig`, `Region` is supposed to be immutable and only used as the result of regular expression matches. So it only wrap new/delete and immutable query APIs of `OnigRegion`:
- - `onig_region_new`: wrapped in `init`.
- - `onig_region_copy`: wrapped in `init(from:)`.
- - `onig_region_free`: wrapper in `deinit`.
-
- Those APIs are not wrapped becuase there is no need to reuse  `Region` in regular expression matches as in C.
- - `onig_region_clear`
- - `onig_region_resize`
- - `onig_region_set`
+ In `SwiftOnig`, `Region` is immutable and only used as the result of regular expression matches.
  */
-public final class Region: Sendable, OnigOwnedResource {
+public struct Region: Sendable {
     internal typealias OnigRegionPointer = UnsafeMutablePointer<OnigRegion>
-    internal nonisolated(unsafe) var rawValue: OnigRegionPointer!
-    
+
+    internal final class Storage: @unchecked Sendable {
+        let rawValue: OnigRegionPointer
+        let regex: Regex
+        let str: any OnigurumaString
+
+        init(regex: Regex, str: any OnigurumaString) throws {
+            guard let rawValue = onig_region_new() else {
+                throw OnigError.memory
+            }
+
+            self.rawValue = rawValue
+            self.regex = regex
+            self.str = str
+        }
+
+        init(copying other: Storage) throws {
+            guard let rawValue = onig_region_new() else {
+                throw OnigError.memory
+            }
+
+            self.rawValue = rawValue
+            self.regex = other.regex
+            self.str = other.str
+            onig_region_copy(rawValue, other.rawValue)
+        }
+
+        init(copying rawValue: OnigRegionPointer!, regex: Regex, str: any OnigurumaString) throws {
+            guard let copiedRegion = onig_region_new() else {
+                throw OnigError.memory
+            }
+
+            self.rawValue = copiedRegion
+            self.regex = regex
+            self.str = str
+            onig_region_copy(copiedRegion, rawValue)
+        }
+
+        deinit {
+            onig_region_free(rawValue, 1 /* free_self */)
+        }
+    }
+
+    internal let storage: Storage
+
+    internal var rawValue: OnigRegionPointer {
+        storage.rawValue
+    }
+
     /**
      The regular expression used in match operation.
      */
-    internal let regex: Regex
+    internal var regex: Regex {
+        storage.regex
+    }
 
     /**
      The string matched against.
      */
-    internal let str: any OnigurumaString
+    internal var str: any OnigurumaString {
+        storage.str
+    }
 
-    // MARK: init and deinit
-    
     /**
      Create an empty `Region`.
      - Parameter regex: The associated `Regex` object.
@@ -44,44 +85,21 @@ public final class Region: Sendable, OnigOwnedResource {
      - Throws: `OnigError.memory` when failing to allocated memory for the new `Region`.
      */
     internal init(regex: Regex, str: any OnigurumaString) throws {
-        self.rawValue = onig_region_new()
-        if self.rawValue == nil {
-            throw OnigError.memory
-        }
-        
-        self.regex = regex
-        self.str = str
+        self.storage = try Storage(regex: regex, str: str)
     }
 
     /**
      Create a new `Region` by copying from other `Region`.
-     - Parameters:
-        - other: The other `Region` to copy from.
-     - Throws: `OnigError.memory` when failing to allocated memory for the new `Region`.
-    */
-    internal convenience init(copying other: Region) throws {
-        try self.init(regex: other.regex, str: other.str)
-        onig_region_copy(self.rawValue, other.rawValue)
+     */
+    internal init(copying other: Region) throws {
+        self.storage = try Storage(copying: other.storage)
     }
     
     /**
      Create a new `Region` by coping from an exsiting oniguruma `OnigRegion` pointer.
-     
-     - Parameters:
-        - rawValue: The oniguruma `OnigRegion` pointer.
-        - regex: The associated `Regex` object.
      */
-    internal convenience init(copying rawValue: OnigRegionPointer!, regex: Regex, str: any OnigurumaString) throws {
-        try self.init(regex: regex, str: str)
-        onig_region_copy(self.rawValue, rawValue)
-    }
-
-    deinit {
-        self.cleanUpRawValue()
-    }
-
-    internal func releaseRawValue(_ rawValue: OnigRegionPointer) {
-        onig_region_free(rawValue, 1 /* free_self */)
+    internal init(copying rawValue: OnigRegionPointer!, regex: Regex, str: any OnigurumaString) throws {
+        self.storage = try Storage(copying: rawValue, regex: regex, str: str)
     }
 
     /**
@@ -90,7 +108,7 @@ public final class Region: Sendable, OnigOwnedResource {
      A region will have at least one subregion representing the whole matched portion, but may optionally have more, for example for a regular expression with capture groups.
      */
     public var count: Int {
-        Int(self.rawValue.pointee.num_regs)
+        Int(rawValue.pointee.num_regs)
     }
     
 
@@ -100,7 +118,7 @@ public final class Region: Sendable, OnigOwnedResource {
      It's a convenient accessor of the range of the first `Subregion`.
      */
     public var range: Range<Int> {
-        precondition(self.count > 0, "Empty region")
+        precondition(count > 0, "Empty region")
         return self[0]!.range
     }
 
@@ -110,7 +128,7 @@ public final class Region: Sendable, OnigOwnedResource {
      It's a convenient accessor of the string of the first `Subregion`.
      */
     public var string: String? {
-        precondition(self.count > 0, "Empty region")
+        precondition(count > 0, "Empty region")
         return self[0]!.string
     }
     
@@ -121,11 +139,11 @@ public final class Region: Sendable, OnigOwnedResource {
         - name: Group name for backreference (`\k<name>`).
      */
     public func backReferencedGroupNumber(of name: any OnigurumaString) -> Int {
-        let result = name.withOnigurumaString(requestedEncoding: self.regex.encoding) { start, count in
-            onig_name_to_backref_number(self.regex.rawValue,
+        let result = name.withOnigurumaString(requestedEncoding: regex.encoding) { start, count in
+            onig_name_to_backref_number(regex.rawValue,
                                         start,
-                                        start.advanced(by:count),
-                                        self.rawValue)
+                                        start.advanced(by: count),
+                                        rawValue)
         }
         return Int(result)
     }
@@ -156,24 +174,24 @@ extension Region: RandomAccessCollection {
     }
 
     public var endIndex: Int {
-        self.count
+        count
     }
 
     /**
      Get the subregion of n-th capture group. If the gropu doesn participate the match, `nil` will be returned.
      */
     public subscript(groupNumber: Int) -> Subregion? {
-        precondition(groupNumber >= 0 && groupNumber < self.count, "Group number \(groupNumber) out of range")
+        precondition(groupNumber >= 0 && groupNumber < count, "Group number \(groupNumber) out of range")
         
-        if self._isGroupActive(groupNumber: groupNumber) {
-            let begin = Int(self.rawValue.pointee.beg[groupNumber])
-            let end = Int(self.rawValue.pointee.end[groupNumber])
+        if _isGroupActive(groupNumber: groupNumber) {
+            let begin = Int(rawValue.pointee.beg[groupNumber])
+            let end = Int(rawValue.pointee.end[groupNumber])
             let range = begin ..< end
             
-            let subString = self.str.withOnigurumaString(requestedEncoding: self.regex.encoding) { (start, count) -> String? in
+            let subString = str.withOnigurumaString(requestedEncoding: regex.encoding) { start, _ in
                 String(bytes: UnsafeBufferPointer(start: start.advanced(by: range.lowerBound),
                                                   count: range.count),
-                       encoding: self.regex.encoding.stringEncoding)
+                       encoding: regex.encoding.stringEncoding)
             }
             
             return Subregion(groupNumber: groupNumber, range: range, string: subString)
@@ -190,15 +208,15 @@ extension Region: RandomAccessCollection {
         if let s = name as? String {
             nameStr = s
         } else {
-            nameStr = name.withOnigurumaString(requestedEncoding: self.regex.encoding) { (start, count) -> String in
-                String(bytes: UnsafeBufferPointer(start: start, count: count), encoding: self.regex.encoding.stringEncoding) ?? ""
+            nameStr = name.withOnigurumaString(requestedEncoding: regex.encoding) { start, count in
+                String(bytes: UnsafeBufferPointer(start: start, count: count), encoding: regex.encoding.stringEncoding) ?? ""
             }
         }
-        return self.regex.captureGroupNumbers(for: nameStr)
+        return regex.captureGroupNumbers(for: nameStr)
             .compactMap { self[$0] }
     }
     
     private func _isGroupActive(groupNumber: Int) -> Bool {
-        return self.rawValue.pointee.beg[groupNumber] != ONIG_REGION_NOTPOS
+        rawValue.pointee.beg[groupNumber] != ONIG_REGION_NOTPOS
     }
 }

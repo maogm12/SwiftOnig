@@ -93,7 +93,7 @@ struct RegionTests {
     
     @OnigurumaActor
     private func setupCaptureTreeSyntax() async -> Syntax {
-        let syntax = Syntax(copying: Syntax.default)
+        var syntax = Syntax(copying: Syntax.default)
         syntax.operators2.insert(.asteriskBraceCallout)
         return syntax
     }

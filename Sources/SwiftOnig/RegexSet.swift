@@ -8,26 +8,58 @@
 import OnigurumaC
 
 /**
- A wrapper of oniguruma `OnigRegSet` which represents the a set of regular expressions.
- 
- In `SwiftOnig`, `RegexSet` is supposed to be immutable, thoses APIs in oniguruma are wrapped:
- - `onig_regset_new`: wrapped in `init`.
- - `onig_regset_free`: wrapped in `deinit`.
- - `onig_regset_number_of_regex`, wrapped in `endIndex` of `RandomAccessCollection`.
- - `onig_regset_get_regex`: wrapped in `subscription(position:)`.
- - `onig_regset_get_region`: Used in `search(*)`.
- - `onig_regset_search`, `onig_regset_search_with_param` : Wrapped in `search(*)`.
-
+ A wrapper of oniguruma `OnigRegSet` which represents a set of regular expressions.
  */
-final public class RegexSet: @unchecked Sendable, OnigOwnedResource {
+public struct RegexSet: Sendable {
     internal typealias OnigRegSet = OpaquePointer
-    private static let fullByteRange: PartialRangeFrom<Int> = 0...
-    internal nonisolated(unsafe) var rawValue: OnigRegSet!
-    
-    /// Cached `Regex` objects
-    private var regexes: [Regex]
 
-    // MARK: init & deinit
+    internal final class Storage: @unchecked Sendable {
+        let rawValue: OnigRegSet
+        let regexes: [Regex]
+
+        init(regexes: [Regex]) throws {
+            self.regexes = regexes
+
+            var rawValue: OnigRegSet?
+            onig_regset_new(&rawValue, 0, nil)
+            guard let rawValue else {
+                throw OnigError.memory
+            }
+
+            self.rawValue = rawValue
+            do {
+                for regex in regexes {
+                    try callOnigFunction {
+                        onig_regset_add(rawValue, regex.rawValue)
+                    }
+                }
+            } catch {
+                for index in (0..<regexes.count).reversed() {
+                    onig_regset_replace(rawValue, OnigInt(index), nil)
+                }
+                onig_regset_free(rawValue)
+                throw error
+            }
+        }
+
+        deinit {
+            for index in (0..<regexes.count).reversed() {
+                onig_regset_replace(rawValue, OnigInt(index), nil)
+            }
+            onig_regset_free(rawValue)
+        }
+    }
+
+    private static let fullByteRange: PartialRangeFrom<Int> = 0...
+    private var storage: Storage
+
+    internal var rawValue: OnigRegSet {
+        storage.rawValue
+    }
+
+    private var regexes: [Regex] {
+        storage.regexes
+    }
 
     /**
      Create a `RegexSet` with a sequence of regular expressions.
@@ -37,65 +69,43 @@ final public class RegexSet: @unchecked Sendable, OnigOwnedResource {
      - Throws: `OnigError`
      */
     public init<S>(regexes: S) async throws where S: Sequence, S.Element == Regex {
-        self.regexes = [Regex](regexes)
-        try Self.validateRegexes(self.regexes)
-        try await Self.initializeRuntime(for: self.regexes)
-        try self.populateRawValue()
+        let regexes = [Regex](regexes)
+        try Self.validateRegexes(regexes)
+        try await Self.initializeRuntime(for: regexes)
+        self.storage = try Storage(regexes: regexes)
     }
 
     /**
      Create a `RegexSet` with a sequence of string patterns.
-
-     As swift string uses UTF-8 as internal storage from swift 5, UTF-8 encoding (`Encoding.utf8`) will be used for swift string pattern.
-     - Parameters:
-         - patterns: Patterns used to create these regular expressions.
-         - option: Options used to create these regular expressions.
-         - syntax: Syntax used to create these regular expressions. If `nil`, `Syntax.default` will be used.
-     - Throws: `OnigError`
      */
     @OnigurumaActor
     public init<S, P>(patterns: S,
-                   options: Regex.Options = .none,
-                   syntax: Syntax? = nil
+                      options: Regex.Options = .none,
+                      syntax: Syntax? = nil
     ) async throws where S: Sequence, S.Element == P, P: StringProtocol {
         var compiledRegexes = [Regex]()
         for pattern in patterns {
             compiledRegexes.append(try await Regex(pattern: pattern, options: options, syntax: syntax))
         }
-        self.regexes = compiledRegexes
-
-        try Self.validateRegexes(self.regexes)
-        try self.populateRawValue()
+        try Self.validateRegexes(compiledRegexes)
+        self.storage = try Storage(regexes: compiledRegexes)
     }
 
     /**
      Create a `RegexSet` with a sequence of patterns.
-
-     - Parameters:
-         - patterns: Patterns used to create these regular expressions.
-         - encoding: Encoding used to create these regular expressions.
-         - option: Options used to create these regular expressions.
-         - syntax: Syntax used to create these regular expressions. If `nil`, `Syntax.default` will be used.
-     - Throws: `OnigError`
      */
     @OnigurumaActor
     public init<S, P>(patternsBytes: S,
-                   encoding: Encoding,
-                   options: Regex.Options = .none,
-                   syntax: Syntax? = nil
+                      encoding: Encoding,
+                      options: Regex.Options = .none,
+                      syntax: Syntax? = nil
     ) async throws where S: Sequence, S.Element == P, P: Sequence, P.Element == UInt8 {
         var compiledRegexes = [Regex]()
         for patternBytes in patternsBytes {
             compiledRegexes.append(try await Regex(patternBytes: patternBytes, encoding: encoding, options: options, syntax: syntax))
         }
-        self.regexes = compiledRegexes
-
-        try Self.validateRegexes(self.regexes)
-        try self.populateRawValue()
-    }
-
-    deinit {
-        self._cleanUp()
+        try Self.validateRegexes(compiledRegexes)
+        self.storage = try Storage(regexes: compiledRegexes)
     }
 
     private static func validateRegexes(_ regexes: [Regex]) throws {
@@ -120,77 +130,49 @@ final public class RegexSet: @unchecked Sendable, OnigOwnedResource {
         }
     }
 
-    private func populateRawValue() throws {
-        onig_regset_new(&self.rawValue, 0, nil)
-        for regex in self.regexes {
-            do {
-                try callOnigFunction {
-                    onig_regset_add(self.rawValue, regex.rawValue)
-                }
-            } catch {
-                self.cleanUpRawValue()
-                throw error
-            }
-        }
-    }
-
-    private func rebuildRawValue(with regexes: [Regex]) throws {
+    private mutating func rebuild(with regexes: [Regex]) throws {
         try Self.validateRegexes(regexes)
-        self.cleanUpRawValue()
-        self.regexes = regexes
-        try self.populateRawValue()
+        storage = try Storage(regexes: regexes)
     }
 
     /**
      The count of regular expressions.
      */
     public var count: Int {
-        Int(onig_regset_number_of_regex(self.rawValue))
+        regexes.count
     }
 
     /**
      Append a regex to the set.
      */
-    public func append(_ regex: Regex) throws {
-        var updated = self.regexes
+    public mutating func append(_ regex: Regex) throws {
+        var updated = regexes
         updated.append(regex)
-        try rebuildRawValue(with: updated)
+        try rebuild(with: updated)
     }
 
     /**
      Replace the regex at the provided index.
      */
-    public func replace(at index: Int, with regex: Regex) throws {
-        precondition(self.regexes.indices.contains(index), "Index out of bounds")
-        var updated = self.regexes
+    public mutating func replace(at index: Int, with regex: Regex) throws {
+        precondition(regexes.indices.contains(index), "Index out of bounds")
+        var updated = regexes
         updated[index] = regex
-        try rebuildRawValue(with: updated)
+        try rebuild(with: updated)
     }
 
     /**
      Remove the regex at the provided index.
      */
-    public func remove(at index: Int) throws {
-        precondition(self.regexes.indices.contains(index), "Index out of bounds")
-        var updated = self.regexes
+    public mutating func remove(at index: Int) throws {
+        precondition(regexes.indices.contains(index), "Index out of bounds")
+        var updated = regexes
         updated.remove(at: index)
-        try rebuildRawValue(with: updated)
+        try rebuild(with: updated)
     }
-
-    // MARK: Match & Search
 
     /**
      Search string and return the first matching region.
-
-     If `str` conforms to `StringProtocol`, will search against the UTF-8 bytes of the string. Do not pass invalid bytes in the regular expression encoding.
-
-     - Parameters:
-        - str: The target string to search against.
-        - lead: Outer loop element, both `.positionLead` and `.regexLead` gurantee to return the *true* left most matched position, but in most cases `.positionLead` seems to be faster. `.priorityToRegexOrder` gurantee the returned regex index is the index of the *first* regular expression that coult match.
-        - option: The regular expression search options.
-        - matchParams: Match patameters, count **must** be equal to count of regular expressions.
-     - Returns: A tuple of matched regular expression index and matching region. Or `nil` if no match is found.
-     - Throws: `OnigError`
      */
     public func firstMatch<S>(in str: S,
                               lead: Lead = .positionLead,
@@ -206,17 +188,6 @@ final public class RegexSet: @unchecked Sendable, OnigOwnedResource {
 
     /**
      Search a range of string and return the first matching region.
-
-     If `str` conforms to `StringProtocol`, will search against the UTF-8 bytes of the string. Do not pass invalid bytes in the regular expression encoding.
-
-     - Parameters:
-        - str: The target string to search against.
-        - range: The range of bytes to search against. It will be clamped to the range of the whole string first.
-        - lead: Outer loop element, both `.positionLead` and `.regexLead` gurantee to return the *true* left most matched position, but in most cases `.positionLead` seems to be faster. `.priorityToRegexOrder` gurantee the returned regex index is the index of the *first* regular expression that coult match.
-        - option: The regular expression search options.
-        - matchParams: Match patameters, count **must** be equal to count of regular expressions.
-     - Returns: A tuple of matched regular expression index and matching region. Or `nil` if no match is found.
-     - Throws: `OnigError`
      */
     public func firstMatch<S, R>(in str: S,
                                  of range: R,
@@ -224,39 +195,41 @@ final public class RegexSet: @unchecked Sendable, OnigOwnedResource {
                                  options: Regex.SearchOptions = .none,
                                  matchParams: [MatchParam]? = nil
     ) throws -> (regexIndex: Int, region: Region)? where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
-        return try _firstMatch(in: str, of: range, lead: lead, options: options, matchParams: matchParams)
+        try _firstMatch(in: str, of: range, lead: lead, options: options, matchParams: matchParams)
     }
 
     private func _firstMatch<S, R>(in str: S,
-                                  of range: R,
-                                  lead: Lead = .positionLead,
-                                  options: Regex.SearchOptions = .none,
-                                  matchParams: [MatchParam]? = nil
+                                   of range: R,
+                                   lead: Lead = .positionLead,
+                                   options: Regex.SearchOptions = .none,
+                                   matchParams: [MatchParam]? = nil
     ) throws -> (regexIndex: Int, region: Region)? where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
-        guard let firstRegex = self.regexes.first else {
+        guard let firstRegex = regexes.first else {
             return nil
         }
-        let result = try str.withOnigurumaString(requestedEncoding: firstRegex.encoding) { (start, count) throws -> OnigInt in
+
+        if let matchParams {
+            precondition(matchParams.count == regexes.count, "Match params count must equal regex count")
+        }
+
+        let result = try str.withOnigurumaString(requestedEncoding: firstRegex.encoding) { start, count throws -> OnigInt in
             var bytesIndex: OnigInt = 0
             let range = range.relative(to: 0..<count).clamped(to: 0..<count)
-            if let matchParams = matchParams {
-                let mps = UnsafeMutableBufferPointer<OpaquePointer?>.allocate(capacity: matchParams.count)
-                _ = mps.initialize(from: matchParams.map{ $0.rawValue })
-                defer {
-                    mps.deallocate()
+
+            if let matchParams {
+                return try Self.withRawMatchParams(matchParams) { rawParams in
+                    onig_regset_search_with_param(rawValue,
+                                                  start,
+                                                  start.advanced(by: count),
+                                                  start.advanced(by: range.lowerBound),
+                                                  start.advanced(by: range.upperBound),
+                                                  lead.onigRegSetLead,
+                                                  options.rawValue,
+                                                  rawParams.baseAddress,
+                                                  &bytesIndex)
                 }
-                
-                return onig_regset_search_with_param(self.rawValue,
-                                                     start,
-                                                     start.advanced(by: count),
-                                                     start.advanced(by: range.lowerBound),
-                                                     start.advanced(by: range.upperBound),
-                                                     lead.onigRegSetLead,
-                                                     options.rawValue,
-                                                     mps.baseAddress,
-                                                     &bytesIndex)
             } else {
-                return onig_regset_search(self.rawValue,
+                return onig_regset_search(rawValue,
                                           start,
                                           start.advanced(by: count),
                                           start.advanced(by: range.lowerBound),
@@ -274,12 +247,34 @@ final public class RegexSet: @unchecked Sendable, OnigOwnedResource {
                 throw OnigError(onigErrorCode: result)
             }
         } else {
-            let onigRegion = onig_regset_get_region(self.rawValue, result)
-            return(regexIndex: Int(result),
-                   region: try Region(copying: onigRegion,
-                                      regex: self.regexes[Int(result)],
-                                      str: str))
+            let onigRegion = onig_regset_get_region(rawValue, result)
+            return (regexIndex: Int(result),
+                    region: try Region(copying: onigRegion,
+                                       regex: regexes[Int(result)],
+                                       str: str))
         }
+    }
+
+    private static func withRawMatchParams<Result>(_ matchParams: [MatchParam],
+                                                   _ body: (UnsafeMutableBufferPointer<OpaquePointer?>) throws -> Result) throws -> Result {
+        var rawParams = Array<OpaquePointer?>()
+        rawParams.reserveCapacity(matchParams.count)
+
+        func run(_ index: Int) throws -> Result {
+            if index == matchParams.count {
+                return try rawParams.withUnsafeMutableBufferPointer { buffer in
+                    try body(buffer)
+                }
+            }
+
+            return try matchParams[index].withRawValue { rawValue in
+                rawParams.append(rawValue)
+                defer { rawParams.removeLast() }
+                return try run(index + 1)
+            }
+        }
+
+        return try run(0)
     }
 
     /**
@@ -306,36 +301,11 @@ final public class RegexSet: @unchecked Sendable, OnigOwnedResource {
     }
 
     /**
-     Clean up oniruguma regset object and cached `Regex`.
-     */
-    private func _cleanUp() {
-        self.cleanUpRawValue()
-    }
-
-    internal func releaseRawValue(_ rawValue: OnigRegSet) {
-        for index in (0..<self.count).reversed() {
-            // mark all regex object in the regset to be nil
-            onig_regset_replace(rawValue, OnigInt(index), nil)
-        }
-
-        onig_regset_free(rawValue)
-    }
-
-    /**
      Out loop element when performing search.
      */
     public enum Lead {
-        /**
-         When performing the search, the outer loop is for positons of the string, once some of the regex matches from this position, it returns, so it gurantees the returned first matched index is indeed the first position some of the regex could match.
-         */
         case positionLead
-        /**
-         When performing the search, the outer loop is for indexes of regex objects, and return the most left matched position, it also gurantees the return first matched index is the first position some of the regex could matches.
-         */
         case regexLead
-        /**
-         When performing the search, the outer loop is for indexes of regex objects, once one regex matches, it returns, so it gurantees the returned matched regex is the first regex that matches, but the return first matched index might not be the first position some of the regex could matches.
-         */
         case priorityToRegexOrder
         
         public var onigRegSetLead: OnigRegSetLead {
@@ -351,21 +321,19 @@ final public class RegexSet: @unchecked Sendable, OnigOwnedResource {
     }
 }
 
-// MARK: RandomAccessCollection
-
-extension RegexSet : RandomAccessCollection {
+extension RegexSet: RandomAccessCollection {
     public typealias Index = Int
     public typealias Element = Regex
     
     public var startIndex: Int {
-        return 0
+        0
     }
     
     public var endIndex: Int {
-        return Int(onig_regset_number_of_regex(self.rawValue))
+        regexes.count
     }
 
     public subscript(position: Int) -> Regex {
-        return self.regexes[position]
+        regexes[position]
     }
 }

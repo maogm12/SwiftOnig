@@ -66,7 +66,7 @@ struct RegexTests {
     func matchParamSupport() async throws {
         let regex = try await Regex(pattern: "(a|aa)+b")
         let target = String(repeating: "a", count: 24)
-        let matchParam = MatchParam()
+        var matchParam = MatchParam()
         matchParam.setRetryLimitInMatch(to: 1)
         matchParam.setRetryLimitInSearch(to: 1)
 
@@ -122,7 +122,7 @@ struct RegexTests {
     @Test("Whole match convenience")
     func wholeMatch() async throws {
         let regex = try await Regex(pattern: #"foo"#)
-        let matchParam = MatchParam()
+        var matchParam = MatchParam()
         matchParam.setRetryLimitInSearch(to: 1_000)
 
         let full = try await regex.wholeMatch(in: "foo", matchParam: matchParam)
@@ -167,8 +167,8 @@ struct RegexTests {
         let noUnnamedCapture = try await Regex(pattern: #"(\w+)(\d+)"#, options: .dontCaptureGroup)
         #expect(!noUnnamedCapture.nonameGroupCaptureIsActive)
 
-        let syntax = await Syntax(copying: Syntax.default)
-        await configureCaptureOnlyNamedGroup(on: syntax)
+        var syntax = Syntax(copying: Syntax.default)
+        await configureCaptureOnlyNamedGroup(on: &syntax)
         let captureOnlyNamedRegex = try await Regex(pattern: #"(?<name>\w+)(\d+)"#, syntax: syntax)
         #expect(!captureOnlyNamedRegex.nonameGroupCaptureIsActive)
 
@@ -177,7 +177,7 @@ struct RegexTests {
     }
 
     @OnigurumaActor
-    private func configureCaptureOnlyNamedGroup(on syntax: Syntax) {
+    private func configureCaptureOnlyNamedGroup(on syntax: inout Syntax) {
         var behaviors = syntax.behaviors
         behaviors.insert(.captureOnlyNamedGroup)
         syntax.behaviors = behaviors

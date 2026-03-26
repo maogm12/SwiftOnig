@@ -8,25 +8,17 @@
 import OnigurumaC
 
 /**
- A wrapper of oniguruma `OnigSyntaxType`.
+ A value snapshot of oniguruma `OnigSyntaxType`.
  
- In `SwiftOnig`, `Syntax` is mutable but isolated by `@OnigurumaActor`.
+ In `SwiftOnig`, `Syntax` is only used to configure regex compilation.
  
  For most users, there's no need to create a `Syntax` object, but using the static predefined syntax objects is recommended.
  */
-@OnigurumaActor
-final public class Syntax: Sendable {
-    private enum Ownership: Equatable {
-        case borrowedPreset
-        case ownedCopy
-    }
+public struct Syntax: Sendable {
+    private var rawSyntax: OnigSyntaxType
 
-    internal nonisolated(unsafe) var rawValue: UnsafeMutablePointer<OnigSyntaxType>
-    private var ownership: Ownership
-
-    private init(rawValue: UnsafeMutablePointer<OnigSyntaxType>, ownership: Ownership) {
-        self.rawValue = rawValue
-        self.ownership = ownership
+    private init(rawSyntax: OnigSyntaxType) {
+        self.rawSyntax = rawSyntax
     }
 
     /**
@@ -34,46 +26,43 @@ final public class Syntax: Sendable {
      - Parameter other: The syntax to copy from.
      */
     public init(copying other: Syntax) {
-        let rawValue = UnsafeMutablePointer<OnigSyntaxType>.allocate(capacity: 1)
-        onig_copy_syntax(rawValue, other.rawValue)
-        self.rawValue = rawValue
-        self.ownership = .ownedCopy
+        self.rawSyntax = other.rawSyntax
     }
 
-    deinit {
-        if ownership == .ownedCopy {
-            rawValue.deallocate()
-        }
+    private static func snapshot(_ rawValue: UnsafeMutablePointer<OnigSyntaxType>) -> Syntax {
+        Syntax(rawSyntax: rawValue.pointee)
     }
 
     /**
      Predefined syntax objects
      */
-    public static var asis: Syntax { Syntax(rawValue: OnigCGlobals.asis, ownership: .borrowedPreset) }
-    public static var posixBasic: Syntax { Syntax(rawValue: OnigCGlobals.posixBasic, ownership: .borrowedPreset) }
-    public static var posixExtended: Syntax { Syntax(rawValue: OnigCGlobals.posixExtended, ownership: .borrowedPreset) }
-    public static var emacs: Syntax { Syntax(rawValue: OnigCGlobals.emacs, ownership: .borrowedPreset) }
-    public static var grep: Syntax { Syntax(rawValue: OnigCGlobals.grep, ownership: .borrowedPreset) }
-    public static var gnuRegex: Syntax { Syntax(rawValue: OnigCGlobals.gnuRegex, ownership: .borrowedPreset) }
-    public static var java: Syntax { Syntax(rawValue: OnigCGlobals.java, ownership: .borrowedPreset) }
-    public static var perl: Syntax { Syntax(rawValue: OnigCGlobals.perl, ownership: .borrowedPreset) }
-    public static var perlNg: Syntax { Syntax(rawValue: OnigCGlobals.perlNg, ownership: .borrowedPreset) }
-    public static var python: Syntax { Syntax(rawValue: OnigCGlobals.python, ownership: .borrowedPreset) }
-    public static var ruby: Syntax { Syntax(rawValue: OnigCGlobals.ruby, ownership: .borrowedPreset) }
-    public static var oniguruma: Syntax { Syntax(rawValue: OnigCGlobals.oniguruma, ownership: .borrowedPreset) }
-    public static var `default`: Syntax { Syntax(rawValue: OnigCGlobals.defaultSyntax, ownership: .borrowedPreset) }
+    public static var asis: Syntax { snapshot(OnigCGlobals.asis) }
+    public static var posixBasic: Syntax { snapshot(OnigCGlobals.posixBasic) }
+    public static var posixExtended: Syntax { snapshot(OnigCGlobals.posixExtended) }
+    public static var emacs: Syntax { snapshot(OnigCGlobals.emacs) }
+    public static var grep: Syntax { snapshot(OnigCGlobals.grep) }
+    public static var gnuRegex: Syntax { snapshot(OnigCGlobals.gnuRegex) }
+    public static var java: Syntax { snapshot(OnigCGlobals.java) }
+    public static var perl: Syntax { snapshot(OnigCGlobals.perl) }
+    public static var perlNg: Syntax { snapshot(OnigCGlobals.perlNg) }
+    public static var python: Syntax { snapshot(OnigCGlobals.python) }
+    public static var ruby: Syntax { snapshot(OnigCGlobals.ruby) }
+    public static var oniguruma: Syntax { snapshot(OnigCGlobals.oniguruma) }
+    public static var `default`: Syntax { snapshot(OnigCGlobals.defaultSyntax) }
 
-    /**
-     Convert the syntax to an owned one if it's not. 
-     Predefined syntax objects should not be modified directly.
-     */
-    internal func convertToOwnedIfNeeded() {
-        if ownership == .borrowedPreset {
-            let newRawValue = UnsafeMutablePointer<OnigSyntaxType>.allocate(capacity: 1)
-            onig_copy_syntax(newRawValue, rawValue)
-            self.rawValue = newRawValue
-            self.ownership = .ownedCopy
+    internal func allocateRawValueCopy() -> UnsafeMutablePointer<OnigSyntaxType> {
+        let pointer = UnsafeMutablePointer<OnigSyntaxType>.allocate(capacity: 1)
+        pointer.initialize(to: rawSyntax)
+        return pointer
+    }
+
+    internal nonisolated func withRawValue<Result>(_ body: (UnsafeMutablePointer<OnigSyntaxType>) throws -> Result) rethrows -> Result {
+        let pointer = allocateRawValueCopy()
+        defer {
+            pointer.deinitialize(count: 1)
+            pointer.deallocate()
         }
+        return try body(pointer)
     }
 
     /**
@@ -81,12 +70,11 @@ final public class Syntax: Sendable {
      */
     public var operators: Operators {
         get {
-            return Operators(rawValue: UInt64(onig_get_syntax_op(self.rawValue)))
+            Operators(rawValue: UInt64(rawSyntax.op))
         }
 
         set {
-            self.convertToOwnedIfNeeded()
-            onig_set_syntax_op(self.rawValue, UInt32(newValue.rawValue))
+            rawSyntax.op = UInt32(newValue.rawValue)
         }
     }
 
@@ -95,12 +83,11 @@ final public class Syntax: Sendable {
      */
     public var operators2: Operators2 {
         get {
-            return Operators2(rawValue: UInt64(onig_get_syntax_op2(self.rawValue)))
+            Operators2(rawValue: UInt64(rawSyntax.op2))
         }
 
         set {
-            self.convertToOwnedIfNeeded()
-            onig_set_syntax_op2(self.rawValue, UInt32(newValue.rawValue))
+            rawSyntax.op2 = UInt32(newValue.rawValue)
         }
     }
 
@@ -109,12 +96,11 @@ final public class Syntax: Sendable {
      */
     public var options: Regex.Options {
         get {
-            return Regex.Options(rawValue: onig_get_syntax_options(self.rawValue))
+            Regex.Options(rawValue: rawSyntax.options)
         }
 
         set {
-            self.convertToOwnedIfNeeded()
-            onig_set_syntax_options(self.rawValue, newValue.rawValue)
+            rawSyntax.options = newValue.rawValue
         }
     }
 
@@ -123,12 +109,11 @@ final public class Syntax: Sendable {
      */
     public var behaviors: Behaviors {
         get {
-            return Behaviors(rawValue: onig_get_syntax_behavior(self.rawValue))
+            Behaviors(rawValue: rawSyntax.behavior)
         }
 
         set {
-            self.convertToOwnedIfNeeded()
-            onig_set_syntax_behavior(self.rawValue, newValue.rawValue)
+            rawSyntax.behavior = newValue.rawValue
         }
     }
 }
@@ -250,7 +235,6 @@ extension Syntax {
             case .Ineffective:
                 return ""
             case .CodePoint(let codePoint):
-                // To avoid overlapping access during description, copy to local variable
                 var cp = codePoint
                 let count = codePoint > 0xFFFFFF ? 4 : (codePoint > 0xFFFF ? 3 : (codePoint > 0xFF ? 2 : 1))
                 return withUnsafeBytes(of: &cp) { buf in
@@ -262,49 +246,54 @@ extension Syntax {
     }
 
     public struct MetaCharTable: Sendable {
-        public let syntax: Syntax
-        
-        @OnigurumaActor
+        fileprivate var rawValue: OnigMetaCharTableType
+
         public subscript(index: MetaCharIndex) -> MetaChar {
             get {
                 let codePoint: OnigCodePoint
                 switch index {
-                case .Escape: codePoint = self.syntax.rawValue.pointee.meta_char_table.esc
-                case .AnyChar: codePoint = self.syntax.rawValue.pointee.meta_char_table.anychar
-                case .AnyTime: codePoint = self.syntax.rawValue.pointee.meta_char_table.anytime
-                case .ZeroOrOne: codePoint = self.syntax.rawValue.pointee.meta_char_table.zero_or_one_time
-                case .OneOrMore: codePoint = self.syntax.rawValue.pointee.meta_char_table.one_or_more_time
-                case .AnyCharAnytime: codePoint = self.syntax.rawValue.pointee.meta_char_table.anychar_anytime
+                case .Escape: codePoint = rawValue.esc
+                case .AnyChar: codePoint = rawValue.anychar
+                case .AnyTime: codePoint = rawValue.anytime
+                case .ZeroOrOne: codePoint = rawValue.zero_or_one_time
+                case .OneOrMore: codePoint = rawValue.one_or_more_time
+                case .AnyCharAnytime: codePoint = rawValue.anychar_anytime
                 }
-                
+
                 if codePoint == OnigCodePoint(ONIG_INEFFECTIVE_META_CHAR) {
                     return .Ineffective
                 } else {
                     return .CodePoint(codePoint)
                 }
             }
-            
+
             set {
-                self.syntax.convertToOwnedIfNeeded()
                 let codePoint: OnigCodePoint
                 switch newValue {
-                case .Ineffective: codePoint = OnigCodePoint(bitPattern: Int32(ONIG_INEFFECTIVE_META_CHAR))
-                case .CodePoint(let cp): codePoint = cp
+                case .Ineffective:
+                    codePoint = OnigCodePoint(bitPattern: Int32(ONIG_INEFFECTIVE_META_CHAR))
+                case .CodePoint(let cp):
+                    codePoint = cp
                 }
-                onig_set_meta_char(self.syntax.rawValue, OnigUInt(index.rawValue), codePoint)
+
+                switch index {
+                case .Escape: rawValue.esc = codePoint
+                case .AnyChar: rawValue.anychar = codePoint
+                case .AnyTime: rawValue.anytime = codePoint
+                case .ZeroOrOne: rawValue.zero_or_one_time = codePoint
+                case .OneOrMore: rawValue.one_or_more_time = codePoint
+                case .AnyCharAnytime: rawValue.anychar_anytime = codePoint
+                }
             }
         }
     }
 
     public var metaCharTable: MetaCharTable {
-        @OnigurumaActor get {
-            MetaCharTable(syntax: self)
+        get {
+            MetaCharTable(rawValue: rawSyntax.meta_char_table)
         }
-    }
-}
-extension Syntax {
-    @OnigurumaActor
-    internal convenience init(rawValue: UnsafeMutablePointer<OnigSyntaxType>) {
-        self.init(rawValue: rawValue, ownership: .borrowedPreset)
+        set {
+            rawSyntax.meta_char_table = newValue.rawValue
+        }
     }
 }

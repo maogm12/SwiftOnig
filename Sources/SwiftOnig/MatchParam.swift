@@ -7,80 +7,112 @@
 
 import OnigurumaC
 
-public class MatchParam {
-    internal private(set) var rawValue: OpaquePointer!
-    internal let calloutState = MatchParamCalloutState()
+public struct MatchParam: Sendable {
+    internal let calloutState: MatchParamCalloutState
+    private var matchStackLimitSize: UInt?
+    private var retryLimitInMatch: UInt?
+    private var retryLimitInSearch: UInt?
 
     public init() {
-        self.rawValue = onig_new_match_param()
-        let statePointer = Unmanaged.passUnretained(calloutState).toOpaque()
-        onig_set_callout_user_data_of_match_param(self.rawValue, statePointer)
+        self.calloutState = MatchParamCalloutState()
+        self.matchStackLimitSize = nil
+        self.retryLimitInMatch = nil
+        self.retryLimitInSearch = nil
     }
 
-    deinit {
-        onig_free_match_param(self.rawValue)
-    }
-    
     /**
      Set the fields to default values.
      */
-    public func reset() {
-        onig_initialize_match_param(self.rawValue)
+    public mutating func reset() {
+        matchStackLimitSize = nil
+        retryLimitInMatch = nil
+        retryLimitInSearch = nil
+        calloutState.userData = nil
+        calloutState.progressHandler = nil
+        calloutState.retractionHandler = nil
     }
 
     /**
      Set the maximum number of match-stack depth of the `MatchParam`. `0` means unlimited.
      - Parameter newLimit: The new limit.
      */
-    public func setMatchStackLimitSize(to newLimit: UInt) {
-        onig_set_match_stack_limit_size_of_match_param(self.rawValue, OnigUInt(newLimit))
+    public mutating func setMatchStackLimitSize(to newLimit: UInt) {
+        matchStackLimitSize = newLimit
     }
 
     /**
     Set the retry limit count of a match process of the `MatchParam`.
      - Parameter newLimit: The new limit.
      */
-    public func setRetryLimitInMatch(to newLimit: UInt) {
-        onig_set_retry_limit_in_match_of_match_param(self.rawValue, OnigULong(newLimit))
+    public mutating func setRetryLimitInMatch(to newLimit: UInt) {
+        retryLimitInMatch = newLimit
     }
 
     /**
      Set the retry limit count in a search process of the `MatchParam`. `0` means unlimited.
      - Parameter newLimit: The new limit.
      */
-    public func setRetryLimitInSearch(to newLimit: UInt) {
-        onig_set_retry_limit_in_search_of_match_param(self.rawValue, OnigULong(newLimit))
+    public mutating func setRetryLimitInSearch(to newLimit: UInt) {
+        retryLimitInSearch = newLimit
     }
 
     /**
      Set the Swift value exposed to per-match callout handlers as user data.
      */
-    public func setCalloutUserData(_ userData: (any Sendable)?) {
+    public mutating func setCalloutUserData(_ userData: (any Sendable)?) {
         calloutState.userData = userData
     }
 
     /**
      Register a progress callout handler for content callouts executed with this match parameter.
      */
-    public func setProgressCallout(_ handler: OnigurumaCalloutHandler?) {
+    public mutating func setProgressCallout(_ handler: OnigurumaCalloutHandler?) {
         calloutState.progressHandler = handler
-        if handler == nil {
-            onig_set_progress_callout_of_match_param(self.rawValue, nil)
-        } else {
-            onig_set_progress_callout_of_match_param(self.rawValue, onigurumaCalloutCallback)
-        }
     }
 
     /**
      Register a retraction callout handler for content callouts executed with this match parameter.
      */
-    public func setRetractionCallout(_ handler: OnigurumaCalloutHandler?) {
+    public mutating func setRetractionCallout(_ handler: OnigurumaCalloutHandler?) {
         calloutState.retractionHandler = handler
-        if handler == nil {
-            onig_set_retraction_callout_of_match_param(self.rawValue, nil)
-        } else {
-            onig_set_retraction_callout_of_match_param(self.rawValue, onigurumaCalloutCallback)
+    }
+
+    internal func withRawValue<Result>(_ body: (OpaquePointer) throws -> Result) throws -> Result {
+        guard let rawValue = onig_new_match_param() else {
+            throw OnigError.memory
         }
+
+        defer {
+            onig_free_match_param(rawValue)
+        }
+
+        if let matchStackLimitSize {
+            _ = onig_set_match_stack_limit_size_of_match_param(rawValue, OnigUInt(matchStackLimitSize))
+        }
+
+        if let retryLimitInMatch {
+            _ = onig_set_retry_limit_in_match_of_match_param(rawValue, OnigULong(retryLimitInMatch))
+        }
+
+        if let retryLimitInSearch {
+            _ = onig_set_retry_limit_in_search_of_match_param(rawValue, OnigULong(retryLimitInSearch))
+        }
+
+        if calloutState.progressHandler == nil {
+            _ = onig_set_progress_callout_of_match_param(rawValue, nil)
+        } else {
+            _ = onig_set_progress_callout_of_match_param(rawValue, onigurumaCalloutCallback)
+        }
+
+        if calloutState.retractionHandler == nil {
+            _ = onig_set_retraction_callout_of_match_param(rawValue, nil)
+        } else {
+            _ = onig_set_retraction_callout_of_match_param(rawValue, onigurumaCalloutCallback)
+        }
+
+        let statePointer = Unmanaged.passUnretained(calloutState).toOpaque()
+        _ = onig_set_callout_user_data_of_match_param(rawValue, statePointer)
+        return try body(rawValue)
     }
     
     /**
