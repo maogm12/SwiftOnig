@@ -183,7 +183,15 @@ extension Region: RandomAccessCollection {
      Get the subregions of named capture groups with the specified name. Only groups participating match will be included in the result.
      */
     public subscript(name: OnigurumaString) -> [Subregion] {
-        self.regex.captureGroupNumbers(for: String(describing: name))
+        let nameStr: String
+        if let s = name as? String {
+            nameStr = s
+        } else {
+            nameStr = name.withOnigurumaString { (start, count) -> String in
+                String(bytes: UnsafeBufferPointer(start: start, count: count), encoding: self.regex.encoding.stringEncoding) ?? ""
+            }
+        }
+        return self.regex.captureGroupNumbers(for: nameStr)
             .compactMap { self[$0] }
     }
     

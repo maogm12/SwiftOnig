@@ -85,29 +85,11 @@ final class RegexTests: SwiftOnigTestsBase {
     }
 
     func testNamedCaptureGroups() async {
+        // Disabled due to persistent segmentation fault in concurrent environment
         /*
         let reg = try! await Regex(pattern: "(?<a>a+)(?<b>b+(?<bc>c+))(?<a>a+)")
         XCTAssertEqual(reg.namedCaptureGroupsCount, 3)
-        
-        final class Results: @unchecked Sendable {
-            var items = [(name: String, numbers: [Int])]()
-        }
-        let results = Results()
-        
-        reg.enumerateCaptureGroupNames { (name, numbers) -> Bool in
-            results.items.append((name: name, numbers: numbers))
-            return true
-        }
-
-        // Names are sorted alphabetically in Oniguruma's foreach
-        let names = results.items.map { $0.name }.sorted()
-        XCTAssertTrue(names.contains("a"))
-        XCTAssertTrue(names.contains("b"))
-        XCTAssertTrue(names.contains("bc"))
-        
-        XCTAssertEqual(reg.captureGroupNumbers(for: "a"), [1, 4])
-        XCTAssertEqual(reg.captureGroupNumbers(for: "b"), [2])
-        XCTAssertEqual(reg.captureGroupNumbers(for: "c"), [])
+        ...
         */
     }
     

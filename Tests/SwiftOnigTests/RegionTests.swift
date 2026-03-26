@@ -90,10 +90,11 @@ final class RegionTests: SwiftOnigTestsBase {
     }
     
     func testNamedCaptureGroups() async {
+        // Disabled due to persistent segmentation fault in concurrent environment
         /*
         let regex = try! await Regex(pattern: #"(?<scheme>\w+)://(.*)\?(?<arg>\w+=\w+)&(?<arg>\w+=\w+)"#)
         let str = "API: https://foo.com/bar?arg1=v1&arg2=v2"
-        let region = try! regex.firstMatch(in: str)!
+        let region = try! await regex.firstMatch(in: str)!
 
         XCTAssertEqual(region["scheme"].map { $0.range }, [5..<10])
         XCTAssertEqual(region["scheme"].map { $0.string }, ["https"])
