@@ -6,7 +6,7 @@ This file captures repo-specific working rules for agents collaborating in this 
 
 - This repository is a Swift 6 package wrapping the Oniguruma regex library.
 - The main library code lives in `Sources/SwiftOnig`.
-- C interop support lives in `Sources/COnig` and `Sources/OnigInternal`.
+- Vendored Oniguruma C sources and helper wrappers live in `Sources/OnigurumaC`.
 - Tests live in `Tests/SwiftOnigTests` and use `swift-testing`, not XCTest manifests.
 - Example executables live in `Examples/`.
 - Benchmarks live in `Benchmarks/`.
@@ -51,11 +51,12 @@ This file captures repo-specific working rules for agents collaborating in this 
 
 ## Oniguruma and C Interop
 
-- Treat changes in `Sources/COnig` and `Sources/OnigInternal` as high risk.
+- Treat changes in `Sources/OnigurumaC` and `Vendor/Oniguruma` as high risk.
 - Preserve pointer lifetime and ownership rules carefully.
 - Prefer existing safe wrapper paths over adding new direct C API calls unless necessary.
 - Be cautious with APIs that hand back borrowed pointers or arrays from Oniguruma.
 - When changing regex or region internals, verify both native `swift test` runs and the affected targeted tests.
+- Initialize submodules before C-layer work with `git submodule update --init --recursive`.
 
 ## Concurrency and API Design
 
@@ -78,6 +79,6 @@ This file captures repo-specific working rules for agents collaborating in this 
 
 ## Practical Checks
 
-- If `swift test` fails unexpectedly, confirm Oniguruma is available via the system package configuration.
+- If `swift test` fails unexpectedly, first confirm the Oniguruma submodule is initialized and the vendored source tree is present.
 - Watch for behavior drift caused by different Oniguruma versions, especially in syntax flags, encodings, named groups, and capture history features.
 - Prefer verifying assumptions with small targeted tests over relying on comments from older implementations.

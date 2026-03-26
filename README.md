@@ -22,6 +22,8 @@ dependencies: [
 ]
 ```
 
+SwiftOnig now vendors Oniguruma source in-repo, so consumers and contributors do not need a separately installed `brew` or `apt` package for the library itself.
+
 ## Quick Start
 
 ### Basic Matching
@@ -106,7 +108,7 @@ swift test
 
 ## Development Setup
 
-The repository now vendors the upstream Oniguruma source as a Git submodule for upcoming source-build integration work.
+The repository vendors the upstream Oniguruma source as a Git submodule and builds it directly through SwiftPM.
 
 After cloning, initialize submodules before building or changing the package internals:
 
