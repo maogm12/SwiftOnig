@@ -95,170 +95,111 @@ public enum OnigError: Error, Equatable, Sendable {
 }
 
 extension OnigError {
-    public init(onigErrorCode: OnigInt, onigErrorInfo: OnigErrorInfo? = nil) {
+    private static let directMappings: [(OnigInt, OnigError)] = [
+        (ONIGERR_MEMORY, .memory),
+        (ONIGERR_TYPE_BUG, .typeBug),
+        (ONIGERR_PARSER_BUG, .parserBug),
+        (ONIGERR_STACK_BUG, .stackBug),
+        (ONIGERR_UNDEFINED_BYTECODE, .undefinedBytecode),
+        (ONIGERR_UNEXPECTED_BYTECODE, .unexpectedBytecode),
+        (ONIGERR_MATCH_STACK_LIMIT_OVER, .matchStackLimitOver),
+        (ONIGERR_PARSE_DEPTH_LIMIT_OVER, .parseDepthLimitOver),
+        (ONIGERR_RETRY_LIMIT_IN_MATCH_OVER, .retryLimitInMatchOver),
+        (ONIGERR_RETRY_LIMIT_IN_SEARCH_OVER, .retryLimitInSearchOver),
+        (ONIGERR_SUBEXP_CALL_LIMIT_IN_SEARCH_OVER, .subexpCallLimitInSearchOver),
+        (ONIGERR_DEFAULT_ENCODING_IS_NOT_SETTED, .defaultEncodingIsNotSetted),
+        (ONIGERR_SPECIFIED_ENCODING_CANT_CONVERT_TO_WIDE_CHAR, .specifiedEncodingCantConvertToWideChar),
+        (ONIGERR_FAIL_TO_INITIALIZE, .failToInitialize),
+        (ONIGERR_INVALID_ARGUMENT, .invalidArgument),
+        (ONIGERR_END_PATTERN_AT_LEFT_BRACE, .endPatternAtLeftBrace),
+        (ONIGERR_END_PATTERN_AT_LEFT_BRACKET, .endPatternAtLeftBracket),
+        (ONIGERR_EMPTY_CHAR_CLASS, .emptyCharClass),
+        (ONIGERR_PREMATURE_END_OF_CHAR_CLASS, .prematureEndOfCharClass),
+        (ONIGERR_END_PATTERN_AT_ESCAPE, .endPatternAtEscape),
+        (ONIGERR_END_PATTERN_AT_META, .endPatternAtMeta),
+        (ONIGERR_END_PATTERN_AT_CONTROL, .endPatternAtControl),
+        (ONIGERR_META_CODE_SYNTAX, .metaCodeSyntax),
+        (ONIGERR_CONTROL_CODE_SYNTAX, .controlCodeSyntax),
+        (ONIGERR_CHAR_CLASS_VALUE_AT_END_OF_RANGE, .charClassValueAtEndOfRange),
+        (ONIGERR_CHAR_CLASS_VALUE_AT_START_OF_RANGE, .charClassValueAtStartOfRange),
+        (ONIGERR_UNMATCHED_RANGE_SPECIFIER_IN_CHAR_CLASS, .unmatchedRangeSpecifierInCharClass),
+        (ONIGERR_TARGET_OF_REPEAT_OPERATOR_NOT_SPECIFIED, .targetOfRepeatOperatorNotSpecified),
+        (ONIGERR_TARGET_OF_REPEAT_OPERATOR_INVALID, .targetOfRepeatOperatorInvalid),
+        (ONIGERR_NESTED_REPEAT_OPERATOR, .nestedRepeatOperator),
+        (ONIGERR_UNMATCHED_CLOSE_PARENTHESIS, .unmatchedCloseParenthesis),
+        (ONIGERR_END_PATTERN_WITH_UNMATCHED_PARENTHESIS, .endPatternWithUnmatchedParenthesis),
+        (ONIGERR_END_PATTERN_IN_GROUP, .endPatternInGroup),
+        (ONIGERR_UNDEFINED_GROUP_OPTION, .undefinedGroupOption),
+        (ONIGERR_INVALID_POSIX_BRACKET_TYPE, .invalidPosixBracketType),
+        (ONIGERR_INVALID_LOOK_BEHIND_PATTERN, .invalidLookBehindPattern),
+        (ONIGERR_INVALID_REPEAT_RANGE_PATTERN, .invalidRepeatRangePattern),
+        (ONIGERR_TOO_BIG_NUMBER, .tooBigNumber),
+        (ONIGERR_TOO_BIG_NUMBER_FOR_REPEAT_RANGE, .tooBigNumberForRepeatRange),
+        (ONIGERR_UPPER_SMALLER_THAN_LOWER_IN_REPEAT_RANGE, .upperSmallerThanLowerInRepeatRange),
+        (ONIGERR_EMPTY_RANGE_IN_CHAR_CLASS, .emptyRangeInCharClass),
+        (ONIGERR_MISMATCH_CODE_LENGTH_IN_CLASS_RANGE, .mismatchCodeLengthInClassRange),
+        (ONIGERR_TOO_MANY_MULTI_BYTE_RANGES, .tooManyMultiByteRanges),
+        (ONIGERR_TOO_SHORT_MULTI_BYTE_STRING, .tooShortMultiByteString),
+        (ONIGERR_TOO_BIG_BACKREF_NUMBER, .tooBigBackrefNumber),
+        (ONIGERR_INVALID_BACKREF, .invalidBackref),
+        (ONIGERR_NUMBERED_BACKREF_OR_CALL_NOT_ALLOWED, .numberedBackrefOrCallNotAllowed),
+        (ONIGERR_TOO_MANY_CAPTURES, .tooManyCaptures),
+        (ONIGERR_TOO_LONG_WIDE_CHAR_VALUE, .tooLongWideCharValue),
+        (ONIGERR_EMPTY_GROUP_NAME, .emptyGroupName),
+        (ONIGERR_NEVER_ENDING_RECURSION, .neverEndingRecursion),
+        (ONIGERR_GROUP_NUMBER_OVER_FOR_CAPTURE_HISTORY, .groupNumberOverForCaptureHistory),
+        (ONIGERR_INVALID_IF_ELSE_SYNTAX, .invalidIfElseSyntax),
+        (ONIGERR_INVALID_ABSENT_GROUP_PATTERN, .invalidAbsentGroupPattern),
+        (ONIGERR_INVALID_ABSENT_GROUP_GENERATOR_PATTERN, .invalidAbsentGroupGeneratorPattern),
+        (ONIGERR_INVALID_CALLOUT_PATTERN, .invalidCalloutPattern),
+        (ONIGERR_INVALID_CALLOUT_NAME, .invalidCalloutName),
+        (ONIGERR_UNDEFINED_CALLOUT_NAME, .undefinedCalloutName),
+        (ONIGERR_INVALID_CALLOUT_BODY, .invalidCalloutBody),
+        (ONIGERR_INVALID_CALLOUT_TAG_NAME, .invalidCalloutTagName),
+        (ONIGERR_INVALID_CALLOUT_ARG, .invalidCalloutArg),
+        (ONIGERR_INVALID_CODE_POINT_VALUE, .invalidCodePointValue),
+        (ONIGERR_INVALID_WIDE_CHAR_VALUE, .invalidWideCharValue),
+        (ONIGERR_TOO_BIG_WIDE_CHAR_VALUE, .tooBigWideCharValue),
+        (ONIGERR_NOT_SUPPORTED_ENCODING_COMBINATION, .notSupportedEncodingCombination),
+        (ONIGERR_INVALID_COMBINATION_OF_OPTIONS, .invalidCombinationOfOptions),
+        (ONIGERR_TOO_MANY_USER_DEFINED_OBJECTS, .tooManyUserDefinedObjects),
+        (ONIGERR_TOO_LONG_PROPERTY_NAME, .tooLongPropertyName),
+        (ONIGERR_LIBRARY_IS_NOT_INITIALIZED, .libraryIsNotInitialized),
+    ]
+
+    private static func contextualError(onigErrorCode: OnigInt, detail: String) -> OnigError? {
         switch onigErrorCode {
-        /* internal error */
-        case ONIGERR_MEMORY:
-            self = .memory
-        case ONIGERR_TYPE_BUG:
-            self = .typeBug
-        case ONIGERR_PARSER_BUG:
-            self = .parserBug
-        case ONIGERR_STACK_BUG:
-            self = .stackBug
-        case ONIGERR_UNDEFINED_BYTECODE:
-            self = .undefinedBytecode
-        case ONIGERR_UNEXPECTED_BYTECODE:
-            self = .unexpectedBytecode
-        case ONIGERR_MATCH_STACK_LIMIT_OVER:
-            self = .matchStackLimitOver
-        case ONIGERR_PARSE_DEPTH_LIMIT_OVER:
-            self = .parseDepthLimitOver
-        case ONIGERR_RETRY_LIMIT_IN_MATCH_OVER:
-            self = .retryLimitInMatchOver
-        case ONIGERR_RETRY_LIMIT_IN_SEARCH_OVER:
-            self = .retryLimitInSearchOver
-        case ONIGERR_SUBEXP_CALL_LIMIT_IN_SEARCH_OVER:
-            self = .subexpCallLimitInSearchOver
-        case ONIGERR_DEFAULT_ENCODING_IS_NOT_SETTED:
-            self = .defaultEncodingIsNotSetted
-        case ONIGERR_SPECIFIED_ENCODING_CANT_CONVERT_TO_WIDE_CHAR:
-            self = .specifiedEncodingCantConvertToWideChar
-        case ONIGERR_FAIL_TO_INITIALIZE:
-            self = .failToInitialize
-
-        /* general error */
-        case ONIGERR_INVALID_ARGUMENT:
-            self = .invalidArgument
-
-        /* syntax error */
-        case ONIGERR_END_PATTERN_AT_LEFT_BRACE:
-            self = .endPatternAtLeftBrace
-        case ONIGERR_END_PATTERN_AT_LEFT_BRACKET:
-            self = .endPatternAtLeftBracket
-        case ONIGERR_EMPTY_CHAR_CLASS:
-            self = .emptyCharClass
-        case ONIGERR_PREMATURE_END_OF_CHAR_CLASS:
-            self = .prematureEndOfCharClass
-        case ONIGERR_END_PATTERN_AT_ESCAPE:
-            self = .endPatternAtEscape
-        case ONIGERR_END_PATTERN_AT_META:
-            self = .endPatternAtMeta
-        case ONIGERR_END_PATTERN_AT_CONTROL:
-            self = .endPatternAtControl
-        case ONIGERR_META_CODE_SYNTAX:
-            self = .metaCodeSyntax
-        case ONIGERR_CONTROL_CODE_SYNTAX:
-            self = .controlCodeSyntax
-        case ONIGERR_CHAR_CLASS_VALUE_AT_END_OF_RANGE:
-            self = .charClassValueAtEndOfRange
-        case ONIGERR_CHAR_CLASS_VALUE_AT_START_OF_RANGE:
-            self = .charClassValueAtStartOfRange
-        case ONIGERR_UNMATCHED_RANGE_SPECIFIER_IN_CHAR_CLASS:
-            self = .unmatchedRangeSpecifierInCharClass
-        case ONIGERR_TARGET_OF_REPEAT_OPERATOR_NOT_SPECIFIED:
-            self = .targetOfRepeatOperatorNotSpecified
-        case ONIGERR_TARGET_OF_REPEAT_OPERATOR_INVALID:
-            self = .targetOfRepeatOperatorInvalid
-        case ONIGERR_NESTED_REPEAT_OPERATOR:
-            self = .nestedRepeatOperator
-        case ONIGERR_UNMATCHED_CLOSE_PARENTHESIS:
-            self = .unmatchedCloseParenthesis
-        case ONIGERR_END_PATTERN_WITH_UNMATCHED_PARENTHESIS:
-            self = .endPatternWithUnmatchedParenthesis
-        case ONIGERR_END_PATTERN_IN_GROUP:
-            self = .endPatternInGroup
-        case ONIGERR_UNDEFINED_GROUP_OPTION:
-            self = .undefinedGroupOption
-        case ONIGERR_INVALID_POSIX_BRACKET_TYPE:
-            self = .invalidPosixBracketType
-        case ONIGERR_INVALID_LOOK_BEHIND_PATTERN:
-            self = .invalidLookBehindPattern
-        case ONIGERR_INVALID_REPEAT_RANGE_PATTERN:
-            self = .invalidRepeatRangePattern
-
-        /* values error (syntax error) */
-        case ONIGERR_TOO_BIG_NUMBER:
-            self = .tooBigNumber
-        case ONIGERR_TOO_BIG_NUMBER_FOR_REPEAT_RANGE:
-            self = .tooBigNumberForRepeatRange
-        case ONIGERR_UPPER_SMALLER_THAN_LOWER_IN_REPEAT_RANGE:
-            self = .upperSmallerThanLowerInRepeatRange
-        case ONIGERR_EMPTY_RANGE_IN_CHAR_CLASS:
-            self = .emptyRangeInCharClass
-        case ONIGERR_MISMATCH_CODE_LENGTH_IN_CLASS_RANGE:
-            self = .mismatchCodeLengthInClassRange
-        case ONIGERR_TOO_MANY_MULTI_BYTE_RANGES:
-            self = .tooManyMultiByteRanges
-        case ONIGERR_TOO_SHORT_MULTI_BYTE_STRING:
-            self = .tooShortMultiByteString
-        case ONIGERR_TOO_BIG_BACKREF_NUMBER:
-            self = .tooBigBackrefNumber
-        case ONIGERR_INVALID_BACKREF:
-            self = .invalidBackref
-        case ONIGERR_NUMBERED_BACKREF_OR_CALL_NOT_ALLOWED:
-            self = .numberedBackrefOrCallNotAllowed
-        case ONIGERR_TOO_MANY_CAPTURES:
-            self = .tooManyCaptures
-        case ONIGERR_TOO_LONG_WIDE_CHAR_VALUE:
-            self = .tooLongWideCharValue
-        case ONIGERR_EMPTY_GROUP_NAME:
-            self = .emptyGroupName
         case ONIGERR_INVALID_GROUP_NAME:
-            self = .invalidGroupName(onigErrorInfo?.description ?? "")
+            .invalidGroupName(detail)
         case ONIGERR_INVALID_CHAR_IN_GROUP_NAME:
-            self = .invalidCharInGroupName(onigErrorInfo?.description ?? "")
+            .invalidCharInGroupName(detail)
         case ONIGERR_UNDEFINED_NAME_REFERENCE:
-            self = .undefinedNameReference(onigErrorInfo?.description ?? "")
+            .undefinedNameReference(detail)
         case ONIGERR_UNDEFINED_GROUP_REFERENCE:
-            self = .undefinedGroupReference(onigErrorInfo?.description ?? "")
+            .undefinedGroupReference(detail)
         case ONIGERR_MULTIPLEX_DEFINED_NAME:
-            self = .multiplexDefinedName(onigErrorInfo?.description ?? "")
+            .multiplexDefinedName(detail)
         case ONIGERR_MULTIPLEX_DEFINITION_NAME_CALL:
-            self = .multiplexDefinitionNameCall(onigErrorInfo?.description ?? "")
-        case ONIGERR_NEVER_ENDING_RECURSION:
-            self = .neverEndingRecursion
-        case ONIGERR_GROUP_NUMBER_OVER_FOR_CAPTURE_HISTORY:
-            self = .groupNumberOverForCaptureHistory
+            .multiplexDefinitionNameCall(detail)
         case ONIGERR_INVALID_CHAR_PROPERTY_NAME:
-            self = .invalidCharPropertyName(onigErrorInfo?.description ?? "")
-        case ONIGERR_INVALID_IF_ELSE_SYNTAX:
-            self = .invalidIfElseSyntax
-        case ONIGERR_INVALID_ABSENT_GROUP_PATTERN:
-            self = .invalidAbsentGroupPattern
-        case ONIGERR_INVALID_ABSENT_GROUP_GENERATOR_PATTERN:
-            self = .invalidAbsentGroupGeneratorPattern
-        case ONIGERR_INVALID_CALLOUT_PATTERN:
-            self = .invalidCalloutPattern
-        case ONIGERR_INVALID_CALLOUT_NAME:
-            self = .invalidCalloutName
-        case ONIGERR_UNDEFINED_CALLOUT_NAME:
-            self = .undefinedCalloutName
-        case ONIGERR_INVALID_CALLOUT_BODY:
-            self = .invalidCalloutBody
-        case ONIGERR_INVALID_CALLOUT_TAG_NAME:
-            self = .invalidCalloutTagName
-        case ONIGERR_INVALID_CALLOUT_ARG:
-            self = .invalidCalloutArg
-        case ONIGERR_INVALID_CODE_POINT_VALUE:
-            self = .invalidCodePointValue
-        case ONIGERR_INVALID_WIDE_CHAR_VALUE:
-            self = .invalidWideCharValue
-        case ONIGERR_TOO_BIG_WIDE_CHAR_VALUE:
-            self = .tooBigWideCharValue
-        case ONIGERR_NOT_SUPPORTED_ENCODING_COMBINATION:
-            self = .notSupportedEncodingCombination
-        case ONIGERR_INVALID_COMBINATION_OF_OPTIONS:
-            self = .invalidCombinationOfOptions
-        case ONIGERR_TOO_MANY_USER_DEFINED_OBJECTS:
-            self = .tooManyUserDefinedObjects
-        case ONIGERR_TOO_LONG_PROPERTY_NAME:
-            self = .tooLongPropertyName
-        case ONIGERR_LIBRARY_IS_NOT_INITIALIZED:
-            self = .libraryIsNotInitialized
+            .invalidCharPropertyName(detail)
         default:
-            fatalError("Unexpected onig error code: \(onigErrorCode)")
+            nil
         }
+    }
+
+    public init(onigErrorCode: OnigInt, onigErrorInfo: OnigErrorInfo? = nil) {
+        if let error = Self.directMappings.first(where: { $0.0 == onigErrorCode })?.1 {
+            self = error
+            return
+        }
+
+        if let error = Self.contextualError(onigErrorCode: onigErrorCode, detail: onigErrorInfo?.description ?? "") {
+            self = error
+            return
+        }
+
+        fatalError("Unexpected onig error code: \(onigErrorCode)")
     }
 
     public var onigErrorCode: OnigInt {
