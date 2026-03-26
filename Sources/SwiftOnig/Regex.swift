@@ -159,8 +159,8 @@ final public class Regex: Sendable, CustomConsumingRegexComponent {
      The syntax used to create this regex.
      */
     public var syntax: Syntax {
-        get {
-            return Syntax(rawValue: onig_get_syntax(self.rawValue))
+        get async {
+            return await Syntax(rawValue: onig_get_syntax(self.rawValue))
         }
     }
     

@@ -79,6 +79,26 @@
             "target": "listcap",
             "configuration": "release",
             "preLaunchTask": "swift: Build Release listcap"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:SwiftOnig}",
+            "name": "Debug SwiftOnigBenchmarks",
+            "target": "SwiftOnigBenchmarks",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug SwiftOnigBenchmarks"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:SwiftOnig}",
+            "name": "Release SwiftOnigBenchmarks",
+            "target": "SwiftOnigBenchmarks",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release SwiftOnigBenchmarks"
         }
     ]
 }

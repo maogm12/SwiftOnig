@@ -13,6 +13,7 @@ let package = Package(
             targets: ["SwiftOnig"]),
     ],
     dependencies: [
+        .package(url: "https://github.com/apple/swift-testing.git", exact: "0.10.0"),
     ],
     targets: [
         .systemLibrary(
@@ -34,24 +35,33 @@ let package = Package(
             ]),
         .testTarget(
             name: "SwiftOnigTests",
-            dependencies: ["SwiftOnig"]),
+            dependencies: [
+                "SwiftOnig",
+                .product(name: "Testing", package: "swift-testing")
+            ]),
         
         // Examples
-        .target(
+        .executableTarget(
             name: "simple",
             dependencies: ["SwiftOnig"],
             path: "Examples/simple"),
-        .target(
+        .executableTarget(
             name: "names",
             dependencies: ["SwiftOnig"],
             path: "Examples/names"),
-        .target(
+        .executableTarget(
             name: "listcap",
             dependencies: ["SwiftOnig"],
             path: "Examples/listcap"),
-        .target(
+        .executableTarget(
             name: "scan",
             dependencies: ["SwiftOnig"],
             path: "Examples/scan"),
+            
+        // Benchmarks
+        .executableTarget(
+            name: "SwiftOnigBenchmarks",
+            dependencies: ["SwiftOnig"],
+            path: "Benchmarks"),
     ]
 )

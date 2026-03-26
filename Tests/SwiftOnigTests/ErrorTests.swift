@@ -5,25 +5,24 @@
 //  Created by Gavin Mao on 4/13/21.
 //
 
-import XCTest
+import Testing
 import SwiftOnig
 
-final class OnigErrorTests: SwiftOnigTestsBase {
-    func testError() async {
-        await XCTAssertThrowsSpecific(try await Regex(pattern: "a{3,999999999999999999999999999999999999999999}"),
-                                OnigError.tooBigNumberForRepeatRange)
+@Suite("OnigError Tests")
+struct OnigErrorTests {
+    @Test("Verify regex compilation errors")
+    func errorHandling() async throws {
+        await #expect(throws: OnigError.tooBigNumberForRepeatRange) {
+            _ = try await Regex(pattern: "a{3,999999999999999999999999999999999999999999}")
+        }
         
         do {
             _ = try await Regex(pattern: #"(?<$$$>\d+)"#)
-            XCTFail("Should throw")
+            Issue.record("Should have thrown invalidCharInGroupName")
         } catch OnigError.invalidCharInGroupName {
             // Success
         } catch {
-            XCTFail("Unexpected error: \(error)")
+            Issue.record("Unexpected error: \(error)")
         }
     }
-    
-    static let allTests = [
-        ("testError", testError)
-    ]
 }

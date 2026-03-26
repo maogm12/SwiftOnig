@@ -2,23 +2,21 @@
 //  SwiftOnigTests.swift
 //  
 //
-//  Created by Gavin Mao on 4/12/21.
+//  Created by Gavin Mao on 4/1/21.
 //
 
-import XCTest
+import Testing
 import SwiftOnig
 
-final class SwiftOnigTests: SwiftOnigTestsBase {
-    func testVersion() async {
-        XCTAssertFalse(SwiftOnig.version().isEmpty)
-    }
-    
-    func testCopyright() async {
-        XCTAssertFalse(SwiftOnig.copyright().isEmpty)
+@Suite("SwiftOnig Global Tests")
+struct SwiftOnigTests {
+    @Test("Verify Version")
+    func version() async throws {
+        #expect(SwiftOnig.version().count > 0)
     }
 
-    static let allTests = [
-        ("testVersion", testVersion),
-        ("testCopyright", testCopyright),
-    ]
+    @Test("Verify Copyright")
+    func copyright() async throws {
+        #expect(SwiftOnig.copyright().count > 0)
+    }
 }

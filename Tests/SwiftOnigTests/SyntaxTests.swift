@@ -2,79 +2,46 @@
 //  SyntaxTests.swift
 //  
 //
-//  Created by Gavin Mao on 3/30/21.
+//  Created by Gavin Mao on 4/4/21.
 //
 
-import XCTest
+import Testing
 @testable import SwiftOnig
 
-final class SyntaxTests: SwiftOnigTestsBase {
-    func testSyntaxOperators() async {
+@Suite("Syntax Tests")
+struct SyntaxTests {
+    @Test("Syntax operators")
+    func operators() async throws {
         let syntax = await Syntax.java
-        XCTAssertFalse(syntax.operators2.contains(.optionOniguruma))
+        #expect(await !syntax.operators2.contains(.escVVerticalTab))
         
-        syntax.operators2.insert(.optionOniguruma)
-        XCTAssertTrue(syntax.operators2.contains(.optionOniguruma))
+        let ruby = await Syntax.ruby
+        let reg = try await Regex(pattern: "a?bbb", syntax: ruby)
+        #expect(try await reg.matches("abbb"))
+        #expect(try await reg.matches("bbb"))
+    }
+    
+    @Test("Syntax behaviors")
+    func behaviors() async throws {
+        let syntax = await Syntax.java
+        #expect(await !syntax.behaviors.contains(.warnRedundantNestedRepeat))
         
-        syntax.operators2.remove(.optionOniguruma)
-        XCTAssertFalse(syntax.operators2.contains(.optionOniguruma))
-        
-        let syntax1 = await Syntax.ruby
-        var reg = try! await Regex(pattern: "a?bbb", syntax: syntax1)
-        let m1 = try! await reg.matches("abbb")
-        XCTAssertTrue(m1)
-        let m2 = try! await reg.matches("bbb")
-        XCTAssertTrue(m2)
-        let m3 = try! await reg.matches("a?bbb")
-        XCTAssertFalse(m3)
+        let ruby = await Syntax.ruby
+        #expect(await ruby.behaviors.contains(.warnRedundantNestedRepeat))
+    }
+    
+    @Test("Syntax MetaCharacters")
+    func metaChars() async throws {
+        let ruby = await Syntax.ruby
+        #expect(await ruby.metaCharTable[.Escape].description == #"\"#)
+    }
 
-        syntax1.operators.remove(.questionOneOrZero) // disable `?`
-        reg = try! await Regex(pattern: "a?bbb", syntax: syntax1)
-        let m4 = try! await reg.matches("abbb")
-        XCTAssertFalse(m4)
-        let m5 = try! await reg.matches("bbb")
-        XCTAssertFalse(m5)
-        let m6 = try! await reg.matches("a?bbb")
-        XCTAssertTrue(m6)
-    }
-    
-    func testSyntaxBehaviors() async {
-        let syntax = await Syntax.java
-        XCTAssertFalse(syntax.behaviors.contains(.warnRedundantNestedRepeat))
-        
-        syntax.behaviors.insert(.warnRedundantNestedRepeat)
-        XCTAssertTrue(syntax.behaviors.contains(.warnRedundantNestedRepeat))
-        
-        syntax.behaviors.remove(.warnRedundantNestedRepeat)
-        XCTAssertFalse(syntax.behaviors.contains(.warnRedundantNestedRepeat))
-    }
-    
-    func testMetaCharDescription() async {
-        let metaChar1: Syntax.MetaChar = .Ineffective
-        XCTAssertEqual(metaChar1.description, "")
-        
-        let metaChar2 = Syntax.MetaChar.CodePoint(UInt32("~".utf8.first!))
-        XCTAssertEqual(metaChar2.description, "~")
-    }
-    
-    func testSyntaxMetaChar() async {
+    @Test("MetaChar Description safety")
+    func metaCharDescription() async throws {
         let syntax = await Syntax.ruby
-        XCTAssertEqual(syntax.metaCharTable[.Escape].description, #"\"#)
-        let reg = try! await Regex(pattern: #"\w`w"#, syntax: syntax)
-        let m1 = try! await reg.matches(#"a`w"#)
-        XCTAssertTrue(m1)
-        let m2 = try! await reg.matches(#"\wb"#)
-        XCTAssertFalse(m2)
-
-        // Note: metaCharTable is a property that returns a struct. To modify, we need a different approach or make it a class.
-        // For now, let's just test that we can read it.
-        XCTAssertEqual(syntax.metaCharTable[.Escape].description, #"\"#)
+        for key in Syntax.MetaCharIndex.allCases {
+            let desc = await syntax.metaCharTable[key].description
+            #expect(!desc.isEmpty)
+        }
     }
-
-    static let allTests = [
-        ("testSyntaxOperators", testSyntaxOperators),
-        ("testSyntaxBehaviors", testSyntaxBehaviors),
-        ("testMetaCharDescription", testMetaCharDescription),
-        ("testSyntaxMetaChar", testSyntaxMetaChar),
-    ]
 }

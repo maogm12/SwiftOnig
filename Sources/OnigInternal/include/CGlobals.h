@@ -70,7 +70,12 @@ unsigned int get_onig_syn_op_esc_plus_one_inf();
 unsigned int get_onig_syn_op_qmark_zero_one();
 unsigned int get_onig_syn_op_esc_qmark_zero_one();
 unsigned int get_onig_syn_op_bracket_cc();
-unsigned int get_onig_syn_op_esc_cap_o_option();
+unsigned int get_onig_syn_op_esc_brace_interval();
+unsigned int get_onig_syn_op_vbar_alt();
+unsigned int get_onig_syn_op_esc_vbar_alt();
+unsigned int get_onig_syn_op_lparen_subexp();
+unsigned int get_onig_syn_op_esc_lparen_subexp();
+unsigned int get_onig_syn_op_esc_o_brace_octal();
 
 unsigned int get_onig_syn_op2_qmark_lt_named_group();
 unsigned int get_onig_syn_op2_esc_p_brace_circumflex_not();
@@ -89,8 +94,6 @@ unsigned int get_onig_syn_op2_qmark_brace_callout_contents();
 unsigned int get_onig_syn_allow_unmatched_close_subexp();
 unsigned int get_onig_syn_allow_interval_low_abbrev();
 unsigned int get_onig_syn_allow_empty_range_in_cc();
-unsigned int get_onig_syn_allow_multiplex_check_length();
 unsigned int get_onig_syn_warn_cc_op_not_escaped();
-unsigned int get_onig_syn_warn_cc_dup();
 
 #endif

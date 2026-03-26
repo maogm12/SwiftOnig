@@ -2,100 +2,99 @@
 //  Syntax.swift
 //  
 //
-//  Created by Gavin Mao on 3/27/21.
+//  Created by Gavin Mao on 4/4/21.
 //
 
 import COnig
 import OnigInternal
 
 /**
- Oniguruma syntax wrapper. This type also comes with static wrapper for oniguruma build-in syntaxes, i.e. `Syntax.oniguruma`, `Syntax.default`.
+ A wrapper of oniguruma `OnigSyntaxType`.
+ 
+ In `SwiftOnig`, `Syntax` is mutable but isolated by `@OnigurumaActor`.
+ 
+ For most users, there's no need to create a `Syntax` object, but using the static predefined syntax objects is recommended.
  */
-public final class Syntax: Sendable {
-    internal typealias OnigSyntaxPtr = UnsafeMutablePointer<OnigSyntaxType>
-    internal nonisolated(unsafe) var rawValue: OnigSyntaxPtr!
+@OnigurumaActor
+final public class Syntax: Sendable {
+    internal nonisolated(unsafe) var rawValue: UnsafeMutablePointer<OnigSyntaxType>
+    private var isOwned: Bool = false
 
-    /**
-     This `OnigSyntaxType` is owned by this object, for oniguruma built-in syntaxes, we only carry the pointer to them.
-     */
-    private nonisolated(unsafe) var ownedSyntax: OnigSyntaxType? = nil
-
-    /**
-     Create a empty syntax.
-     */
-    public init() {
-        self.ownedSyntax = OnigSyntaxType()
-        withUnsafeMutablePointer(to: &self.ownedSyntax!) {
-            self.rawValue = $0
-        }
-    }
-
-    internal init(rawValue: OnigSyntaxPtr!) {
+    internal init(rawValue: UnsafeMutablePointer<OnigSyntaxType>, isOwned: Bool = false) {
         self.rawValue = rawValue
+        self.isOwned = isOwned
     }
 
     /**
-     Create a syntax by copying from another syntax.
+     Create a new syntax object by copying from an existing syntax.
      - Parameter other: The syntax to copy from.
      */
     public init(copying other: Syntax) {
-        self.ownedSyntax = other.rawValue.pointee
-        withUnsafeMutablePointer(to: &self.ownedSyntax!) {
-            self.rawValue = $0
+        self.rawValue = UnsafeMutablePointer<OnigSyntaxType>.allocate(capacity: 1)
+        onig_copy_syntax(self.rawValue, other.rawValue)
+        self.isOwned = true
+    }
+
+    deinit {
+        if isOwned {
+            rawValue.deallocate()
         }
     }
 
-    private func convertToOwnedIfNeeded() {
-        if self.ownedSyntax == nil {
-            self.ownedSyntax = self.rawValue.pointee
-            withUnsafeMutablePointer(to: &self.ownedSyntax!) {
-                self.rawValue = $0
-            }
+    /**
+     Predefined syntax objects
+     */
+    public static var asis: Syntax { Syntax(rawValue: OnigCGlobals.asis) }
+    public static var posixBasic: Syntax { Syntax(rawValue: OnigCGlobals.posixBasic) }
+    public static var posixExtended: Syntax { Syntax(rawValue: OnigCGlobals.posixExtended) }
+    public static var emacs: Syntax { Syntax(rawValue: OnigCGlobals.emacs) }
+    public static var grep: Syntax { Syntax(rawValue: OnigCGlobals.grep) }
+    public static var gnuRegex: Syntax { Syntax(rawValue: OnigCGlobals.gnuRegex) }
+    public static var java: Syntax { Syntax(rawValue: OnigCGlobals.java) }
+    public static var perl: Syntax { Syntax(rawValue: OnigCGlobals.perl) }
+    public static var perlNg: Syntax { Syntax(rawValue: OnigCGlobals.perlNg) }
+    public static var ruby: Syntax { Syntax(rawValue: OnigCGlobals.ruby) }
+    public static var oniguruma: Syntax { Syntax(rawValue: OnigCGlobals.oniguruma) }
+    public static var `default`: Syntax { Syntax(rawValue: OnigCGlobals.defaultSyntax) }
+
+    /**
+     Convert the syntax to an owned one if it's not. 
+     Predefined syntax objects should not be modified directly.
+     */
+    internal func convertToOwnedIfNeeded() {
+        if !isOwned {
+            let newRawValue = UnsafeMutablePointer<OnigSyntaxType>.allocate(capacity: 1)
+            onig_copy_syntax(newRawValue, self.rawValue)
+            self.rawValue = newRawValue
+            self.isOwned = true
         }
     }
 
-    /// Plain text syntax
-    @OnigurumaActor public static var asis: Syntax { Syntax(rawValue: get_onig_asis()) }
-    
-    /// POSIX Basic RE syntax
-    @OnigurumaActor public static var posixBasic: Syntax { Syntax(rawValue: get_onig_posix_basic()) }
-    
-    /// POSIX Extended RE syntax
-    @OnigurumaActor public static var posixExtended: Syntax { Syntax(rawValue: get_onig_posix_extended()) }
-
-    /// Emacs syntax
-    @OnigurumaActor public static var emacs: Syntax { Syntax(rawValue: get_onig_emacs()) }
-    
-    /// Grep syntax
-    @OnigurumaActor public static var grep: Syntax { Syntax(rawValue: get_onig_grep()) }
-    
-    /// GNU regex syntax
-    @OnigurumaActor public static var gnuRegex: Syntax { Syntax(rawValue: get_onig_gnu_regex()) }
-    
-    /// Java syntax
-    @OnigurumaActor public static var java: Syntax { Syntax(rawValue: get_onig_java()) }
-    
-    /// Perl syntax
-    @OnigurumaActor public static var perl: Syntax { Syntax(rawValue: get_onig_perl()) }
-    
-    /// Perl + named group syntax
-    @OnigurumaActor public static var perlNg: Syntax { Syntax(rawValue: get_onig_perl_ng()) }
-    
-    /// Ruby syntax
-    @OnigurumaActor public static var ruby: Syntax { Syntax(rawValue: get_onig_ruby()) }
-    
-    /// Oniguruma syntax
-    @OnigurumaActor public static var oniguruma: Syntax { Syntax(rawValue: get_onig_oniguruma()) }
-    
-    /// Default syntax
-    @OnigurumaActor
-    public static var `default`: Syntax {
+    /**
+     Syntax operators.
+     */
+    public var operators: Operators {
         get {
-            return Syntax(rawValue: get_onig_default_syntax())
+            return Operators(rawValue: UInt64(onig_get_syntax_op(self.rawValue)))
         }
-        
+
         set {
-            onig_set_default_syntax(newValue.rawValue)
+            self.convertToOwnedIfNeeded()
+            onig_set_syntax_op(self.rawValue, UInt32(newValue.rawValue))
+        }
+    }
+
+    /**
+     Syntax operators 2.
+     */
+    public var operators2: Operators2 {
+        get {
+            return Operators2(rawValue: UInt64(onig_get_syntax_op2(self.rawValue)))
+        }
+
+        set {
+            self.convertToOwnedIfNeeded()
+            onig_set_syntax_op2(self.rawValue, UInt32(newValue.rawValue))
         }
     }
 
@@ -148,17 +147,14 @@ extension Syntax {
         public static let questionOneOrZero = Operators(rawValue: UInt64(get_onig_syn_op_qmark_zero_one()))
         public static let escQuestionOneOrZero = Operators(rawValue: UInt64(get_onig_syn_op_esc_qmark_zero_one()))
         public static let braceInterval = Operators(rawValue: UInt64(ONIG_SYN_OP_BRACE_INTERVAL))
-        public static let escBraceInterval = Operators(rawValue: UInt64(ONIG_SYN_OP_ESC_BRACE_INTERVAL))
-        public static let vbarAlt = Operators(rawValue: UInt64(ONIG_SYN_OP_VBAR_ALT))
-        public static let escVbarAlt = Operators(rawValue: UInt64(ONIG_SYN_OP_ESC_VBAR_ALT))
-        public static let lparenSubexp = Operators(rawValue: UInt64(ONIG_SYN_OP_LPAREN_SUBEXP))
-        public static let escLparenSubexp = Operators(rawValue: UInt64(ONIG_SYN_OP_ESC_LPAREN_SUBEXP))
+        public static let escBraceInterval = Operators(rawValue: UInt64(get_onig_syn_op_esc_brace_interval()))
+        public static let vbarAlt = Operators(rawValue: UInt64(get_onig_syn_op_vbar_alt()))
+        public static let escVbarAlt = Operators(rawValue: UInt64(get_onig_syn_op_esc_vbar_alt()))
+        public static let lparenSubexp = Operators(rawValue: UInt64(get_onig_syn_op_lparen_subexp()))
+        public static let escLparenSubexp = Operators(rawValue: UInt64(get_onig_syn_op_esc_lparen_subexp()))
         public static let escAzBufAnchor = Operators(rawValue: UInt64(ONIG_SYN_OP_ESC_AZ_BUF_ANCHOR))
-        public static let escCapitalGBeginAnchor = Operators(rawValue: UInt64(ONIG_SYN_OP_ESC_CAPITAL_G_BEGIN_ANCHOR))
-        public static let decimalBackref = Operators(rawValue: UInt64(ONIG_SYN_OP_DECIMAL_BACKREF))
-        public static let bracketAnychar = Operators(rawValue: UInt64(get_onig_syn_op_bracket_cc()))
         public static let escWWord = Operators(rawValue: UInt64(ONIG_SYN_OP_ESC_W_WORD))
-        public static let escLtgtWordBeginEnd = Operators(rawValue: UInt64(ONIG_SYN_OP_ESC_LTGT_WORD_BEGIN_END))
+        public static let escLtGtWordBeginEnd = Operators(rawValue: UInt64(ONIG_SYN_OP_ESC_LTGT_WORD_BEGIN_END))
         public static let escBWordBound = Operators(rawValue: UInt64(ONIG_SYN_OP_ESC_B_WORD_BOUND))
         public static let escSWhiteSpace = Operators(rawValue: UInt64(ONIG_SYN_OP_ESC_S_WHITE_SPACE))
         public static let escDDigit = Operators(rawValue: UInt64(ONIG_SYN_OP_ESC_D_DIGIT))
@@ -166,22 +162,12 @@ extension Syntax {
         public static let posixBracket = Operators(rawValue: UInt64(ONIG_SYN_OP_POSIX_BRACKET))
         public static let qmarkNonGreedy = Operators(rawValue: UInt64(ONIG_SYN_OP_QMARK_NON_GREEDY))
         public static let escControlChars = Operators(rawValue: UInt64(ONIG_SYN_OP_ESC_CONTROL_CHARS))
-        public static let escCControl = Operators(rawValue: UInt64(ONIG_SYN_OP_ESC_C_CONTROL))
+        public static let decimalBackref = Operators(rawValue: UInt64(ONIG_SYN_OP_DECIMAL_BACKREF))
+        public static let bracketAnycharHyphen = Operators(rawValue: UInt64(get_onig_syn_op_bracket_cc()))
         public static let escOctal3 = Operators(rawValue: UInt64(ONIG_SYN_OP_ESC_OCTAL3))
         public static let escXHex2 = Operators(rawValue: UInt64(ONIG_SYN_OP_ESC_X_HEX2))
         public static let escXBraceHex8 = Operators(rawValue: UInt64(ONIG_SYN_OP_ESC_X_BRACE_HEX8))
-        public static let escCapOOption = Operators(rawValue: UInt64(get_onig_syn_op_esc_cap_o_option()))
-    }
-
-    public var operators: Operators {
-        get {
-            return Operators(rawValue: UInt64(onig_get_syntax_op(self.rawValue)))
-        }
-
-        set {
-            self.convertToOwnedIfNeeded()
-            onig_set_syntax_op(self.rawValue, UInt32(newValue.rawValue))
-        }
+        public static let escOBraceOctal = Operators(rawValue: UInt64(get_onig_syn_op_esc_o_brace_octal()))
     }
 
     public struct Operators2: OptionSet, Sendable {
@@ -197,56 +183,25 @@ extension Syntax {
         public static let optionRuby = Operators2(rawValue: UInt64(ONIG_SYN_OP2_OPTION_RUBY))
         public static let plusPossessiveRepeat = Operators2(rawValue: UInt64(ONIG_SYN_OP2_PLUS_POSSESSIVE_REPEAT))
         public static let plusPossessiveInterval = Operators2(rawValue: UInt64(ONIG_SYN_OP2_PLUS_POSSESSIVE_INTERVAL))
-        public static let cclassSetOp = Operators2(rawValue: UInt64(ONIG_SYN_OP2_CCLASS_SET_OP))
-        public static let qmarkLtNamedGroup = Operators2(rawValue: UInt64(get_onig_syn_op2_qmark_lt_named_group()))
-        public static let escKNamedBackref = Operators2(rawValue: UInt64(get_onig_syn_op2_esc_k_named_backref()))
-        public static let escGSubexpCall = Operators2(rawValue: UInt64(get_onig_syn_op2_esc_g_subexp_call()))
-        public static let atmarkCaptureHistory = Operators2(rawValue: UInt64(get_onig_syn_op2_atmark_capture_history()))
-        public static let escCapitalCBarControl = Operators2(rawValue: UInt64(ONIG_SYN_OP2_ESC_CAPITAL_C_BAR_CONTROL))
-        public static let escCapitalMBarMeta = Operators2(rawValue: UInt64(ONIG_SYN_OP2_ESC_CAPITAL_M_BAR_META))
-        public static let escVVtab = Operators2(rawValue: UInt64(get_onig_syn_op2_esc_v_vtab()))
-        public static let escUHex4 = Operators2(rawValue: UInt64(get_onig_syn_op2_esc_u_hex4()))
-        public static let escGnuBufAnchor = Operators2(rawValue: UInt64(ONIG_SYN_OP2_ESC_GNU_BUF_ANCHOR))
-        public static let escPBraceCharProperty = Operators2(rawValue: UInt64(ONIG_SYN_OP2_ESC_P_BRACE_CHAR_PROPERTY))
-        public static let escPBraceCircumflexNot = Operators2(rawValue: UInt64(get_onig_syn_op2_esc_p_brace_circumflex_not()))
-        public static let escHXdigit = Operators2(rawValue: UInt64(get_onig_syn_op2_esc_h_xdigit()))
-        public static let ineffectiveEscape = Operators2(rawValue: UInt64(ONIG_SYN_OP2_INEFFECTIVE_ESCAPE))
-        public static let qmarkLparenIfElse = Operators2(rawValue: UInt64(get_onig_syn_op2_qmark_lparen_if_else()))
-        public static let escCapitalKKeep = Operators2(rawValue: UInt64(ONIG_SYN_OP2_ESC_CAPITAL_K_KEEP))
-        public static let escCapitalRGeneralNewline = Operators2(rawValue: UInt64(get_onig_syn_op2_esc_capital_r_general_newline()))
-        public static let escCapitalNOSuperDot = Operators2(rawValue: UInt64(get_onig_syn_op2_esc_capital_n_o_super_dot()))
-        public static let qmarkTildeAbsentGroup = Operators2(rawValue: UInt64(ONIG_SYN_OP2_QMARK_TILDE_ABSENT_GROUP))
-        public static let escXYTextSegment = Operators2(rawValue: UInt64(get_onig_syn_op2_esc_x_y_text_segment()))
-        public static let qmarkPerlSubexpCall = Operators2(rawValue: UInt64(ONIG_SYN_OP2_QMARK_PERL_SUBEXP_CALL))
-        public static let qmarkBraceCalloutContents = Operators2(rawValue: UInt64(get_onig_syn_op2_qmark_brace_callout_contents()))
-        public static let asteriskCalloutName = Operators2(rawValue: UInt64(ONIG_SYN_OP2_ASTERISK_CALLOUT_NAME))
-        public static let optionOniguruma = Operators2(rawValue: UInt64(ONIG_SYN_OP2_OPTION_ONIGURUMA))
-        public static let qmarkCapitalPName = Operators2(rawValue: UInt64(ONIG_SYN_OP2_QMARK_CAPITAL_P_NAME))
+        public static let escCapitalUHex4 = Operators2(rawValue: UInt64(get_onig_syn_op2_esc_u_hex4()))
+        public static let escVVerticalTab = Operators2(rawValue: UInt64(get_onig_syn_op2_esc_v_vtab()))
+        public static let escHHorizontalTab = Operators2(rawValue: UInt64(get_onig_syn_op2_esc_h_xdigit()))
+        public static let escCapitalKKeep = Operators2(rawValue: UInt64(get_onig_syn_op2_esc_k_named_backref()))
+        public static let escCapitalRLinebreak = Operators2(rawValue: UInt64(get_onig_syn_op2_esc_capital_r_general_newline()))
+        public static let escCapitalXExtendedGraphemeCluster = Operators2(rawValue: UInt64(get_onig_syn_op2_esc_x_y_text_segment()))
+        public static let qmarkLparenCondition = Operators2(rawValue: UInt64(get_onig_syn_op2_qmark_lparen_if_else()))
+        public static let qmarkBraceCallout = Operators2(rawValue: UInt64(get_onig_syn_op2_qmark_brace_callout_contents()))
+        public static let asteriskBraceCallout = Operators2(rawValue: UInt64(get_onig_syn_op2_atmark_capture_history()))
     }
 
-    public var operators2: Operators2 {
-        get {
-            return Operators2(rawValue: UInt64(onig_get_syntax_op2(self.rawValue)))
-        }
-
-        set {
-            self.convertToOwnedIfNeeded()
-            onig_set_syntax_op2(self.rawValue, UInt32(newValue.rawValue))
-        }
-    }
-}
-
-/**
- Syntax behaviors
- */
-extension Syntax {
     public struct Behaviors: OptionSet, Sendable {
-        public let rawValue: OnigUInt
-        
-        public init(rawValue: OnigUInt) {
+        public let rawValue: UInt32
+
+        public init(rawValue: UInt32) {
             self.rawValue = rawValue
         }
 
+        public static let contextIndepAnchors = Behaviors(rawValue: ONIG_SYN_CONTEXT_INDEP_ANCHORS)
         public static let contextIndepRepeatOps = Behaviors(rawValue: ONIG_SYN_CONTEXT_INDEP_REPEAT_OPS)
         public static let contextInvalidRepeatOps = Behaviors(rawValue: ONIG_SYN_CONTEXT_INVALID_REPEAT_OPS)
         public static let allowUnmatchedCloseSubexp = Behaviors(rawValue: get_onig_syn_allow_unmatched_close_subexp())
@@ -258,17 +213,15 @@ extension Syntax {
         public static let allowMultiplexDefinitionName = Behaviors(rawValue: ONIG_SYN_ALLOW_MULTIPLEX_DEFINITION_NAME)
         public static let fixedIntervalIsGreedyOnly = Behaviors(rawValue: ONIG_SYN_FIXED_INTERVAL_IS_GREEDY_ONLY)
         public static let allowEmptyRangeInCc = Behaviors(rawValue: get_onig_syn_allow_empty_range_in_cc())
-        public static let allowMultiplexCheckLength = Behaviors(rawValue: get_onig_syn_allow_multiplex_check_length())
         public static let backslashEscapeInCC = Behaviors(rawValue: ONIG_SYN_BACKSLASH_ESCAPE_IN_CC)
         public static let allowDoubleRangeOpInCC = Behaviors(rawValue: ONIG_SYN_ALLOW_DOUBLE_RANGE_OP_IN_CC)
         public static let warnCCOpNotEscaped = Behaviors(rawValue: get_onig_syn_warn_cc_op_not_escaped())
         public static let warnRedundantNestedRepeat = Behaviors(rawValue: ONIG_SYN_WARN_REDUNDANT_NESTED_REPEAT)
-        public static let warnCCDup = Behaviors(rawValue: get_onig_syn_warn_cc_dup())
     }
 }
 
 extension Syntax {
-    public enum MetaCharIndex: Int, Sendable {
+    public enum MetaCharIndex: Int, Sendable, CaseIterable {
         case Escape = 0
         case AnyChar = 1
         case AnyTime = 2
@@ -286,19 +239,21 @@ extension Syntax {
             case .Ineffective:
                 return ""
             case .CodePoint(let codePoint):
+                // To avoid overlapping access during description, copy to local variable
                 var cp = codePoint
                 let count = codePoint > 0xFFFFFF ? 4 : (codePoint > 0xFFFF ? 3 : (codePoint > 0xFF ? 2 : 1))
-                return withUnsafeBytes(of: &cp) {
-                    let bytes = $0.baseAddress!.assumingMemoryBound(to: UInt8.self)
+                return withUnsafeBytes(of: &cp) { buf in
+                    let bytes = buf.baseAddress!.assumingMemoryBound(to: UInt8.self)
                     return String(decoding: UnsafeBufferPointer(start: bytes, count: count), as: UTF8.self)
                 }
             }
         }
     }
 
-    public struct MetaCharTable {
+    public struct MetaCharTable: Sendable {
         public let syntax: Syntax
         
+        @OnigurumaActor
         public subscript(index: MetaCharIndex) -> MetaChar {
             get {
                 let codePoint: OnigCodePoint
@@ -322,7 +277,7 @@ extension Syntax {
                 self.syntax.convertToOwnedIfNeeded()
                 let codePoint: OnigCodePoint
                 switch newValue {
-                case .Ineffective: codePoint = OnigCodePoint(bitPattern: ONIG_INEFFECTIVE_META_CHAR)
+                case .Ineffective: codePoint = OnigCodePoint(bitPattern: Int32(ONIG_INEFFECTIVE_META_CHAR))
                 case .CodePoint(let cp): codePoint = cp
                 }
                 onig_set_meta_char(self.syntax.rawValue, OnigUInt(index.rawValue), codePoint)
@@ -331,6 +286,14 @@ extension Syntax {
     }
 
     public var metaCharTable: MetaCharTable {
-        MetaCharTable(syntax: self)
+        @OnigurumaActor get {
+            MetaCharTable(syntax: self)
+        }
+    }
+}
+extension Syntax {
+    @OnigurumaActor
+    internal convenience init(rawValue: UnsafeMutablePointer<OnigSyntaxType>) {
+        self.init(rawValue: rawValue, isOwned: false)
     }
 }

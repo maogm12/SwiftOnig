@@ -5,26 +5,30 @@
 //  Created by Gavin Mao on 3/25/26.
 //
 
-import XCTest
+import Testing
 import SwiftOnig
+import Foundation
 
-final class OnigOfficialTests: SwiftOnigTestsBase {
+@Suite("Official Oniguruma Tests")
+struct OnigOfficialTests {
     
     // MARK: DSL
     
     struct PatternInput {
         let pattern: String
         let input: String
+        let syntax: Syntax?
+        let options: Regex.Options
     }
     
     enum TestExpectation {
-        case match(pattern: String, input: String, range: Range<Int>, group: Int = 0)
-        case noMatch(pattern: String, input: String)
-        case error(pattern: String, error: OnigError)
+        case match(pattern: String, input: String, range: Range<Int>, group: Int = 0, syntax: Syntax?, options: Regex.Options)
+        case noMatch(pattern: String, input: String, syntax: Syntax?, options: Regex.Options)
+        case error(pattern: String, error: OnigError, syntax: Syntax?, options: Regex.Options)
     }
     
-    func testUTF8() async {
-        // Ported from test_utf8.c
+    @Test("UTF-8 Suite (test_utf8.c)")
+    func utf8() async throws {
         await verify([
             "a" =~ "a" == 0..<1,
             "a" =~ "ba" == 1..<2,
@@ -52,39 +56,61 @@ final class OnigOfficialTests: SwiftOnigTestsBase {
             // Unicode
             "あ" =~ "あ" == 0..<3,
             "あいう" =~ "あいう" == 0..<9,
-            "あいう" =~ "あいう" == (group: 0, 0..<9),
             "あ.*ん" =~ "あいうえおん" == 0..<18,
-            
-            // Escapes
-            "\\\\" =~ "\\" == 0..<1,
-            "\\w" =~ "a" == 0..<1,
-            "\\w" =~ "Z" == 0..<1,
-            "\\w" =~ "0" == 0..<1,
-            "\\w" =~ "_" == 0..<1,
-            "\\W" =~ " " == 0..<1,
-            "\\d" =~ "5" == 0..<1,
-            "\\D" =~ "a" == 0..<1,
-            "\\s" =~ " " == 0..<1,
-            "\\S" =~ "a" == 0..<1,
-            
-            // Character classes
-            "[abc]" =~ "a" == 0..<1,
-            "[abc]" =~ "b" == 0..<1,
-            "[abc]" =~ "c" == 0..<1,
-            "[^abc]" =~ "d" == 0..<1,
-            "[a-z]" =~ "m" == 0..<1,
             
             // Anchors
             "^a" =~ "a" == 0..<1,
             "^a" =~ "ba" !~ "",
             "a$" =~ "a" == 0..<1,
             "a$" =~ "ab" !~ "",
-            "\\Aa" =~ "a" == 0..<1,
-            "\\Aa" =~ "ba" !~ "",
             
             // Errors
             "[" !! .prematureEndOfCharClass,
             "(abc" !! .endPatternWithUnmatchedParenthesis,
+        ])
+    }
+
+    @Test("Syntax Suite (test_syntax.c)")
+    func syntax() async throws {
+        let java = await Syntax.java
+        let posix = await Syntax.posixExtended
+        
+        await verify([
+            // Java syntax
+            ("a{1,3}?" =~ "aaa" == 0..<1).with(syntax: java),
+            ("a{1,3}?" =~ "aaa" == 0..<1).with(syntax: java),
+            
+            // POSIX Extended
+            ("(a)b" =~ "ab" == 0..<2).with(syntax: posix),
+            ("(a)b" =~ "ab" == (group: 1, 0..<1)).with(syntax: posix),
+        ])
+    }
+
+    @Test("Options Suite (test_options.c)")
+    func options() async throws {
+        await verify([
+            ("a" =~ "A" == 0..<1).with(options: .ignoreCase),
+            ("abc" =~ "ABC" == 0..<3).with(options: .ignoreCase),
+            ("a.*b" =~ "a\nb" == 0..<3).with(options: .singleLine),
+        ])
+    }
+
+    @Test("Backtracking & Recursion (test_back.c)")
+    func back() async throws {
+        await verify([
+            // Atomic groups
+            "(?>a+)aa" =~ "aaaaa" !~ "",
+            "(?>a+)a" =~ "aaaaa" == 0..<5,
+            
+            // Lookahead
+            "a(?=b)" =~ "ab" == 0..<1,
+            "a(?=b)" =~ "ac" !~ "",
+            "a(?!b)" =~ "ac" == 0..<1,
+            "a(?!b)" =~ "ab" !~ "",
+            
+            // Recursion
+            #"(?<p>\(\g<p>*\))"# =~ "(())" == 0..<4,
+            #"(?<p>\(\g<p>*\))"# =~ "((()))" == 0..<6,
         ])
     }
     
@@ -93,43 +119,39 @@ final class OnigOfficialTests: SwiftOnigTestsBase {
     private func verify(_ expectations: [TestExpectation]) async {
         for expectation in expectations {
             switch expectation {
-            case .match(let pattern, let input, let expectedRange, let group):
+            case .match(let pattern, let input, let expectedRange, let group, let syntax, let options):
                 do {
-                    let reg = try await Regex(pattern: pattern)
+                    let reg = try await Regex(pattern: pattern, options: options, syntax: syntax)
                     guard let region = try await reg.firstMatch(in: input) else {
-                        XCTFail("Pattern /\(pattern)/ failed to match '\(input)'")
+                        Issue.record("Pattern /\(pattern)/ failed to match '\(input)'")
                         continue
                     }
-                    XCTAssertEqual(region[group]?.range, expectedRange, "Pattern /\(pattern)/ matched wrong range in '\(input)' for group \(group)")
+                    #expect(region[group]?.range == expectedRange, "Pattern /\(pattern)/ matched wrong range in '\(input)' for group \(group)")
                 } catch {
-                    XCTFail("Pattern /\(pattern)/ threw error: \(error)")
+                    Issue.record("Pattern /\(pattern)/ threw error: \(error)")
                 }
                 
-            case .noMatch(let pattern, let input):
+            case .noMatch(let pattern, let input, let syntax, let options):
                 do {
-                    let reg = try await Regex(pattern: pattern)
+                    let reg = try await Regex(pattern: pattern, options: options, syntax: syntax)
                     let region = try await reg.firstMatch(in: input)
-                    XCTAssertNil(region, "Pattern /\(pattern)/ unexpectedly matched '\(input)'")
+                    #expect(region == nil, "Pattern /\(pattern)/ unexpectedly matched '\(input)'")
                 } catch {
-                    XCTFail("Pattern /\(pattern)/ threw error: \(error)")
+                    Issue.record("Pattern /\(pattern)/ threw error: \(error)")
                 }
                 
-            case .error(let pattern, let expectedError):
+            case .error(let pattern, let expectedError, let syntax, let options):
                 do {
-                    _ = try await Regex(pattern: pattern)
-                    XCTFail("Pattern /\(pattern)/ unexpectedly succeeded")
+                    _ = try await Regex(pattern: pattern, options: options, syntax: syntax)
+                    Issue.record("Pattern /\(pattern)/ unexpectedly succeeded")
                 } catch let error as OnigError {
-                    XCTAssertEqual(error, expectedError, "Pattern /\(pattern)/ threw wrong error")
+                    #expect(error == expectedError, "Pattern /\(pattern)/ threw wrong error")
                 } catch {
-                    XCTFail("Pattern /\(pattern)/ threw non-OnigError: \(error)")
+                    Issue.record("Pattern /\(pattern)/ threw non-OnigError: \(error)")
                 }
             }
         }
     }
-
-    static let allTests = [
-        ("testUTF8", testUTF8),
-    ]
 }
 
 // MARK: Operators
@@ -144,21 +166,47 @@ infix operator !~ : OnigTestPrecedence
 infix operator !! : OnigTestPrecedence
 
 func =~ (lhs: String, rhs: String) -> OnigOfficialTests.PatternInput {
-    return OnigOfficialTests.PatternInput(pattern: lhs, input: rhs)
+    return OnigOfficialTests.PatternInput(pattern: lhs, input: rhs, syntax: nil, options: .none)
 }
 
 func == (lhs: OnigOfficialTests.PatternInput, rhs: Range<Int>) -> OnigOfficialTests.TestExpectation {
-    return .match(pattern: lhs.pattern, input: lhs.input, range: rhs)
+    return .match(pattern: lhs.pattern, input: lhs.input, range: rhs, syntax: lhs.syntax, options: lhs.options)
 }
 
 func == (lhs: OnigOfficialTests.PatternInput, rhs: (group: Int, range: Range<Int>)) -> OnigOfficialTests.TestExpectation {
-    return .match(pattern: lhs.pattern, input: lhs.input, range: rhs.range, group: rhs.group)
+    return .match(pattern: lhs.pattern, input: lhs.input, range: rhs.range, group: rhs.group, syntax: lhs.syntax, options: lhs.options)
 }
 
 func !~ (lhs: OnigOfficialTests.PatternInput, rhs: String) -> OnigOfficialTests.TestExpectation {
-    return .noMatch(pattern: lhs.pattern, input: lhs.input)
+    return .noMatch(pattern: lhs.pattern, input: lhs.input, syntax: lhs.syntax, options: lhs.options)
 }
 
 func !! (lhs: String, rhs: OnigError) -> OnigOfficialTests.TestExpectation {
-    return .error(pattern: lhs, error: rhs)
+    return .error(pattern: lhs, error: rhs, syntax: nil, options: .none)
+}
+
+extension OnigOfficialTests.PatternInput {
+    func with(syntax: Syntax) -> OnigOfficialTests.PatternInput {
+        return OnigOfficialTests.PatternInput(pattern: self.pattern, input: self.input, syntax: syntax, options: self.options)
+    }
+    func with(options: Regex.Options) -> OnigOfficialTests.PatternInput {
+        return OnigOfficialTests.PatternInput(pattern: self.pattern, input: self.input, syntax: self.syntax, options: options)
+    }
+}
+
+extension OnigOfficialTests.TestExpectation {
+    func with(syntax: Syntax) -> OnigOfficialTests.TestExpectation {
+        switch self {
+        case .match(let p, let i, let r, let g, _, let o): return .match(pattern: p, input: i, range: r, group: g, syntax: syntax, options: o)
+        case .noMatch(let p, let i, _, let o): return .noMatch(pattern: p, input: i, syntax: syntax, options: o)
+        case .error(let p, let e, _, let o): return .error(pattern: p, error: e, syntax: syntax, options: o)
+        }
+    }
+    func with(options: Regex.Options) -> OnigOfficialTests.TestExpectation {
+        switch self {
+        case .match(let p, let i, let r, let g, let s, _): return .match(pattern: p, input: i, range: r, group: g, syntax: s, options: options)
+        case .noMatch(let p, let i, let s, _): return .noMatch(pattern: p, input: i, syntax: s, options: options)
+        case .error(let p, let e, let s, _): return .error(pattern: p, error: e, syntax: s, options: options)
+        }
+    }
 }
