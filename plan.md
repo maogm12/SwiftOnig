@@ -114,3 +114,16 @@ This section tracks the packaging refactor from a system-installed Oniguruma dep
 - [x] **Error Metadata Refactor**: Rework `OnigError` mapping into smaller metadata-driven components with clearer diagnostics plumbing.
 - [x] **RegexSet Builder Cleanup**: Consolidate repeated `RegexSet` initialization logic and add earlier compatibility validation.
 - [x] **Test Suite Organization**: Reorganize tests by behavior layers so future refactors are easier to validate and localize.
+
+## 12. Remaining Oniguruma Feature Gaps
+
+- [x] **Regex MatchParam Integration**: Add `MatchParam` overloads to the main `Regex` search and match APIs and route them through `onig_search_with_param()` / `onig_match_with_param()`.
+- [ ] **Missing Option Flags**: Expose the remaining upstream compile and search option flags in `Regex.Options` and `Regex.SearchOptions`.
+- [ ] **Whole Match Convenience**: Add higher-level whole-string match APIs backed by Oniguruma whole-match semantics.
+- [ ] **Missing Syntax Presets and Flags**: Expose `Syntax.python` plus the remaining upstream syntax flags currently absent from `Operators` and `Operators2`.
+- [ ] **Regex Capture Metadata Gap**: Expose `Regex.nonameGroupCaptureIsActive`.
+- [ ] **Encoding Boundary Helpers**: Implement the pending encoding cursor and length helpers in `Encoding`.
+- [ ] **Runtime Warning Hooks**: Add actor-isolated APIs for standard and verbose Oniguruma warning callbacks.
+- [ ] **User Unicode Properties**: Add registration APIs for custom Unicode properties.
+- [ ] **Swift-Native Callouts**: Add Swift-native registration and execution support for named/content callouts and per-match callout handlers.
+- [ ] **Mutable RegexSet Operations**: Add append, replace, and remove operations while preserving regset invariants.

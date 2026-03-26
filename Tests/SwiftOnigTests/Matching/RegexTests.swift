@@ -60,6 +60,38 @@ struct RegexTests {
         #expect(region2[0]?.range == 0..<4)
         #expect(region2[0]?.string == "你好")
     }
+
+    @Test("MatchParam support on core search and match APIs")
+    func matchParamSupport() async throws {
+        let regex = try await Regex(pattern: "(a|aa)+b")
+        let target = String(repeating: "a", count: 24)
+        let matchParam = MatchParam()
+        matchParam.setRetryLimitInMatch(to: 1)
+        matchParam.setRetryLimitInSearch(to: 1)
+
+        func expectRetryLimitError(_ body: () async throws -> Void) async {
+            do {
+                try await body()
+                Issue.record("Expected retry limit error")
+            } catch let error as OnigError {
+                #expect(error == .retryLimitInMatchOver || error == .retryLimitInSearchOver)
+            } catch {
+                Issue.record("Unexpected error: \(error)")
+            }
+        }
+
+        await expectRetryLimitError {
+            _ = try await regex.matchCount(in: target, matchParam: matchParam)
+        }
+
+        await expectRetryLimitError {
+            _ = try await regex.matches(target, matchParam: matchParam)
+        }
+
+        await expectRetryLimitError {
+            _ = try await regex.firstMatch(in: target, matchParam: matchParam)
+        }
+    }
     
     @Test("Enumerate Matches")
     func enumerateMatches() async throws {
