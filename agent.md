@@ -29,12 +29,10 @@ This file captures repo-specific working rules for agents collaborating in this 
 
 
 - Use Semantic Versioning.
-- Track the current package version in the repo root `VERSION` file.
 - Track release notes in `CHANGELOG.md`.
 - For every commit, explicitly decide whether the change requires a version bump.
-- If a bump is needed, update both:
-  - `VERSION`
-  - the top `Unreleased` or new release section in `CHANGELOG.md`
+- If a bump is needed, update the top `Unreleased` or new release section in `CHANGELOG.md`.
+- When the package version changes, create the matching Git tag for the new version because SwiftPM resolves releases from tags.
 - Bump rules:
   - `MAJOR` for breaking public API or CLI contract changes, always ask for approval for MAJOR version bump
   - `MINOR` for backward-compatible features
@@ -75,7 +73,9 @@ This file captures repo-specific working rules for agents collaborating in this 
 ## Documentation and Planning
 
 - Update `README.md` or DocC content when user-facing behavior materially changes.
-- `plan.md` exists, but it is a modernization notes document, not a required per-task checklist.
+- Treat `plan.md` as the source of truth for tracked work in this repository.
+- Add new implementation tasks to `plan.md` before or as part of the work when they are meant to be tracked.
+- Whenever a tracked task is completed, update `plan.md` and check it off in the same step.
 
 ## Practical Checks
 
