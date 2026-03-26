@@ -16,12 +16,17 @@ import OnigurumaC
  */
 @OnigurumaActor
 final public class Syntax: Sendable {
-    internal nonisolated(unsafe) var rawValue: UnsafeMutablePointer<OnigSyntaxType>
-    private var isOwned: Bool = false
+    private enum Ownership: Equatable {
+        case borrowedPreset
+        case ownedCopy
+    }
 
-    internal init(rawValue: UnsafeMutablePointer<OnigSyntaxType>, isOwned: Bool = false) {
+    internal nonisolated(unsafe) var rawValue: UnsafeMutablePointer<OnigSyntaxType>
+    private var ownership: Ownership
+
+    private init(rawValue: UnsafeMutablePointer<OnigSyntaxType>, ownership: Ownership) {
         self.rawValue = rawValue
-        self.isOwned = isOwned
+        self.ownership = ownership
     }
 
     /**
@@ -29,13 +34,14 @@ final public class Syntax: Sendable {
      - Parameter other: The syntax to copy from.
      */
     public init(copying other: Syntax) {
-        self.rawValue = UnsafeMutablePointer<OnigSyntaxType>.allocate(capacity: 1)
-        onig_copy_syntax(self.rawValue, other.rawValue)
-        self.isOwned = true
+        let rawValue = UnsafeMutablePointer<OnigSyntaxType>.allocate(capacity: 1)
+        onig_copy_syntax(rawValue, other.rawValue)
+        self.rawValue = rawValue
+        self.ownership = .ownedCopy
     }
 
     deinit {
-        if isOwned {
+        if ownership == .ownedCopy {
             rawValue.deallocate()
         }
     }
@@ -43,29 +49,29 @@ final public class Syntax: Sendable {
     /**
      Predefined syntax objects
      */
-    public static var asis: Syntax { Syntax(rawValue: OnigCGlobals.asis) }
-    public static var posixBasic: Syntax { Syntax(rawValue: OnigCGlobals.posixBasic) }
-    public static var posixExtended: Syntax { Syntax(rawValue: OnigCGlobals.posixExtended) }
-    public static var emacs: Syntax { Syntax(rawValue: OnigCGlobals.emacs) }
-    public static var grep: Syntax { Syntax(rawValue: OnigCGlobals.grep) }
-    public static var gnuRegex: Syntax { Syntax(rawValue: OnigCGlobals.gnuRegex) }
-    public static var java: Syntax { Syntax(rawValue: OnigCGlobals.java) }
-    public static var perl: Syntax { Syntax(rawValue: OnigCGlobals.perl) }
-    public static var perlNg: Syntax { Syntax(rawValue: OnigCGlobals.perlNg) }
-    public static var ruby: Syntax { Syntax(rawValue: OnigCGlobals.ruby) }
-    public static var oniguruma: Syntax { Syntax(rawValue: OnigCGlobals.oniguruma) }
-    public static var `default`: Syntax { Syntax(rawValue: OnigCGlobals.defaultSyntax) }
+    public static var asis: Syntax { Syntax(rawValue: OnigCGlobals.asis, ownership: .borrowedPreset) }
+    public static var posixBasic: Syntax { Syntax(rawValue: OnigCGlobals.posixBasic, ownership: .borrowedPreset) }
+    public static var posixExtended: Syntax { Syntax(rawValue: OnigCGlobals.posixExtended, ownership: .borrowedPreset) }
+    public static var emacs: Syntax { Syntax(rawValue: OnigCGlobals.emacs, ownership: .borrowedPreset) }
+    public static var grep: Syntax { Syntax(rawValue: OnigCGlobals.grep, ownership: .borrowedPreset) }
+    public static var gnuRegex: Syntax { Syntax(rawValue: OnigCGlobals.gnuRegex, ownership: .borrowedPreset) }
+    public static var java: Syntax { Syntax(rawValue: OnigCGlobals.java, ownership: .borrowedPreset) }
+    public static var perl: Syntax { Syntax(rawValue: OnigCGlobals.perl, ownership: .borrowedPreset) }
+    public static var perlNg: Syntax { Syntax(rawValue: OnigCGlobals.perlNg, ownership: .borrowedPreset) }
+    public static var ruby: Syntax { Syntax(rawValue: OnigCGlobals.ruby, ownership: .borrowedPreset) }
+    public static var oniguruma: Syntax { Syntax(rawValue: OnigCGlobals.oniguruma, ownership: .borrowedPreset) }
+    public static var `default`: Syntax { Syntax(rawValue: OnigCGlobals.defaultSyntax, ownership: .borrowedPreset) }
 
     /**
      Convert the syntax to an owned one if it's not. 
      Predefined syntax objects should not be modified directly.
      */
     internal func convertToOwnedIfNeeded() {
-        if !isOwned {
+        if ownership == .borrowedPreset {
             let newRawValue = UnsafeMutablePointer<OnigSyntaxType>.allocate(capacity: 1)
-            onig_copy_syntax(newRawValue, self.rawValue)
+            onig_copy_syntax(newRawValue, rawValue)
             self.rawValue = newRawValue
-            self.isOwned = true
+            self.ownership = .ownedCopy
         }
     }
 
@@ -293,6 +299,6 @@ extension Syntax {
 extension Syntax {
     @OnigurumaActor
     internal convenience init(rawValue: UnsafeMutablePointer<OnigSyntaxType>) {
-        self.init(rawValue: rawValue, isOwned: false)
+        self.init(rawValue: rawValue, ownership: .borrowedPreset)
     }
 }
