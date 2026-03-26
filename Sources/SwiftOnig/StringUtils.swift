@@ -37,8 +37,8 @@ extension StringProtocol {
             }
         }
 
-        if result != nil {
-            return result!
+        if let result = result {
+            return result
         }
         
         // If contiguous storage is not available, go with cstring
@@ -50,13 +50,24 @@ extension StringProtocol {
     }
 }
 
-// MARK: - UTF-16 Support
+// MARK: - UTF-16 Support (Optimized for NSString)
 
 extension String.UTF16View: OnigurumaString {
     public func withOnigurumaString<Result>(_ body: (UnsafePointer<OnigUChar>, Int) throws -> Result) rethrows -> Result {
-        // UTF-16 is not the native storage for Swift strings (UTF-8 is).
-        // To pass this to Oniguruma as a raw pointer, we must ensure it's contiguous.
-        // This involves a copy.
+        // Optimization: Try to get a pointer to the underlying storage without copying.
+        // This is highly effective for bridged NSStrings which are already stored as UTF-16.
+        let result = try self.withContiguousStorageIfAvailable { bufPtr -> Result in
+            let byteCount = bufPtr.count * MemoryLayout<UInt16>.size
+            return try bufPtr.baseAddress!.withMemoryRebound(to: OnigUChar.self, capacity: byteCount) {
+                try body($0, byteCount)
+            }
+        }
+        
+        if let result = result {
+            return result
+        }
+
+        // Fallback: Copy to a contiguous buffer if necessary.
         let bytes = Array(self)
         return try bytes.withUnsafeBufferPointer { bufPtr in
             let byteCount = bufPtr.count * MemoryLayout<UInt16>.size
@@ -69,6 +80,17 @@ extension String.UTF16View: OnigurumaString {
 
 extension Substring.UTF16View: OnigurumaString {
     public func withOnigurumaString<Result>(_ body: (UnsafePointer<OnigUChar>, Int) throws -> Result) rethrows -> Result {
+        let result = try self.withContiguousStorageIfAvailable { bufPtr -> Result in
+            let byteCount = bufPtr.count * MemoryLayout<UInt16>.size
+            return try bufPtr.baseAddress!.withMemoryRebound(to: OnigUChar.self, capacity: byteCount) {
+                try body($0, byteCount)
+            }
+        }
+        
+        if let result = result {
+            return result
+        }
+
         let bytes = Array(self)
         return try bytes.withUnsafeBufferPointer { bufPtr in
             let byteCount = bufPtr.count * MemoryLayout<UInt16>.size
@@ -103,11 +125,6 @@ extension Array: OnigurumaString where Element == UInt8 { }
 extension ContiguousArray: OnigurumaString where Element == UInt8 { }
 extension ArraySlice: OnigurumaString where Element == UInt8 { }
 extension Data: OnigurumaString { }
-
-// We can't conform Array<UInt16> directly without conflict if we already have Array<UInt8>.
-// Instead, users can use `Data(array)` or `withUnsafeBytes` on their side,
-// OR we can provide a wrapper. 
-// For now, let's just stick to UInt8 arrays and Data.
 
 extension CollectionOfOne : OnigurumaString where Element == UInt8 { }
 
