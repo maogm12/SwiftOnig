@@ -7,6 +7,7 @@
 
 import Testing
 import Foundation
+import OnigurumaC
 @testable import SwiftOnig
 
 @Suite("Regex Tests")
@@ -91,6 +92,31 @@ struct RegexTests {
         await expectRetryLimitError {
             _ = try await regex.firstMatch(in: target, matchParam: matchParam)
         }
+    }
+
+    @Test("Compile and search option flags")
+    func optionFlags() async throws {
+        let defaultWordRegex = try await Regex(pattern: #"^\w+$"#)
+        let asciiWordRegex = try await Regex(pattern: #"^\w+$"#, options: .wordIsASCII)
+        #expect(try await defaultWordRegex.matches("cafe"))
+        #expect(try await defaultWordRegex.matches("café"))
+        #expect(try await !asciiWordRegex.matches("café"))
+
+        let unicodeIgnoreCase = try await Regex(pattern: "é", options: .ignoreCase)
+        let asciiIgnoreCase = try await Regex(pattern: "é", options: [.ignoreCase, .ignoreCaseIsASCII])
+        #expect(try await unicodeIgnoreCase.matches("É"))
+        #expect(try await !asciiIgnoreCase.matches("É"))
+
+        let wholeMatchRegex = try await Regex(pattern: #"foo"#)
+        #expect(try await wholeMatchRegex.firstMatch(in: "foo bar", options: .matchWholeString) == nil)
+        #expect(try await wholeMatchRegex.firstMatch(in: "foo", options: .matchWholeString) != nil)
+
+        #expect(Regex.SearchOptions.callbackEachMatch.rawValue == ONIG_OPTION_CALLBACK_EACH_MATCH)
+        #expect(Regex.Options.digitIsASCII.rawValue == ONIG_OPTION_DIGIT_IS_ASCII)
+        #expect(Regex.Options.spaceIsASCII.rawValue == ONIG_OPTION_SPACE_IS_ASCII)
+        #expect(Regex.Options.posixIsASCII.rawValue == ONIG_OPTION_POSIX_IS_ASCII)
+        #expect(Regex.Options.textSegmentExtendedGraphemeCluster.rawValue == ONIG_OPTION_TEXT_SEGMENT_EXTENDED_GRAPHEME_CLUSTER)
+        #expect(Regex.Options.textSegmentWord.rawValue == ONIG_OPTION_TEXT_SEGMENT_WORD)
     }
     
     @Test("Enumerate Matches")

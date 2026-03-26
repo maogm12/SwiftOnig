@@ -732,6 +732,9 @@ extension Regex {
         
         /// Ignore case.
         public static let ignoreCase = Regex.Options(rawValue: ONIG_OPTION_IGNORECASE)
+
+        /// Limit ignore-case matching to ASCII characters.
+        public static let ignoreCaseIsASCII = Regex.Options(rawValue: ONIG_OPTION_IGNORECASE_IS_ASCII)
         
         /// Extended pattern form.
         public static let extend = Regex.Options(rawValue: ONIG_OPTION_EXTEND)
@@ -747,6 +750,24 @@ extension Regex {
         
         /// Ignore empty match.
         public static let findNotEmpty = Regex.Options(rawValue: ONIG_OPTION_FIND_NOT_EMPTY);
+
+        /// Limit word character classes and boundaries to ASCII.
+        public static let wordIsASCII = Regex.Options(rawValue: ONIG_OPTION_WORD_IS_ASCII)
+
+        /// Limit digit character classes to ASCII.
+        public static let digitIsASCII = Regex.Options(rawValue: ONIG_OPTION_DIGIT_IS_ASCII)
+
+        /// Limit whitespace character classes to ASCII.
+        public static let spaceIsASCII = Regex.Options(rawValue: ONIG_OPTION_SPACE_IS_ASCII)
+
+        /// Limit POSIX character classes to ASCII.
+        public static let posixIsASCII = Regex.Options(rawValue: ONIG_OPTION_POSIX_IS_ASCII)
+
+        /// Treat text segments as extended grapheme clusters.
+        public static let textSegmentExtendedGraphemeCluster = Regex.Options(rawValue: ONIG_OPTION_TEXT_SEGMENT_EXTENDED_GRAPHEME_CLUSTER)
+
+        /// Treat text segments as words.
+        public static let textSegmentWord = Regex.Options(rawValue: ONIG_OPTION_TEXT_SEGMENT_WORD)
         
         /// Clear `OPTION_SINGLELINE` which is enabled on
         /// `SYNTAX_POSIX_BASIC`, `SYNTAX_POSIX_EXTENDED`,
@@ -785,5 +806,11 @@ extension Regex {
         
         /// Do not regard the (start) as start position of search  (* fail \G)
         public static let notBeginPosition = SearchOptions(rawValue: ONIG_OPTION_NOT_BEGIN_POSITION)
+
+        /// Request callback delivery for each successful match.
+        public static let callbackEachMatch = SearchOptions(rawValue: ONIG_OPTION_CALLBACK_EACH_MATCH)
+
+        /// Require the whole input to match.
+        public static let matchWholeString = SearchOptions(rawValue: ONIG_OPTION_MATCH_WHOLE_STRING)
     }
 }
