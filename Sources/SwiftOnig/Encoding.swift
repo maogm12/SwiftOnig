@@ -181,44 +181,84 @@ public struct Encoding: Equatable, CustomStringConvertible, Sendable {
         fatalError("Unexpected encoding")
     }
 
-    /*
-     TODO:
-     # UChar* onigenc_get_prev_char_head(OnigEncoding enc, const UChar* start, const UChar* s)
-
-       Return previous character head address.
-
-       arguments
-       1 enc:   character encoding
-       2 start: string address
-       3 s:     target address of string
-
-
-     # UChar* onigenc_get_left_adjust_char_head(OnigEncoding enc,
-                                                const UChar* start, const UChar* s)
-
-       Return left-adjusted head address of a character.
-
-       arguments
-       1 enc:   character encoding
-       2 start: string address
-       3 s:     target address of string
-
-
-     # int onigenc_get_right_adjust_char_head(OnigEncoding enc,
-                                              const UChar* start, const UChar* s)
-
-       Return right-adjusted head address of a character.
-
-       arguments
-       1 enc:   character encoding
-       2 start: string address
-       3 s:     target address of string
-
-
-     # int onigenc_strlen(OnigEncoding enc, const UChar* s, const UChar* end)
-     # int onigenc_strlen_null(OnigEncoding enc, const UChar* s)
-     # int onigenc_str_bytelen_null(OnigEncoding enc, const UChar* s)
+    /**
+     Return the previous character head before the given byte offset, or `nil` if there is no previous character.
      */
+    public func previousCharacterHead<S>(in bytes: S, before index: Int) -> Int? where S: Sequence, S.Element == UInt8 {
+        withContiguousBytes(bytes) { start, count in
+            precondition((0...count).contains(index), "Index out of bounds")
+            guard let previous = onigenc_get_prev_char_head(self.rawValue, start, start.advanced(by: index)) else {
+                return nil
+            }
+            return start.distance(to: previous)
+        }
+    }
+
+    /**
+     Return the left-adjusted character head at or before the given byte offset.
+     */
+    public func leftAdjustedCharacterHead<S>(in bytes: S, at index: Int) -> Int where S: Sequence, S.Element == UInt8 {
+        withContiguousBytes(bytes) { start, count in
+            precondition((0...count).contains(index), "Index out of bounds")
+            let adjusted = onigenc_get_left_adjust_char_head(self.rawValue, start, start.advanced(by: index))!
+            return start.distance(to: adjusted)
+        }
+    }
+
+    /**
+     Return the right-adjusted character head at or after the given byte offset.
+     */
+    public func rightAdjustedCharacterHead<S>(in bytes: S, at index: Int) -> Int where S: Sequence, S.Element == UInt8 {
+        withContiguousBytes(bytes) { start, count in
+            precondition((0...count).contains(index), "Index out of bounds")
+            let adjusted = onigenc_get_right_adjust_char_head(self.rawValue, start, start.advanced(by: index))!
+            return start.distance(to: adjusted)
+        }
+    }
+
+    /**
+     Return the number of encoded characters in the provided byte sequence.
+     */
+    public func characterCount<S>(in bytes: S) -> Int where S: Sequence, S.Element == UInt8 {
+        withContiguousBytes(bytes) { start, count in
+            Int(onigenc_strlen(self.rawValue, start, start.advanced(by: count)))
+        }
+    }
+
+    /**
+     Return the number of encoded characters in the provided bytes, treated as null-terminated.
+     */
+    public func nullTerminatedCharacterCount<S>(in bytes: S) -> Int where S: Sequence, S.Element == UInt8 {
+        withNullTerminatedBytes(bytes) { start in
+            Int(onigenc_strlen_null(self.rawValue, start))
+        }
+    }
+
+    /**
+     Return the byte length of the provided bytes, treated as null-terminated.
+     */
+    public func nullTerminatedByteCount<S>(in bytes: S) -> Int where S: Sequence, S.Element == UInt8 {
+        withNullTerminatedBytes(bytes) { start in
+            Int(onigenc_str_bytelen_null(self.rawValue, start))
+        }
+    }
+
+    private func withContiguousBytes<S, Result>(_ bytes: S, _ body: (UnsafePointer<OnigUChar>, Int) -> Result) -> Result where S: Sequence, S.Element == UInt8 {
+        let contiguous = ContiguousArray(bytes)
+        return contiguous.withUnsafeBufferPointer { buffer in
+            let baseAddress = buffer.baseAddress ?? UnsafePointer<UInt8>(bitPattern: 0x1)!
+            return body(baseAddress, buffer.count)
+        }
+    }
+
+    private func withNullTerminatedBytes<S, Result>(_ bytes: S, _ body: (UnsafePointer<OnigUChar>) -> Result) -> Result where S: Sequence, S.Element == UInt8 {
+        var contiguous = ContiguousArray(bytes)
+        contiguous.append(0)
+        return contiguous.withUnsafeBufferPointer { buffer in
+            let baseAddress = buffer.baseAddress ?? UnsafePointer<UInt8>(bitPattern: 0x1)!
+            return body(baseAddress)
+        }
+    }
 }
 
 extension String.Encoding {

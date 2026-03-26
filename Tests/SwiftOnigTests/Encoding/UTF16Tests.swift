@@ -44,4 +44,17 @@ struct UTF16Tests {
         
         #expect(region.range == 14..<18)
     }
+
+    @Test("Encoding byte boundary helpers")
+    func encodingBoundaryHelpers() async throws {
+        let utf16Bytes: [UInt8] = [0x41, 0x00, 0x60, 0x4f, 0x42, 0x00] // "A你B" in UTF-16LE
+        let encoding = await Encoding.utf16LittleEndian
+
+        #expect(encoding.previousCharacterHead(in: utf16Bytes, before: 4) == 2)
+        #expect(encoding.leftAdjustedCharacterHead(in: utf16Bytes, at: 3) == 2)
+        #expect(encoding.rightAdjustedCharacterHead(in: utf16Bytes, at: 3) == 4)
+        #expect(encoding.characterCount(in: utf16Bytes) == 3)
+        #expect(encoding.nullTerminatedCharacterCount(in: utf16Bytes) == 3)
+        #expect(encoding.nullTerminatedByteCount(in: utf16Bytes) == utf16Bytes.count)
+    }
 }
