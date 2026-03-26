@@ -71,6 +71,7 @@ internal struct OnigCGlobals {
     static var java: UnsafeMutablePointer<OnigSyntaxType> { get_onig_java() }
     static var perl: UnsafeMutablePointer<OnigSyntaxType> { get_onig_perl() }
     static var perlNg: UnsafeMutablePointer<OnigSyntaxType> { get_onig_perl_ng() }
+    static var python: UnsafeMutablePointer<OnigSyntaxType> { get_onig_python() }
     static var ruby: UnsafeMutablePointer<OnigSyntaxType> { get_onig_ruby() }
     static var oniguruma: UnsafeMutablePointer<OnigSyntaxType> { get_onig_oniguruma() }
     static var defaultSyntax: UnsafeMutablePointer<OnigSyntaxType> { get_onig_default_syntax() }

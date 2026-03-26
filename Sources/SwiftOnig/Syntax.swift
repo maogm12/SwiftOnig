@@ -58,6 +58,7 @@ final public class Syntax: Sendable {
     public static var java: Syntax { Syntax(rawValue: OnigCGlobals.java, ownership: .borrowedPreset) }
     public static var perl: Syntax { Syntax(rawValue: OnigCGlobals.perl, ownership: .borrowedPreset) }
     public static var perlNg: Syntax { Syntax(rawValue: OnigCGlobals.perlNg, ownership: .borrowedPreset) }
+    public static var python: Syntax { Syntax(rawValue: OnigCGlobals.python, ownership: .borrowedPreset) }
     public static var ruby: Syntax { Syntax(rawValue: OnigCGlobals.ruby, ownership: .borrowedPreset) }
     public static var oniguruma: Syntax { Syntax(rawValue: OnigCGlobals.oniguruma, ownership: .borrowedPreset) }
     public static var `default`: Syntax { Syntax(rawValue: OnigCGlobals.defaultSyntax, ownership: .borrowedPreset) }
@@ -158,6 +159,7 @@ extension Syntax {
         public static let lparenSubexp = Operators(rawValue: UInt64(ONIG_SYN_OP_LPAREN_SUBEXP))
         public static let escLparenSubexp = Operators(rawValue: UInt64(ONIG_SYN_OP_ESC_LPAREN_SUBEXP))
         public static let escAzBufAnchor = Operators(rawValue: UInt64(ONIG_SYN_OP_ESC_AZ_BUF_ANCHOR))
+        public static let escCapitalGBeginAnchor = Operators(rawValue: UInt64(ONIG_SYN_OP_ESC_CAPITAL_G_BEGIN_ANCHOR))
         public static let escWWord = Operators(rawValue: UInt64(ONIG_SYN_OP_ESC_W_WORD))
         public static let escLtGtWordBeginEnd = Operators(rawValue: UInt64(ONIG_SYN_OP_ESC_LTGT_WORD_BEGIN_END))
         public static let escBWordBound = Operators(rawValue: UInt64(ONIG_SYN_OP_ESC_B_WORD_BOUND))
@@ -188,11 +190,15 @@ extension Syntax {
         public static let optionRuby = Operators2(rawValue: UInt64(ONIG_SYN_OP2_OPTION_RUBY))
         public static let plusPossessiveRepeat = Operators2(rawValue: UInt64(ONIG_SYN_OP2_PLUS_POSSESSIVE_REPEAT))
         public static let plusPossessiveInterval = Operators2(rawValue: UInt64(ONIG_SYN_OP2_PLUS_POSSESSIVE_INTERVAL))
+        public static let qmarkLtNamedGroup = Operators2(rawValue: UInt64(ONIG_SYN_OP2_QMARK_LT_NAMED_GROUP))
         public static let escCapitalUHex4 = Operators2(rawValue: UInt64(ONIG_SYN_OP2_ESC_U_HEX4))
         public static let escVVerticalTab = Operators2(rawValue: UInt64(ONIG_SYN_OP2_ESC_V_VTAB))
         public static let escHHorizontalTab = Operators2(rawValue: UInt64(ONIG_SYN_OP2_ESC_H_XDIGIT))
+        public static let escPBraceCircumflexNot = Operators2(rawValue: UInt64(ONIG_SYN_OP2_ESC_P_BRACE_CIRCUMFLEX_NOT))
         public static let escCapitalKKeep = Operators2(rawValue: UInt64(ONIG_SYN_OP2_ESC_K_NAMED_BACKREF))
+        public static let escGSubexpCall = Operators2(rawValue: UInt64(ONIG_SYN_OP2_ESC_G_SUBEXP_CALL))
         public static let escCapitalRLinebreak = Operators2(rawValue: UInt64(ONIG_SYN_OP2_ESC_CAPITAL_R_GENERAL_NEWLINE))
+        public static let escCapitalNSuperDot = Operators2(rawValue: UInt64(ONIG_SYN_OP2_ESC_CAPITAL_N_O_SUPER_DOT))
         public static let escCapitalXExtendedGraphemeCluster = Operators2(rawValue: UInt64(ONIG_SYN_OP2_ESC_X_Y_TEXT_SEGMENT))
         public static let qmarkLparenCondition = Operators2(rawValue: UInt64(ONIG_SYN_OP2_QMARK_LPAREN_IF_ELSE))
         public static let qmarkBraceCallout = Operators2(rawValue: UInt64(ONIG_SYN_OP2_QMARK_BRACE_CALLOUT_CONTENTS))

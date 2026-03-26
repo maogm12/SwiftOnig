@@ -43,6 +43,7 @@ OnigSyntaxType* get_onig_gnu_regex();
 OnigSyntaxType* get_onig_java();
 OnigSyntaxType* get_onig_perl();
 OnigSyntaxType* get_onig_perl_ng();
+OnigSyntaxType* get_onig_python();
 OnigSyntaxType* get_onig_ruby();
 OnigSyntaxType* get_onig_oniguruma();
 OnigSyntaxType* get_onig_default_syntax();

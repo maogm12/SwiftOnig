@@ -120,7 +120,7 @@ This section tracks the packaging refactor from a system-installed Oniguruma dep
 - [x] **Regex MatchParam Integration**: Add `MatchParam` overloads to the main `Regex` search and match APIs and route them through `onig_search_with_param()` / `onig_match_with_param()`.
 - [x] **Missing Option Flags**: Expose the remaining upstream compile and search option flags in `Regex.Options` and `Regex.SearchOptions`.
 - [x] **Whole Match Convenience**: Add higher-level whole-string match APIs backed by Oniguruma whole-match semantics.
-- [ ] **Missing Syntax Presets and Flags**: Expose `Syntax.python` plus the remaining upstream syntax flags currently absent from `Operators` and `Operators2`.
+- [x] **Missing Syntax Presets and Flags**: Expose `Syntax.python` plus the remaining upstream syntax flags currently absent from `Operators` and `Operators2`.
 - [ ] **Regex Capture Metadata Gap**: Expose `Regex.nonameGroupCaptureIsActive`.
 - [ ] **Encoding Boundary Helpers**: Implement the pending encoding cursor and length helpers in `Encoding`.
 - [ ] **Runtime Warning Hooks**: Add actor-isolated APIs for standard and verbose Oniguruma warning callbacks.
