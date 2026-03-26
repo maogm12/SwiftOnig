@@ -49,4 +49,19 @@ struct SwiftOnigTests {
         await setWarningHandler(nil)
         await setVerboseWarningHandler(nil)
     }
+
+    @Test("Define user Unicode property")
+    func userUnicodeProperty() async throws {
+        try await defineUserUnicodeProperty(
+            named: "SwiftOnigKana",
+            ranges: [
+                OnigurumaUnicodePropertyRange(0x3042, 0x3042), // あ
+                OnigurumaUnicodePropertyRange(0x3044, 0x3044), // い
+            ]
+        )
+
+        let regex = try await Regex(pattern: #"\A\p{SwiftOnigKana}{2}\z"#)
+        #expect(try await regex.matches("あい"))
+        #expect(try await !regex.matches("あう"))
+    }
 }

@@ -124,6 +124,6 @@ This section tracks the packaging refactor from a system-installed Oniguruma dep
 - [x] **Regex Capture Metadata Gap**: Expose `Regex.nonameGroupCaptureIsActive`.
 - [x] **Encoding Boundary Helpers**: Implement the pending encoding cursor and length helpers in `Encoding`.
 - [x] **Runtime Warning Hooks**: Add actor-isolated APIs for standard and verbose Oniguruma warning callbacks.
-- [ ] **User Unicode Properties**: Add registration APIs for custom Unicode properties.
+- [x] **User Unicode Properties**: Add registration APIs for custom Unicode properties.
 - [ ] **Swift-Native Callouts**: Add Swift-native registration and execution support for named/content callouts and per-match callout handlers.
 - [ ] **Mutable RegexSet Operations**: Add append, replace, and remove operations while preserving regset invariants.

@@ -3,6 +3,16 @@ import Foundation
 
 public typealias OnigurumaWarningHandler = @Sendable (String) -> Void
 
+public struct OnigurumaUnicodePropertyRange: Sendable, Equatable {
+    public let lowerBound: OnigCodePoint
+    public let upperBound: OnigCodePoint
+
+    public init(_ lowerBound: OnigCodePoint, _ upperBound: OnigCodePoint) {
+        self.lowerBound = lowerBound
+        self.upperBound = upperBound
+    }
+}
+
 private enum OnigurumaWarningBridge {
     nonisolated(unsafe) static var standardHandler: OnigurumaWarningHandler?
     nonisolated(unsafe) static var verboseHandler: OnigurumaWarningHandler?
@@ -27,6 +37,7 @@ public actor OnigurumaActor {
 
     private var isLibraryInitialized = false
     private var initializedEncodings = Set<OnigEncoding>()
+    private var userUnicodePropertyStorage = [ContiguousArray<OnigCodePoint>]()
 
     /**
      Ensures that the oniguruma library and the specified encoding are initialized.
@@ -44,6 +55,47 @@ public actor OnigurumaActor {
             }
             initializedEncodings.insert(encoding)
         }
+    }
+
+    fileprivate func defineUserUnicodeProperty(named name: String, ranges: [OnigurumaUnicodePropertyRange]) throws {
+        try ensureInitialized()
+
+        guard !name.isEmpty,
+              name.unicodeScalars.allSatisfy(\.isASCII),
+              !ranges.isEmpty else {
+            throw OnigError.invalidArgument
+        }
+
+        var previousUpperBound: OnigCodePoint?
+        for range in ranges {
+            guard range.lowerBound <= range.upperBound else {
+                throw OnigError.invalidArgument
+            }
+
+            if let previousUpperBound, range.lowerBound <= previousUpperBound {
+                throw OnigError.invalidArgument
+            }
+
+            previousUpperBound = range.upperBound
+        }
+
+        var storage = ContiguousArray<OnigCodePoint>()
+        storage.reserveCapacity((ranges.count * 2) + 1)
+        storage.append(OnigCodePoint(ranges.count))
+        for range in ranges {
+            storage.append(range.lowerBound)
+            storage.append(range.upperBound)
+        }
+
+        let result = storage.withUnsafeMutableBufferPointer { buffer -> OnigInt in
+            onig_unicode_define_user_property(name, buffer.baseAddress)
+        }
+
+        if result != ONIG_NORMAL {
+            throw OnigError(onigErrorCode: result)
+        }
+
+        userUnicodePropertyStorage.append(storage)
     }
 }
 
@@ -142,6 +194,14 @@ public func setVerboseWarningHandler(_ handler: OnigurumaWarningHandler?) {
     } else {
         onig_set_verb_warn_func(onigurumaVerboseWarningCallback)
     }
+}
+
+/**
+ Register a user-defined Unicode property for later use in regex patterns.
+ */
+@OnigurumaActor
+public func defineUserUnicodeProperty(named name: String, ranges: [OnigurumaUnicodePropertyRange]) async throws {
+    try await OnigurumaActor.shared.defineUserUnicodeProperty(named: name, ranges: ranges)
 }
 
 /**
