@@ -104,6 +104,16 @@ SwiftOnig includes a comprehensive test suite, including a port of the official 
 swift test
 ```
 
+## Development Setup
+
+The repository now vendors the upstream Oniguruma source as a Git submodule for upcoming source-build integration work.
+
+After cloning, initialize submodules before building or changing the package internals:
+
+```bash
+git submodule update --init --recursive
+```
+
 ## License
 
 SwiftOnig is available under the MIT license. See the LICENSE file for more info.
