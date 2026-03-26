@@ -7,15 +7,30 @@
 
 import Testing
 import SwiftOnig
+import Foundation
 
 @Suite("Encoding Tests")
 struct EncodingTests {
     @Test("Verify Big5 string encoding mapping")
     func stringEncoding() async throws {
-        let encoding = await Encoding.big5
+        // "空山新雨後，天氣晚來秋。" in Big5
+        let big5Bytes: [UInt8] = [
+            0xAA, 0xC5, // 空
+            0xA4, 0x73, // 山
+            0xB7, 0x73, // 新
+            0xAB, 0x42, // 雨
+            0xAB, 0xE1, // 後
+            0xA1, 0x41, // ，
+            0xA4, 0xD1, // 天
+            0xAE, 0xF0, // 氣
+            0xB1, 0xDF, // 晚
+            0xA8, 0xD3, // 來
+            0xAC, 0xEE, // 秋
+            0xA1, 0x43  // 。
+        ]
 
-        // 空山新雨後，天氣晚來秋。
-        let big5Bytes: [UInt8] = [170, 197, 164, 115, 183, 115, 166, 123, 171, 231, 161, 65, 164, 211, 179, 181, 173, 213, 168, 211, 169, 170, 161, 67]
-        #expect(String(bytes: big5Bytes, encoding: encoding.stringEncoding) == "空山新州怎，太陬倘來帚。")
+        let encoding = await Encoding.big5
+        let decoded = String(bytes: big5Bytes, encoding: encoding.stringEncoding)
+        #expect(decoded == "空山新雨後，天氣晚來秋。")
     }
 }

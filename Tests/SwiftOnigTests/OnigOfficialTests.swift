@@ -91,7 +91,7 @@ struct OnigOfficialTests {
         await verify([
             ("a" =~ "A" == 0..<1).with(options: .ignoreCase),
             ("abc" =~ "ABC" == 0..<3).with(options: .ignoreCase),
-            ("a.*b" =~ "a\nb" == 0..<3).with(options: .singleLine),
+            ("a.*b" =~ "a\nb" == 0..<3).with(options: .multiLine),
         ])
     }
 
@@ -100,7 +100,7 @@ struct OnigOfficialTests {
         await verify([
             // Atomic groups
             "(?>a+)aa" =~ "aaaaa" !~ "",
-            "(?>a+)a" =~ "aaaaa" == 0..<5,
+            "(?>a+)a" =~ "aaaaa" !~ "",
             
             // Lookahead
             "a(?=b)" =~ "ab" == 0..<1,

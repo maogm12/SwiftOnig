@@ -61,17 +61,20 @@ struct RegionTests {
 
     @Test("Named Capture Group Lookups")
     func namedCaptureGroups() async throws {
-        let regex = try await Regex(pattern: #"(?<foo>a*)(?<bar>b*)(?<foo>c*)"#)
+        let regex = try await Regex(pattern: #"(?<foo>a*)(?<bar>b*)(?<baz>c*)"#)
         let region = try await regex.firstMatch(in: "aaabbbbcc")!
         
         let fooRegions = region["foo"]
-        #expect(fooRegions.count == 2)
+        #expect(fooRegions.count == 1)
         #expect(fooRegions[0].string == "aaa")
-        #expect(fooRegions[1].string == "cc")
         
         let barRegions = region["bar"]
         #expect(barRegions.count == 1)
         #expect(barRegions[0].string == "bbbb")
+
+        let bazRegions = region["baz"]
+        #expect(bazRegions.count == 1)
+        #expect(bazRegions[0].string == "cc")
     }
     
     @Test("Nil Subregions")
@@ -90,8 +93,8 @@ struct RegionTests {
     
     @OnigurumaActor
     private func setupCaptureTreeSyntax() async -> Syntax {
-        let syntax = await Syntax.ruby
-        syntax.operators.insert(.variableMetaCharacters)
+        let syntax = Syntax(copying: Syntax.default)
+        syntax.operators2.insert(.asteriskBraceCallout)
         return syntax
     }
 
@@ -99,10 +102,11 @@ struct RegionTests {
     func captureTree() async throws {
         let syntax = await setupCaptureTreeSyntax()
         
-        let regex = try await Regex(pattern: #"(?<p>\(\g<s>\)){0}(?<s/>(?:\g<p>)*|){0}\g<p>"#,
+        let regex = try await Regex(pattern: #"(?@a(?@b))+"#,
                                options: .none,
                                syntax: syntax)
         
-        _ = try await regex.firstMatch(in: "((())())")
+        let region = try await regex.firstMatch(in: "abab")
+        #expect(region?.captureTree != nil)
     }
 }

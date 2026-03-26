@@ -19,12 +19,7 @@ struct RegexBuilderTests {
         }
         
         let onigRegex = try await SwiftOnig.Regex(pattern: #"\d+"#)
-        
-        // Use standard Swift string match to verify the OnigRegex component
-        // Since we can't easily name the Swift.Regex type here without conflict
         let input = "The item ID-12345! is ready."
-        
-        // We verify the component works by using it in a way that doesn't require naming the type
-        #expect(onigRegex != nil)
+        #expect(try await onigRegex.firstMatch(in: input)?.string == "12345")
     }
 }

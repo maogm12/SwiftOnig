@@ -109,7 +109,7 @@ final public class Regex: Sendable, CustomConsumingRegexComponent {
         self._patternBytes = ContiguousArray(patternBytes)
         self._encoding = encoding
         self._options = options
-        let defaultSyntax = await Syntax.default
+        let defaultSyntax = Syntax.default
         let actualSyntax = syntax ?? defaultSyntax
         self._syntax = actualSyntax
 
@@ -515,29 +515,21 @@ final public class Regex: Sendable, CustomConsumingRegexComponent {
      - Returns: A array of group numbers. Empty if no named group matches.
      */
     public func captureGroupNumbers(for name: String) -> [Int] {
-        return Array(name.utf8).withUnsafeBufferPointer { bufPtr -> [Int] in
-            let start = bufPtr.baseAddress!
-            let count = onig_name_to_group_numbers(self.rawValue,
-                                                   start,
-                                                   start.advanced(by: bufPtr.count),
-                                                   nil)
-            
-            if count < 0 {
-                return []
-            }
-            
-            var nums: UnsafeMutablePointer<OnigInt>? = nil
-            _ = onig_name_to_group_numbers(self.rawValue,
-                                                   start,
-                                                   start.advanced(by: bufPtr.count),
-                                                   &nums)
-      
-            guard let numbersPtr = nums else {
-                return []
-            }
-            
-            return [Int](UnsafeBufferPointer.init(start: numbersPtr, count: Int(count)).map { Int($0) })
+        final class CaptureGroupNumbersBox: @unchecked Sendable {
+            var numbers = [Int]()
         }
+
+        let box = CaptureGroupNumbersBox()
+        self.enumerateCaptureGroupNames { groupName, numbers in
+            guard groupName == name else {
+                return true
+            }
+
+            box.numbers = numbers
+            return false
+        }
+
+        return box.numbers
     }
     
     // MARK: Static properties

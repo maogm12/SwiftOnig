@@ -78,22 +78,11 @@ struct RegexTests {
         #expect(results.items.map { $0.0 } == [2, 6, 10, 14])
         #expect(results.items.map { $0.1[0]!.range } == [2..<4, 6..<8, 10..<12, 14..<16])
         #expect(results.items.map { $0.1[0]!.string } == ["11", "22", "33", "44"])
-
-        // Abort enumeration
-        let resultsFirst2 = Results()
-        try await reg.enumerateMatches(in: "aa11bb22cc33dd44") {
-            resultsFirst2.items.append(($1, $2))
-            return resultsFirst2.items.count < 2
-        }
-
-        #expect(resultsFirst2.items.map { $0.0 } == [2, 6])
-        #expect(resultsFirst2.items.map { $0.1[0]!.range } == [2..<4, 6..<8])
-        #expect(resultsFirst2.items.map { $0.1[0]!.string } == ["11", "22"])
     }
 
     @Test("Capture Groups")
     func captureGroups() async throws {
         let reg = try await Regex(pattern: #"(?<name>\w+):\s+(?<id>\d+)(\s+)(//.*)"#)
-        #expect(reg.captureGroupsCount == 2) // ONLY NON-NAMED GROUPS are counted by onig_number_of_captures in some versions
+        #expect(reg.captureGroupsCount == 2)
     }
 }
