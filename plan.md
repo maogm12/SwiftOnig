@@ -113,6 +113,7 @@ This section tracks the packaging refactor from a system-installed Oniguruma dep
 - [x] **Syntax Ownership Model**: Separate borrowed predefined syntax presets from owned mutable syntax values to make mutation rules explicit.
 - [x] **Error Metadata Refactor**: Rework `OnigError` mapping into smaller metadata-driven components with clearer diagnostics plumbing.
 - [x] **RegexSet Builder Cleanup**: Consolidate repeated `RegexSet` initialization logic and add earlier compatibility validation.
+- [x] **RegexSet Copy-on-Write Mutations**: Reuse uniquely owned regset storage for append, replace, and remove while preserving value semantics for shared copies.
 - [x] **Test Suite Organization**: Reorganize tests by behavior layers so future refactors are easier to validate and localize.
 
 ## 12. Remaining Oniguruma Feature Gaps

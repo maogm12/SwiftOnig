@@ -88,6 +88,32 @@ struct RegexSetTests {
         #expect(try await regSet.firstMatch(in: "bbcc")?.regexIndex == 0)
     }
 
+    @Test("Mutable operations preserve value semantics across copies")
+    func copyOnWriteMutations() async throws {
+        let regexA = try await Regex(pattern: "a+")
+        let regexB = try await Regex(pattern: "b+")
+        let regexC = try await Regex(pattern: "c+")
+
+        var original = try await RegexSet(regexes: [regexA, regexB])
+        let copy = original
+
+        try original.append(regexC)
+        #expect(original.count == 3)
+        #expect(copy.count == 2)
+        #expect(try await original.firstMatch(in: "ccc")?.regexIndex == 2)
+        #expect(try await copy.firstMatch(in: "ccc") == nil)
+
+        try original.replace(at: 0, with: try await Regex(pattern: "aa"))
+        #expect(try await original[0].wholeMatch(in: "aa") != nil)
+        #expect(try await copy[0].wholeMatch(in: "a") != nil)
+        #expect(try await original[0].wholeMatch(in: "a") == nil)
+
+        try original.remove(at: 1)
+        #expect(original.count == 2)
+        #expect(copy.count == 2)
+        #expect(try await copy.firstMatch(in: "bbb")?.regexIndex == 1)
+    }
+
     @Test("Reject invalid mutable operations")
     func mutationValidation() async throws {
         var regSet = try await RegexSet(regexes: [try await Regex(pattern: "a+")])

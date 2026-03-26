@@ -15,7 +15,7 @@ public struct RegexSet: Sendable {
 
     internal final class Storage: @unchecked Sendable {
         let rawValue: OnigRegSet
-        let regexes: [Regex]
+        var regexes: [Regex]
 
         init(regexes: [Regex]) throws {
             self.regexes = regexes
@@ -47,6 +47,27 @@ public struct RegexSet: Sendable {
                 onig_regset_replace(rawValue, OnigInt(index), nil)
             }
             onig_regset_free(rawValue)
+        }
+
+        func append(_ regex: Regex) throws {
+            try callOnigFunction {
+                onig_regset_add(rawValue, regex.rawValue)
+            }
+            regexes.append(regex)
+        }
+
+        func replace(at index: Int, with regex: Regex) throws {
+            try callOnigFunction {
+                onig_regset_replace(rawValue, OnigInt(index), regex.rawValue)
+            }
+            regexes[index] = regex
+        }
+
+        func remove(at index: Int) throws {
+            try callOnigFunction {
+                onig_regset_replace(rawValue, OnigInt(index), nil)
+            }
+            regexes.remove(at: index)
         }
     }
 
@@ -135,6 +156,14 @@ public struct RegexSet: Sendable {
         storage = try Storage(regexes: regexes)
     }
 
+    private mutating func ensureUniqueStorage() throws {
+        if isKnownUniquelyReferenced(&storage) {
+            return
+        }
+
+        storage = try Storage(regexes: regexes)
+    }
+
     /**
      The count of regular expressions.
      */
@@ -146,9 +175,9 @@ public struct RegexSet: Sendable {
      Append a regex to the set.
      */
     public mutating func append(_ regex: Regex) throws {
-        var updated = regexes
-        updated.append(regex)
-        try rebuild(with: updated)
+        try Self.validateRegexes(regexes + [regex])
+        try ensureUniqueStorage()
+        try storage.append(regex)
     }
 
     /**
@@ -158,7 +187,9 @@ public struct RegexSet: Sendable {
         precondition(regexes.indices.contains(index), "Index out of bounds")
         var updated = regexes
         updated[index] = regex
-        try rebuild(with: updated)
+        try Self.validateRegexes(updated)
+        try ensureUniqueStorage()
+        try storage.replace(at: index, with: regex)
     }
 
     /**
@@ -166,9 +197,8 @@ public struct RegexSet: Sendable {
      */
     public mutating func remove(at index: Int) throws {
         precondition(regexes.indices.contains(index), "Index out of bounds")
-        var updated = regexes
-        updated.remove(at: index)
-        try rebuild(with: updated)
+        try ensureUniqueStorage()
+        try storage.remove(at: index)
     }
 
     /**
