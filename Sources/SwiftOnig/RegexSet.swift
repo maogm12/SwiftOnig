@@ -333,7 +333,7 @@ public struct RegexSet: Sendable {
     /**
      Out loop element when performing search.
      */
-    public enum Lead {
+    public enum Lead: Sendable {
         case positionLead
         case regexLead
         case priorityToRegexOrder

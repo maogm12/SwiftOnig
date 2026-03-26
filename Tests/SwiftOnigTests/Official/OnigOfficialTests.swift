@@ -5,11 +5,11 @@
 //  Created by Guangming Mao on 3/25/26.
 //
 
-import Testing
+@_spi(Experimental) import Testing
 import SwiftOnig
 import Foundation
 
-@Suite("Official Oniguruma Tests")
+@Suite("Official Oniguruma Tests", .serialized)
 struct OnigOfficialTests {
     
     // MARK: DSL

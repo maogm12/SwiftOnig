@@ -48,6 +48,7 @@ public enum OnigError: Error, Equatable, Sendable {
     case endPatternWithUnmatchedParenthesis
     case endPatternInGroup
     case undefinedGroupOption
+    case invalidGroupOption
     case invalidPosixBracketType
     case invalidLookBehindPattern
     case invalidRepeatRangePattern
@@ -72,6 +73,7 @@ public enum OnigError: Error, Equatable, Sendable {
     case undefinedGroupReference(String)
     case multiplexDefinedName(String)
     case multiplexDefinitionNameCall(String)
+    case undefinedOperator
     case neverEndingRecursion
     case groupNumberOverForCaptureHistory
     case invalidCharPropertyName(String)
@@ -130,6 +132,7 @@ extension OnigError {
         (ONIGERR_END_PATTERN_WITH_UNMATCHED_PARENTHESIS, .endPatternWithUnmatchedParenthesis),
         (ONIGERR_END_PATTERN_IN_GROUP, .endPatternInGroup),
         (ONIGERR_UNDEFINED_GROUP_OPTION, .undefinedGroupOption),
+        (ONIGERR_INVALID_GROUP_OPTION, .invalidGroupOption),
         (ONIGERR_INVALID_POSIX_BRACKET_TYPE, .invalidPosixBracketType),
         (ONIGERR_INVALID_LOOK_BEHIND_PATTERN, .invalidLookBehindPattern),
         (ONIGERR_INVALID_REPEAT_RANGE_PATTERN, .invalidRepeatRangePattern),
@@ -146,6 +149,7 @@ extension OnigError {
         (ONIGERR_TOO_MANY_CAPTURES, .tooManyCaptures),
         (ONIGERR_TOO_LONG_WIDE_CHAR_VALUE, .tooLongWideCharValue),
         (ONIGERR_EMPTY_GROUP_NAME, .emptyGroupName),
+        (ONIGERR_UNDEFINED_OPERATOR, .undefinedOperator),
         (ONIGERR_NEVER_ENDING_RECURSION, .neverEndingRecursion),
         (ONIGERR_GROUP_NUMBER_OVER_FOR_CAPTURE_HISTORY, .groupNumberOverForCaptureHistory),
         (ONIGERR_INVALID_IF_ELSE_SYNTAX, .invalidIfElseSyntax),
@@ -277,6 +281,8 @@ extension OnigError {
             return ONIGERR_END_PATTERN_IN_GROUP
         case .undefinedGroupOption:
             return ONIGERR_UNDEFINED_GROUP_OPTION
+        case .invalidGroupOption:
+            return ONIGERR_INVALID_GROUP_OPTION
         case .invalidPosixBracketType:
             return ONIGERR_INVALID_POSIX_BRACKET_TYPE
         case .invalidLookBehindPattern:
@@ -311,6 +317,8 @@ extension OnigError {
             return ONIGERR_TOO_LONG_WIDE_CHAR_VALUE
         case .emptyGroupName:
             return ONIGERR_EMPTY_GROUP_NAME
+        case .undefinedOperator:
+            return ONIGERR_UNDEFINED_OPERATOR
         case .invalidGroupName:
             return ONIGERR_INVALID_GROUP_NAME
         case .invalidCharInGroupName:

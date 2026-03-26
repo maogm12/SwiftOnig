@@ -49,6 +49,9 @@ If rebuilding `SwiftOnig` today, the architecture would focus on being a "Swift-
     - `test_syntax.c`: Different syntax modes and edge cases.
     - `test_options.c`: Regex compilation and search options.
     - `test_back.c`: Backtracking and recursion tests.
+    - `test_regset.c`: Regex set search behavior and lead modes.
+    - `testc.c`: Native EUC-JP test corpus.
+    - `testu.c`: UTF-16BE byte-oriented test corpus.
 - [x] **Validation**: Ensure all ported tests pass against the modernized `SwiftOnig` implementation.
 
 ## 8. Documentation & Quality

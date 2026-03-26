@@ -89,6 +89,12 @@ let package = Package(
                 "SwiftOnig",
                 .product(name: "Testing", package: "swift-testing")
             ]),
+        .testTarget(
+            name: "SwiftOnigUpstreamTests",
+            dependencies: [
+                "SwiftOnig",
+                .product(name: "Testing", package: "swift-testing")
+            ]),
         
         // Examples
         .executableTarget(

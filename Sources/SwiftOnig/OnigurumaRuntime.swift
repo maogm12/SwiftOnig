@@ -176,11 +176,7 @@ public func uninitialize() {
 @OnigurumaActor
 public func setWarningHandler(_ handler: OnigurumaWarningHandler?) {
     OnigurumaWarningBridge.standardHandler = handler
-    if handler == nil {
-        onig_set_warn_func(nil)
-    } else {
-        onig_set_warn_func(onigurumaStandardWarningCallback)
-    }
+    onig_set_warn_func(onigurumaStandardWarningCallback)
 }
 
 /**
@@ -189,11 +185,7 @@ public func setWarningHandler(_ handler: OnigurumaWarningHandler?) {
 @OnigurumaActor
 public func setVerboseWarningHandler(_ handler: OnigurumaWarningHandler?) {
     OnigurumaWarningBridge.verboseHandler = handler
-    if handler == nil {
-        onig_set_verb_warn_func(nil)
-    } else {
-        onig_set_verb_warn_func(onigurumaVerboseWarningCallback)
-    }
+    onig_set_verb_warn_func(onigurumaVerboseWarningCallback)
 }
 
 /**

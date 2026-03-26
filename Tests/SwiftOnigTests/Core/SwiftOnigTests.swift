@@ -5,11 +5,11 @@
 //  Created by Guangming Mao on 4/1/21.
 //
 
-import Testing
+@_spi(Experimental) import Testing
 import SwiftOnig
 import Foundation
 
-@Suite("SwiftOnig Global Tests")
+@Suite("SwiftOnig Global Tests", .serialized)
 struct SwiftOnigTests {
     final class MessageBox: @unchecked Sendable {
         private let lock = NSLock()
