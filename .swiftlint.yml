@@ -1,0 +1,45 @@
+included:
+  - Sources
+  - Tests
+  - Examples
+  - Benchmarks
+
+excluded:
+  - Vendor
+  - .build
+  - .swiftpm
+  - Packages
+
+disabled_rules:
+  - todo
+
+opt_in_rules:
+  - empty_count
+  - first_where
+  - flatmap_over_map_reduce
+  - sorted_first_last
+
+line_length:
+  warning: 120
+  error: 140
+  ignores_comments: true
+  ignores_urls: true
+
+type_body_length:
+  warning: 300
+  error: 450
+
+file_length:
+  warning: 500
+  error: 700
+
+identifier_name:
+  excluded:
+    - i
+    - j
+    - n
+    - x
+    - y
+    - e
+
+reporter: "xcode"

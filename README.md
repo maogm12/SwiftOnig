@@ -106,6 +106,12 @@ SwiftOnig includes a comprehensive test suite, including a port of the official 
 swift test
 ```
 
+Run the serial variant as well when touching concurrency-sensitive or C-interop-heavy code:
+
+```bash
+swift test --no-parallel
+```
+
 ## Development Setup
 
 The repository vendors the upstream Oniguruma source as a Git submodule and builds it directly through SwiftPM.
@@ -115,6 +121,17 @@ After cloning, initialize submodules before building or changing the package int
 ```bash
 git submodule update --init --recursive
 ```
+
+### Formatting and Linting
+
+SwiftOnig keeps formatting and lint rules in-repo so contributors can run the same checks locally.
+
+```bash
+make format
+make lint
+```
+
+These commands expect local `swiftformat` and `swiftlint` installs and will fail fast with an install hint if the tools are missing.
 
 ## License
 

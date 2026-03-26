@@ -22,39 +22,39 @@ If rebuilding `SwiftOnig` today, the architecture would focus on being a "Swift-
 *   **Modern Testing**: Use the new `Testing` framework (Swift 6.0+) for clearer, more expressive unit tests and better integration with Xcode's testing tools.
 
 ## 3. Infrastructure & Tooling Upgrade
-- [ ] **Swift Version**: Update `Package.swift` to `swift-tools-version:6.0`.
-- [ ] **Strict Concurrency**: Enable `.enableUpcomingFeature("StrictConcurrency")` in `Package.swift`.
-- [ ] **SwiftLint/SwiftFormat**: Integrate automated linting and formatting.
+- [x] **Swift Version**: Update `Package.swift` to `swift-tools-version:6.0`.
+- [x] **Strict Concurrency**: Enable `.enableUpcomingFeature("StrictConcurrency")` in `Package.swift`.
+- [x] **SwiftLint/SwiftFormat**: Integrate automated linting and formatting.
 - [ ] **CI/CD**: Ensure GitHub Actions test on macOS and Linux with the latest Swift toolchain.
 
 ## 4. Swift Concurrency & Thread Safety
-- [ ] **Global Synchronization**: Replace `onigQueue` with `Mutex` or a `GlobalActor`.
-- [ ] **Sendable Conformance**: Make `Regex`, `Syntax`, `Encoding`, and `Region` `Sendable`.
-- [ ] **Async APIs**: Introduce `async` versions of search and scan operations.
+- [x] **Global Synchronization**: Replace `onigQueue` with `Mutex` or a `GlobalActor`.
+- [x] **Sendable Conformance**: Make `Regex`, `Syntax`, `Encoding`, and `Region` `Sendable`.
+- [x] **Async APIs**: Introduce `async` versions of search and scan operations.
 
 ## 5. API Modernization
-- [ ] **Naming Conventions**: Audit and rename public APIs (e.g., `isMatch` -> `matches(_:)`).
+- [x] **Naming Conventions**: Audit and rename public APIs (e.g., `isMatch` -> `matches(_:)`).
 - [ ] **Opaque Types**: Use `some` and `any` keywords where appropriate.
-- [ ] **Result & Error Handling**: Refine `OnigError` for better diagnostics.
-- [ ] **Collection Conformance**: Modernize `Region` collection conformance.
+- [x] **Result & Error Handling**: Refine `OnigError` for better diagnostics.
+- [x] **Collection Conformance**: Modernize `Region` collection conformance.
 
 ## 6. Standard Library Integration
 - [ ] **Swift `Regex` Interop**: Explore bridging to `Swift.Regex`.
-- [ ] **Regex Builder**: Implement `RegexComponent` support.
+- [x] **Regex Builder**: Implement `RegexComponent` support.
 
 ## 7. Porting Oniguruma Official Tests
-- [ ] **Testing DSL**: Create a Swift-based DSL (using `swift-testing`) that mirrors Oniguruma's C macros (`x2`, `x3`, `n`, `e`) for concise test definitions.
-- [ ] **Test Suites**: Port the following suites from the official Oniguruma repository:
+- [x] **Testing DSL**: Create a Swift-based DSL (using `swift-testing`) that mirrors Oniguruma's C macros (`x2`, `x3`, `n`, `e`) for concise test definitions.
+- [x] **Test Suites**: Port the following suites from the official Oniguruma repository:
     - `test_utf8.c`: Comprehensive UTF-8 and regex feature tests.
     - `test_syntax.c`: Different syntax modes and edge cases.
     - `test_options.c`: Regex compilation and search options.
     - `test_back.c`: Backtracking and recursion tests.
-- [ ] **Validation**: Ensure all ported tests pass against the modernized `SwiftOnig` implementation.
+- [x] **Validation**: Ensure all ported tests pass against the modernized `SwiftOnig` implementation.
 
 ## 8. Documentation & Quality
-- [ ] **DocC Integration**: Convert comments to DocC and add high-level articles.
-- [ ] **Unit Tests**: Migrate to or add tests using the new `Testing` framework.
-- [ ] **Benchmarks**: Implement performance benchmarks.
+- [x] **DocC Integration**: Convert comments to DocC and add high-level articles.
+- [x] **Unit Tests**: Migrate to or add tests using the new `Testing` framework.
+- [x] **Benchmarks**: Implement performance benchmarks.
 
 ## 9. Execution Strategy
 1. **Phase 1: Foundation**: Upgrade `Package.swift`, enable strict concurrency, and fix immediate compiler warnings.

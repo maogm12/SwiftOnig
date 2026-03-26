@@ -1,0 +1,13 @@
+--indent 4
+--linebreaks lf
+--maxwidth 120
+--wraparguments preserve
+--wrapcollections preserve
+--commas inline
+--trimwhitespace always
+--semicolons never
+--self remove
+--stripunusedargs closure-only
+--ifdef indent
+--allman false
+--exclude Vendor,.build,.swiftpm,Packages
