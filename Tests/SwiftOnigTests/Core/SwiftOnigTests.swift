@@ -69,8 +69,8 @@ struct SwiftOnigTests {
         )
 
         let regex = try await Regex(pattern: #"\A\p{SwiftOnigKana}{2}\z"#)
-        #expect(try await regex.matches("あい"))
-        #expect(try await !regex.matches("あう"))
+        #expect(try regex.matches("あい"))
+        #expect(try !regex.matches("あう"))
     }
 
     @Test("Reject invalid user Unicode property definitions")
@@ -111,7 +111,7 @@ struct SwiftOnigTests {
         }
 
         let regex = try await Regex(pattern: #"\A(*swiftTestCallout)abc\z"#)
-        #expect(try await regex.matches("abc"))
+        #expect(try regex.matches("abc"))
         #expect(phases.values.contains { $0.contains("swiftTestCallout") })
     }
 
@@ -122,7 +122,7 @@ struct SwiftOnigTests {
             ranges: [OnigurumaUnicodePropertyRange(0x3042, 0x3042)]
         )
         let before = try await Regex(pattern: #"\A\p{SwiftOnigResetKana}\z"#)
-        #expect(try await before.matches("あ"))
+        #expect(try before.matches("あ"))
 
         let firstPhases = MessageBox()
         try await registerCallout(named: "swiftResetCallout") { context in
@@ -130,13 +130,13 @@ struct SwiftOnigTests {
             return .continue
         }
         let beforeCalloutRegex = try await Regex(pattern: #"\A(*swiftResetCallout)ok\z"#)
-        #expect(try await beforeCalloutRegex.matches("ok"))
+        #expect(try beforeCalloutRegex.matches("ok"))
         #expect(firstPhases.values == ["before:swiftResetCallout"])
 
         await uninitialize()
 
         let after = try await Regex(pattern: #"\A\p{SwiftOnigResetKana}\z"#)
-        #expect(try await !after.matches("あ"))
+        #expect(try !after.matches("あ"))
         await #expect(throws: OnigError.self) {
             _ = try await Regex(pattern: #"\A(*swiftResetCallout)ok\z"#)
         }
@@ -146,8 +146,8 @@ struct SwiftOnigTests {
             ranges: [OnigurumaUnicodePropertyRange(0x3044, 0x3044)]
         )
         let redefined = try await Regex(pattern: #"\A\p{SwiftOnigResetKana}\z"#)
-        #expect(try await !redefined.matches("あ"))
-        #expect(try await redefined.matches("い"))
+        #expect(try !redefined.matches("あ"))
+        #expect(try redefined.matches("い"))
 
         let secondPhases = MessageBox()
         try await registerCallout(named: "swiftResetCallout") { context in
@@ -155,7 +155,7 @@ struct SwiftOnigTests {
             return .continue
         }
         let afterCalloutRegex = try await Regex(pattern: #"\A(*swiftResetCallout)ok\z"#)
-        #expect(try await afterCalloutRegex.matches("ok"))
+        #expect(try afterCalloutRegex.matches("ok"))
         #expect(secondPhases.values == ["after:swiftResetCallout"])
     }
 
@@ -276,7 +276,7 @@ struct SwiftOnigTests {
         }
 
         let regex = try await Regex(pattern: #"\Aa(?{swift-content}X)b\z"#)
-        #expect(try await regex.firstMatch(in: "ab", matchParam: matchParam) != nil)
+        #expect(try regex.firstMatch(in: "ab", matchParam: matchParam) != nil)
         #expect(box.payloads.contains("payload"))
     }
 }

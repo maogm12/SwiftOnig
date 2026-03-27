@@ -22,7 +22,7 @@ struct UTF16Tests {
         let target: [UInt16] = [0x0048, 0x0065, 0x006c, 0x006c, 0x006f, 0x002c, 0x0020, 0x4f60, 0x597d, 0x0021]
         let targetData = target.withUnsafeBufferPointer { Data(buffer: $0) }
         
-        guard let region = try await regex.firstMatch(in: targetData) else {
+        guard let region = try regex.firstMatch(in: targetData) else {
             Issue.record("Should have matched")
             return
         }
@@ -37,7 +37,7 @@ struct UTF16Tests {
         let utf16Pattern = Array("你好".utf16).withUnsafeBufferPointer { Data(buffer: $0) }
         let regex16 = try await Regex(patternBytes: utf16Pattern, encoding: .utf16LittleEndian)
         
-        guard let region = try await regex16.firstMatch(in: input.utf16) else {
+        guard let region = try regex16.firstMatch(in: input.utf16) else {
             Issue.record("Should have matched")
             return
         }
@@ -51,7 +51,7 @@ struct UTF16Tests {
         let utf16Pattern = Array("你好".utf16).withUnsafeBufferPointer { Data(buffer: $0) }
         let regex16 = try await Regex(patternBytes: utf16Pattern, encoding: .utf16LittleEndian)
 
-        guard let region = try await regex16.firstMatch(in: input) else {
+        guard let region = try regex16.firstMatch(in: input) else {
             Issue.record("Should have matched")
             return
         }

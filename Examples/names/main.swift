@@ -20,7 +20,7 @@ Task {
         
         regex = try await Regex(patternBytes: pattern.utf8,
                           encoding: await .ascii)
-        region = try await regex.firstMatch(in: str)
+        region = try regex.firstMatch(in: str)
 
         guard let region = region else {
             print("No match")

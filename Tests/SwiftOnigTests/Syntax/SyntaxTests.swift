@@ -18,8 +18,8 @@ struct SyntaxTests {
 
         let ruby = Syntax.ruby
         let reg = try await Regex(pattern: "a?bbb", syntax: ruby)
-        #expect(try await reg.matches("abbb"))
-        #expect(try await reg.matches("bbb"))
+        #expect(try reg.matches("abbb"))
+        #expect(try reg.matches("bbb"))
     }
     
     @Test("Syntax behaviors")
@@ -61,8 +61,8 @@ struct SyntaxTests {
         #expect(python.operators.contains(.escCapitalGBeginAnchor))
 
         let regex = try await Regex(pattern: #"(?P<word>\w+)(?P=word)"#, syntax: python)
-        #expect(try await regex.matches("hellohello"))
-        #expect(try await !regex.matches("helloworld"))
+        #expect(try regex.matches("hellohello"))
+        #expect(try !regex.matches("helloworld"))
 
         var custom = Syntax(copying: Syntax.default)
         await configureAdditionalFlags(on: &custom)

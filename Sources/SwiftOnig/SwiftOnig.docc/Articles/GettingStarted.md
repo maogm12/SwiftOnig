@@ -29,7 +29,7 @@ Use the `firstMatch(in:)` method to find the first occurrence of the pattern in 
 
 ```swift
 let input = "The price is 42 dollars."
-if let region = try await regex.firstMatch(in: input) {
+if let region = try regex.firstMatch(in: input) {
     print("Matched: \(region.decodedString()!)") // "42"
     print("Range in input: \(region.range(in: input)!)")
 }
@@ -60,7 +60,7 @@ If your input is already stored in a specific byte encoding, compile the regex w
 ```swift
 let gbBytes: [UInt8] = [196, 227, 186, 195] // "你好" in GB18030
 let regex = try await Regex(patternBytes: gbBytes, encoding: .gb18030)
-let region = try await regex.firstMatch(in: gbBytes)
+let region = try regex.firstMatch(in: gbBytes)
 ```
 
 ### UTF-16 Input Performance
@@ -74,5 +74,5 @@ let patternData = Array("你好".utf16).withUnsafeBufferPointer { Data(buffer: $
 let regex = try await Regex(patternBytes: patternData, encoding: .utf16LittleEndian)
 
 let preparedInput = UTF16CodeUnitBuffer("Hello, 你好!".utf16)
-let region = try await regex.firstMatch(in: preparedInput)
+let region = try regex.firstMatch(in: preparedInput)
 ```

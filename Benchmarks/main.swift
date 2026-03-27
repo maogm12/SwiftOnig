@@ -354,7 +354,7 @@ func runBenchmarks() async throws {
 
     try await runSwiftOnigOnly(
         makeCase(group: "utf16",
-                name: "SwiftOnig UTF-16 anchored matchCount from UTF16View",
+                name: "SwiftOnig UTF-16 anchored matchedByteCount from UTF16View",
                 iterations: 100_000) {
             for _ in 0..<100_000 {
                 _ = try utf16Regex.matchedByteCount(in: utf16AnchoredInput.utf16)
@@ -364,7 +364,7 @@ func runBenchmarks() async throws {
 
     try await runSwiftOnigOnly(
         makeCase(group: "utf16",
-                 name: "SwiftOnig UTF-16 matchCount from UTF16View",
+                 name: "SwiftOnig UTF-16 matchedByteCount from UTF16View",
                  iterations: 100_000) {
             for _ in 0..<100_000 {
                 _ = try utf16Regex.matchedByteCount(in: utf16Input.utf16)

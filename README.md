@@ -45,7 +45,7 @@ let regex = try await Regex(pattern: #"\d+"#)
 let input = "The answer is 42."
 
 // Find the first match
-if let region = try await regex.firstMatch(in: input) {
+if let region = try regex.firstMatch(in: input) {
     print("Found: \(region.decodedString()!)") // "42"
     print("Range: \(region.range)")   // 14..<16
     print("String range: \(region.range(in: input)!)")
@@ -90,7 +90,7 @@ if let match = "The item ID-12345! is ready.".firstMatch(of: swiftRegex) {
 
 ```swift
 let regex = try await Regex(pattern: #"(\w+):\s+(\d+)"#)
-if let region = try await regex.firstMatch(in: "Age: 25") {
+if let region = try regex.firstMatch(in: "Age: 25") {
     print("Field: \(region[1]!.decodedString()!)") // "Age"
     print("Value: \(region[2]!.decodedString()!)") // "25"
 }
@@ -109,7 +109,7 @@ let gbBytes: [UInt8] = [196, 227, 186, 195] // "你好" in GB18030
 let regex = try await Regex(patternBytes: gbBytes, encoding: .gb18030)
 
 let input: [UInt8] = ... // GB18030 encoded data
-if let region = try await regex.firstMatch(in: input) {
+if let region = try regex.firstMatch(in: input) {
     // ...
 }
 ```
@@ -126,7 +126,7 @@ let regex = try await Regex(patternBytes: utf16Pattern, encoding: .utf16LittleEn
 
 let preparedInput = UTF16CodeUnitBuffer("Hello, 你好!".utf16)
 
-if let region = try await regex.firstMatch(in: preparedInput) {
+if let region = try regex.firstMatch(in: preparedInput) {
     print(region.range) // 14..<18
 }
 ```

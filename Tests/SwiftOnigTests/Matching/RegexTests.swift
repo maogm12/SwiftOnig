@@ -28,13 +28,13 @@ struct RegexTests {
     func match() async throws {
         let reg = try await Regex(pattern: "foo")
 
-        #expect(try await reg.matches("foo"))
-        #expect(try await !reg.matches("bar"))
+        #expect(try reg.matches("foo"))
+        #expect(try !reg.matches("bar"))
 
-        #expect(try await reg.matchedByteCount(in: "foo") == 3)
-        #expect(try await reg.matchedByteCount(in: "foo bar") == 3)
-        #expect(try await reg.matchedByteCount(in: "afoo bar", of: 1...) == 3)
-        #expect(try await reg.matchedByteCount(in: "bar") == nil)
+        #expect(try reg.matchedByteCount(in: "foo") == 3)
+        #expect(try reg.matchedByteCount(in: "foo bar") == 3)
+        #expect(try reg.matchedByteCount(in: "afoo bar", of: 1...) == 3)
+        #expect(try reg.matchedByteCount(in: "bar") == nil)
     }
     
     @Test("Search")
@@ -42,7 +42,7 @@ struct RegexTests {
         let naiveEmailReg = try await Regex(pattern: #"\w+@\w+\.com"#)
         let target = "Naive email: test@example.com. :)"
 
-        guard let region = try await naiveEmailReg.firstMatch(in: target) else {
+        guard let region = try naiveEmailReg.firstMatch(in: target) else {
             Issue.record("Failed to match email")
             return
         }
@@ -53,7 +53,7 @@ struct RegexTests {
         let gb18030Bytes: [UInt8] = [196, 227, 186, 195] // 你好
         let regGb18030 = try await Regex(patternBytes: gb18030Bytes, encoding: .gb18030)
         let gb18030String: [UInt8] = [196, 227, 186, 195, 163, 172, 202, 192, 189, 231] // 你好，世界
-        guard let region2 = try await regGb18030.firstMatch(in: gb18030String) else {
+        guard let region2 = try regGb18030.firstMatch(in: gb18030String) else {
             Issue.record("Failed to match GB18030")
             return
         }
@@ -82,15 +82,15 @@ struct RegexTests {
         }
 
         await expectRetryLimitError {
-            _ = try await regex.matchedByteCount(in: target, matchParam: matchParam)
+            _ = try regex.matchedByteCount(in: target, matchParam: matchParam)
         }
 
         await expectRetryLimitError {
-            _ = try await regex.matches(target, matchParam: matchParam)
+            _ = try regex.matches(target, matchParam: matchParam)
         }
 
         await expectRetryLimitError {
-            _ = try await regex.firstMatch(in: target, matchParam: matchParam)
+            _ = try regex.firstMatch(in: target, matchParam: matchParam)
         }
     }
 
@@ -98,18 +98,18 @@ struct RegexTests {
     func optionFlags() async throws {
         let defaultWordRegex = try await Regex(pattern: #"^\w+$"#)
         let asciiWordRegex = try await Regex(pattern: #"^\w+$"#, options: .wordIsASCII)
-        #expect(try await defaultWordRegex.matches("cafe"))
-        #expect(try await defaultWordRegex.matches("café"))
-        #expect(try await !asciiWordRegex.matches("café"))
+        #expect(try defaultWordRegex.matches("cafe"))
+        #expect(try defaultWordRegex.matches("café"))
+        #expect(try !asciiWordRegex.matches("café"))
 
         let unicodeIgnoreCase = try await Regex(pattern: "é", options: .ignoreCase)
         let asciiIgnoreCase = try await Regex(pattern: "é", options: [.ignoreCase, .ignoreCaseIsASCII])
-        #expect(try await unicodeIgnoreCase.matches("É"))
-        #expect(try await !asciiIgnoreCase.matches("É"))
+        #expect(try unicodeIgnoreCase.matches("É"))
+        #expect(try !asciiIgnoreCase.matches("É"))
 
         let wholeMatchRegex = try await Regex(pattern: #"foo"#)
-        #expect(try await wholeMatchRegex.firstMatch(in: "foo bar", options: .matchWholeString) == nil)
-        #expect(try await wholeMatchRegex.firstMatch(in: "foo", options: .matchWholeString) != nil)
+        #expect(try wholeMatchRegex.firstMatch(in: "foo bar", options: .matchWholeString) == nil)
+        #expect(try wholeMatchRegex.firstMatch(in: "foo", options: .matchWholeString) != nil)
 
         #expect(Regex.SearchOptions.callbackEachMatch.rawValue == ONIG_OPTION_CALLBACK_EACH_MATCH)
         #expect(Regex.Options.digitIsASCII.rawValue == ONIG_OPTION_DIGIT_IS_ASCII)
@@ -125,10 +125,10 @@ struct RegexTests {
         var matchParam = MatchParam()
         matchParam.setRetryLimitInSearch(to: 1_000)
 
-        let full = try await regex.wholeMatch(in: "foo", matchParam: matchParam)
+        let full = try regex.wholeMatch(in: "foo", matchParam: matchParam)
         #expect(full?[0]?.decodedString() == "foo")
-        #expect(try await regex.wholeMatch(in: "foo bar") == nil)
-        #expect(try await regex.wholeMatch(in: "bar foo") == nil)
+        #expect(try regex.wholeMatch(in: "foo bar") == nil)
+        #expect(try regex.wholeMatch(in: "bar foo") == nil)
     }
     
     @Test("Enumerate Matches")
@@ -140,7 +140,7 @@ struct RegexTests {
         }
         let results = Results()
         
-        try await reg.enumerateMatches(in: "aa11bb22cc33dd44") {
+        try reg.enumerateMatches(in: "aa11bb22cc33dd44") {
             results.items.append(($1, $2))
             return true
         }
@@ -159,7 +159,7 @@ struct RegexTests {
         }
         let results = Results()
 
-        let count = try await regex.enumerateMatches(in: "aa11bb22cc33", of: (-20)..<200) { order, matchedIndex, region in
+        let count = try regex.enumerateMatches(in: "aa11bb22cc33", of: (-20)..<200) { order, matchedIndex, region in
             results.items.append((matchedIndex, region[0]?.decodedString() ?? ""))
             return order == 0
         }
@@ -167,8 +167,8 @@ struct RegexTests {
         #expect(count == Int(ONIG_ABORT))
         #expect(results.items.map(\.0) == [2, 6])
         #expect(results.items.map(\.1) == ["11", "22"])
-        #expect(try await regex.matches("zz11yy", in: 2..<100))
-        #expect(try await regex.matchedByteCount(in: "zz11yy", of: 2..<100) == 2)
+        #expect(try regex.matches("zz11yy", in: 2..<100))
+        #expect(try regex.matchedByteCount(in: "zz11yy", of: 2..<100) == 2)
     }
 
     @Test("Capture Groups")

@@ -17,7 +17,7 @@ Task {
 
         let regex = try await Regex(pattern: pattern)
 
-        guard let region = try await regex.firstMatch(in: str) else {
+        guard let region = try regex.firstMatch(in: str) else {
             print("No match")
             exit(EXIT_SUCCESS)
         }

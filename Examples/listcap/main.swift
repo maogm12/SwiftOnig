@@ -14,7 +14,7 @@ func execute(str: String, pattern: String, syntax: Syntax, options: Regex.Option
     print("String : \"\(str)\"")
 
     let regex = try await Regex(pattern: pattern, options: options, syntax: syntax)
-    guard let region = try await regex.firstMatch(in: str) else {
+    guard let region = try regex.firstMatch(in: str) else {
         print("No match")
         return
     }

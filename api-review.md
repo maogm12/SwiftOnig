@@ -8,7 +8,7 @@ This document captures API design issues from the perspective of a consumer inte
 2. Resolved: `OnigurumaString` exposes implementation-level details as a public protocol.
 3. Resolved: UTF-16 copy behavior is implicit instead of explicit.
 4. Resolved: `matchCount` is misnamed for what it actually returns.
-5. Open: Sync and async APIs are duplicated too broadly.
+5. Resolved: Sync and async APIs are duplicated too broadly.
 6. Resolved: `Region.range` leaks byte offsets too directly for `String` users.
 7. Resolved: `Region.string` and `Subregion.string` hide decoding work behind property syntax.
 8. Resolved: `RegexSet.firstMatch` has a different mental model from `Regex.firstMatch`.
@@ -63,13 +63,13 @@ Suggested fix:
 
 - The public API surface is much larger than it needs to be.
 - It is harder to learn and document.
-- Attempting to demote async search overloads directly runs into Swift overload-resolution behavior: in async contexts, same-signature sync/async overload pairs strongly prefer the async candidate, which makes a compatibility-preserving cleanup trickier than the other items.
+- The old API carried both sync and async search surfaces even though the actual work is synchronous once a regex is compiled.
 
 Suggested fix:
 
 - Decide which operations truly need async-first ergonomics.
 - Collapse the rest around one primary surface and keep the secondary surface thin.
-- Treat this as a deliberate follow-up item rather than an opportunistic cleanup.
+- Keep async on initialization/compilation, and keep search/match operations synchronous.
 
 ### 6. `Region.range` is too low-level for common `String` use
 
@@ -122,4 +122,4 @@ Suggested fix:
 - Use one git commit per issue.
 - Keep tests passing after each issue.
 - Prefer compatibility-preserving fixes first, then deeper API reshaping.
-- Current unresolved item: issue 5.
+- All review items above have now been addressed in the current API surface.

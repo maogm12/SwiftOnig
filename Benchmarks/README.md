@@ -71,9 +71,9 @@ Current large-sample configuration:
 - UTF-16 smart match from `String`: `100000` iterations
 - UTF-16 oriented match from `UTF16View`: `100000` iterations
 - SwiftOnig UTF-16 explicit contiguous match from `UTF16CodeUnitBuffer`: `100000` iterations
-- SwiftOnig UTF-16 `matchCount` from `UTF16View`: `100000` iterations
+- SwiftOnig UTF-16 `matchedByteCount` from `UTF16View`: `100000` iterations
 - SwiftOnig UTF-16 anchored `firstMatch` from `UTF16View`: `100000` iterations
-- SwiftOnig UTF-16 anchored `matchCount` from `UTF16View`: `100000` iterations
+- SwiftOnig UTF-16 anchored `matchedByteCount` from `UTF16View`: `100000` iterations
 - SwiftOnig UTF-16 mismatch from `String`: `100000` iterations
 - SwiftOnig UTF-16 mismatch from `UTF16View`: `100000` iterations
 - SwiftOnig UTF-16 whole match from `String`: `100000` iterations
@@ -83,8 +83,8 @@ Current output reports `median`, `min`, and `max` over repeated samples instead 
 
 Important note:
 
-- `matchCount(in:)` is anchored at the provided start offset because it is backed by `onig_match`, not `onig_search`.
-- That means `matchCount` is not a like-for-like replacement for `firstMatch(in:)` on inputs where the match does not begin at the start of the searched range.
+- `matchedByteCount(in:)` is anchored at the provided start offset because it is backed by `onig_match`, not `onig_search`.
+- That means `matchedByteCount` is not a like-for-like replacement for `firstMatch(in:)` on inputs where the match does not begin at the start of the searched range.
 - Use the anchored UTF-16 cases when estimating `Region` materialization cost relative to search cost.
 - `String`, `Substring`, `String.UTF16View`, and `Substring.UTF16View` may materialize a temporary contiguous UTF-16 buffer when used with a UTF-16 encoded regex.
 - To make that materialization explicit and reusable for repeated searches, prebuild a `UTF16CodeUnitBuffer` and pass that into the match APIs.
@@ -129,7 +129,7 @@ Release-mode measurements from this workspace:
 - `NSRegularExpression`: `0.055756 s`
 - `Swift Regex`: `0.126161 s`
 
-### SwiftOnig UTF-16 `matchCount` From `UTF16View`
+### SwiftOnig UTF-16 `matchedByteCount` From `UTF16View`
 
 - `SwiftOnig`: `1.246005 s`
 
@@ -159,11 +159,11 @@ Measured results from this workspace:
 
 - `SwiftOnig`: median `0.995038 s`
 
-### SwiftOnig UTF-16 Anchored `matchCount` From `UTF16View`
+### SwiftOnig UTF-16 Anchored `matchedByteCount` From `UTF16View`
 
 - `SwiftOnig`: median `0.979267 s`
 
-### SwiftOnig UTF-16 `matchCount` From `UTF16View`
+### SwiftOnig UTF-16 `matchedByteCount` From `UTF16View`
 
 - `SwiftOnig`: median `0.980964 s`
 
@@ -191,5 +191,5 @@ From the current results:
 - `SwiftOnig` is roughly on par with `NSRegularExpression` on the Unicode capture workload.
 - The main remaining performance gap is the UTF-16 path.
 - `String` and `UTF16View` are nearly identical on the UTF-16 path, which suggests generic UTF-16 adaptation copy costs are not the primary issue in the current hot path.
-- Anchored UTF-16 `firstMatch` and anchored UTF-16 `matchCount` differ only slightly, which supports the conclusion that `Region` materialization is not the dominant cost.
+- Anchored UTF-16 `firstMatch` and anchored UTF-16 `matchedByteCount` differ only slightly, which supports the conclusion that `Region` materialization is not the dominant cost.
 - UTF-16 mismatch and whole-string workloads are much more expensive than the successful early-match case, so search behavior remains the main remaining performance problem.

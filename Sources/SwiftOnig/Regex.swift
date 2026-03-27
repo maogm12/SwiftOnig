@@ -288,42 +288,6 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
     }
 
     /**
-     Async version of `firstMatch`.
-     */
-    public func firstMatch<S, R>(in str: S, of range: R, options: SearchOptions = .none) async throws -> Region? where R: RangeExpression, R.Bound == Int {
-        try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _firstMatch(in: supported, of: range, options: options, matchParam: nil)
-        }
-    }
-
-    /**
-     Async version of `firstMatch`.
-     */
-    public func firstMatch<S>(in str: S, options: SearchOptions = .none) async throws -> Region? {
-        try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchParam: nil)
-        }
-    }
-
-    /**
-     Async version of `firstMatch`.
-     */
-    public func firstMatch<S, R>(in str: S, of range: R, options: SearchOptions = .none, matchParam: MatchParam) async throws -> Region? where R: RangeExpression, R.Bound == Int {
-        try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _firstMatch(in: supported, of: range, options: options, matchParam: matchParam)
-        }
-    }
-
-    /**
-     Async version of `firstMatch`.
-     */
-    public func firstMatch<S>(in str: S, options: SearchOptions = .none, matchParam: MatchParam) async throws -> Region? {
-        try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchParam: matchParam)
-        }
-    }
-
-    /**
      Search the full input and return a region only when the entire string matches.
      */
     public func wholeMatch<S>(in str: S, options: SearchOptions = .none) throws -> Region? {
@@ -336,24 +300,6 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
      Search the full input and return a region only when the entire string matches.
      */
     public func wholeMatch<S>(in str: S, options: SearchOptions = .none, matchParam: MatchParam) throws -> Region? {
-        try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _wholeMatch(in: supported, options: options, matchParam: matchParam)
-        }
-    }
-
-    /**
-     Async version of `wholeMatch`.
-     */
-    public func wholeMatch<S>(in str: S, options: SearchOptions = .none) async throws -> Region? {
-        try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _wholeMatch(in: supported, options: options, matchParam: nil)
-        }
-    }
-
-    /**
-     Async version of `wholeMatch`.
-     */
-    public func wholeMatch<S>(in str: S, options: SearchOptions = .none, matchParam: MatchParam) async throws -> Region? {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
             try _wholeMatch(in: supported, options: options, matchParam: matchParam)
         }
@@ -451,82 +397,6 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
         }
     }
 
-    /**
-     Async version of `matchedByteCount`.
-     */
-    public func matchedByteCount<S, R>(in str: S, of range: R, options: SearchOptions = .none) async throws -> Int? where R: RangeExpression, R.Bound == Int {
-        try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _matchCount(in: supported, of: range, options: options, matchParam: nil)
-        }
-    }
-
-    /**
-     Async version of `matchedByteCount`.
-     */
-    public func matchedByteCount<S>(in str: S, options: SearchOptions = .none) async throws -> Int? {
-        try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _matchCount(in: supported, of: Self.fullByteRange, options: options, matchParam: nil)
-        }
-    }
-
-    /**
-     Async version of `matchedByteCount`.
-     */
-    public func matchedByteCount<S, R>(in str: S, of range: R, options: SearchOptions = .none, matchParam: MatchParam) async throws -> Int? where R: RangeExpression, R.Bound == Int {
-        try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _matchCount(in: supported, of: range, options: options, matchParam: matchParam)
-        }
-    }
-
-    /**
-     Async version of `matchedByteCount`.
-     */
-    public func matchedByteCount<S>(in str: S, options: SearchOptions = .none, matchParam: MatchParam) async throws -> Int? {
-        try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _matchCount(in: supported, of: Self.fullByteRange, options: options, matchParam: matchParam)
-        }
-    }
-
-    @available(*, deprecated, renamed: "matchedByteCount(in:of:options:)")
-    public func matchCount<S, R>(in str: S, of range: R, options: SearchOptions = .none) throws -> Int? where R: RangeExpression, R.Bound == Int {
-        try matchedByteCount(in: str, of: range, options: options)
-    }
-
-    @available(*, deprecated, renamed: "matchedByteCount(in:options:)")
-    public func matchCount<S>(in str: S, options: SearchOptions = .none) throws -> Int? {
-        try matchedByteCount(in: str, options: options)
-    }
-
-    @available(*, deprecated, renamed: "matchedByteCount(in:of:options:matchParam:)")
-    public func matchCount<S, R>(in str: S, of range: R, options: SearchOptions = .none, matchParam: MatchParam) throws -> Int? where R: RangeExpression, R.Bound == Int {
-        try matchedByteCount(in: str, of: range, options: options, matchParam: matchParam)
-    }
-
-    @available(*, deprecated, renamed: "matchedByteCount(in:options:matchParam:)")
-    public func matchCount<S>(in str: S, options: SearchOptions = .none, matchParam: MatchParam) throws -> Int? {
-        try matchedByteCount(in: str, options: options, matchParam: matchParam)
-    }
-
-    @available(*, deprecated, renamed: "matchedByteCount(in:of:options:)")
-    public func matchCount<S, R>(in str: S, of range: R, options: SearchOptions = .none) async throws -> Int? where R: RangeExpression, R.Bound == Int {
-        try await matchedByteCount(in: str, of: range, options: options)
-    }
-
-    @available(*, deprecated, renamed: "matchedByteCount(in:options:)")
-    public func matchCount<S>(in str: S, options: SearchOptions = .none) async throws -> Int? {
-        try await matchedByteCount(in: str, options: options)
-    }
-
-    @available(*, deprecated, renamed: "matchedByteCount(in:of:options:matchParam:)")
-    public func matchCount<S, R>(in str: S, of range: R, options: SearchOptions = .none, matchParam: MatchParam) async throws -> Int? where R: RangeExpression, R.Bound == Int {
-        try await matchedByteCount(in: str, of: range, options: options, matchParam: matchParam)
-    }
-
-    @available(*, deprecated, renamed: "matchedByteCount(in:options:matchParam:)")
-    public func matchCount<S>(in str: S, options: SearchOptions = .none, matchParam: MatchParam) async throws -> Int? {
-        try await matchedByteCount(in: str, options: options, matchParam: matchParam)
-    }
-
     private func _matches<S, R>(_ str: S, in range: R, options: SearchOptions = .none, matchParam: MatchParam?) throws -> Bool where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
         try _matchCount(in: str, of: range, options: options, matchParam: matchParam) != nil
     }
@@ -582,62 +452,6 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
         }
     }
 
-    /**
-     Async version of `matches`.
-     */
-    public func matches<S, R>(_ str: S, in range: R, options: SearchOptions = .none) async throws -> Bool where R: RangeExpression, R.Bound == Int {
-        try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _matches(supported, in: range, options: options, matchParam: nil)
-        }
-    }
-
-    /**
-     Async version of `matches`.
-     */
-    public func matches<S>(_ str: S, options: SearchOptions = .none) async throws -> Bool {
-        try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _matches(supported, in: Self.fullByteRange, options: options, matchParam: nil)
-        }
-    }
-
-    /**
-     Async version of `matches`.
-     */
-    public func matches<S, R>(_ str: S, in range: R, options: SearchOptions = .none, matchParam: MatchParam) async throws -> Bool where R: RangeExpression, R.Bound == Int {
-        try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _matches(supported, in: range, options: options, matchParam: matchParam)
-        }
-    }
-
-    /**
-     Async version of `matches`.
-     */
-    public func matches<S>(_ str: S, options: SearchOptions = .none, matchParam: MatchParam) async throws -> Bool {
-        try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _matches(supported, in: Self.fullByteRange, options: options, matchParam: matchParam)
-        }
-    }
-
-    @available(*, deprecated, renamed: "matches(_:in:options:)")
-    public func isMatch<S, R>(in str: S, of range: R, options: SearchOptions = .none) throws -> Bool where R: RangeExpression, R.Bound == Int {
-        return try matches(str, in: range, options: options)
-    }
-
-    @available(*, deprecated, renamed: "matches(_:options:)")
-    public func isMatch<S>(in str: S, options: SearchOptions = .none) throws -> Bool {
-        return try matches(str, options: options)
-    }
-
-    @available(*, deprecated, renamed: "matches(_:in:options:)")
-    public func isMatch<S, R>(in str: S, of range: R, options: SearchOptions = .none) async throws -> Bool where R: RangeExpression, R.Bound == Int {
-        return try await matches(str, in: range, options: options)
-    }
-
-    @available(*, deprecated, renamed: "matches(_:options:)")
-    public func isMatch<S>(in str: S, options: SearchOptions = .none) async throws -> Bool {
-        return try await matches(str, options: options)
-    }
-    
     @discardableResult public func enumerateMatches<S>(in str: S,
                                                        options: SearchOptions = .none,
                                                        matchParam: MatchParam = MatchParam(),
@@ -732,33 +546,6 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
         }
 
         return Int(result)
-    }
-
-    /**
-     Async version of `enumerateMatches`.
-     */
-    @discardableResult public func enumerateMatches<S, R>(in str: S,
-                                                          of range: R,
-                                                          options: SearchOptions = .none,
-                                                          matchParam: MatchParam = MatchParam(),
-                                                          body: @escaping @Sendable (_ order: Int, _ matchedIndex: Int, _ region: Region) -> Bool
-    ) async throws -> Int where R: RangeExpression, R.Bound == Int {
-        try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _enumerateMatches(in: supported, of: range, options: options, matchParam: matchParam, body: body)
-        }
-    }
-
-    /**
-     Async version of `enumerateMatches`.
-     */
-    @discardableResult public func enumerateMatches<S>(in str: S,
-                                                       options: SearchOptions = .none,
-                                                       matchParam: MatchParam = MatchParam(),
-                                                       body: @escaping @Sendable (_ order: Int, _ matchedIndex: Int, _ region: Region) -> Bool
-    ) async throws -> Int {
-        try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _enumerateMatches(in: supported, of: Self.fullByteRange, options: options, matchParam: matchParam, body: body)
-        }
     }
 
     // MARK: Capture groups

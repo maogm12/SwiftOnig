@@ -148,17 +148,6 @@ public struct Region: Sendable {
     }
 
     /**
-     Get the matched string of the region.
-     
-     It's a convenient accessor of the string of the first `Subregion`.
-     */
-    @available(*, deprecated, renamed: "decodedString()")
-    public var string: String? {
-        precondition(count > 0, "Empty region")
-        return decodedString()
-    }
-
-    /**
      Decode the matched bytes of the region into a `String`.
      
      This is a convenient accessor for the whole matched region and may allocate or decode text.
@@ -199,12 +188,6 @@ public struct Subregion: Sendable {
 
     internal let regex: Regex
     internal let str: any OnigurumaString
-
-    /// The matched string of this capture group.
-    @available(*, deprecated, renamed: "decodedString()")
-    public var string: String? {
-        decodedString()
-    }
 
     /// Decode the matched bytes of this capture group into a `String`.
     public func decodedString() -> String? {

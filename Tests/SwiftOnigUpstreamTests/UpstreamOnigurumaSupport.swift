@@ -62,7 +62,7 @@ enum UpstreamOnigurumaSupport {
                 let region: Region?
                 switch testCase.direction {
                 case .forward:
-                    region = try await regex.firstMatch(in: testCase.input, options: testCase.searchOptions)
+                    region = try regex.firstMatch(in: testCase.input, options: testCase.searchOptions)
                 case .backward:
                     region = try backwardSearch(regex: regex, input: testCase.input)
                 }
@@ -128,7 +128,7 @@ enum UpstreamOnigurumaSupport {
                     regexes.append(try await Regex(patternBytes: pattern, encoding: .utf8))
                 }
                 let regset = try await RegexSet(regexes: regexes)
-                let result = try await regset.firstMatch(in: inputBytes, lead: testCase.lead)
+                let result = try regset.firstSetMatch(in: inputBytes, lead: testCase.lead)
 
                 switch testCase.expectation {
                 case .match(let range, let group):
