@@ -123,6 +123,31 @@ public struct Region: Sendable {
     }
 
     /**
+     Convert the matched byte range into a Swift `String` range for the provided input.
+
+     Pass the same `String` or `Substring` value that produced this match result. Returns `nil`
+     when the regex encoding cannot be mapped back to Swift string indices.
+     */
+    public func range<S: StringProtocol>(in input: S) -> Range<S.Index>? {
+        precondition(count > 0, "Empty region")
+        return _stringRange(in: input, encodedRange: _activeRange(of: 0), encoding: regex.encoding)
+    }
+
+    /**
+     Return the matched substring in the provided input.
+
+     Pass the same `String` or `Substring` value that produced this match result. Returns `nil`
+     when the regex encoding cannot be mapped back to Swift string indices.
+     */
+    public func substring<S: StringProtocol>(in input: S) -> S.SubSequence? {
+        guard let range = self.range(in: input) else {
+            return nil
+        }
+
+        return input[range]
+    }
+
+    /**
      Get the matched string of the region.
      
      It's a convenient accessor of the string of the first `Subregion`.
@@ -189,6 +214,30 @@ public struct Subregion: Sendable {
                    encoding: regex.encoding.stringEncoding)
         }
     }
+
+    /**
+     Convert this capture group's byte range into a Swift `String` range for the provided input.
+
+     Pass the same `String` or `Substring` value that produced this match result. Returns `nil`
+     when the regex encoding cannot be mapped back to Swift string indices.
+     */
+    public func range<S: StringProtocol>(in input: S) -> Range<S.Index>? {
+        _stringRange(in: input, encodedRange: range, encoding: regex.encoding)
+    }
+
+    /**
+     Return this capture group's substring in the provided input.
+
+     Pass the same `String` or `Substring` value that produced this match result. Returns `nil`
+     when the regex encoding cannot be mapped back to Swift string indices.
+     */
+    public func substring<S: StringProtocol>(in input: S) -> S.SubSequence? {
+        guard let range = self.range(in: input) else {
+            return nil
+        }
+
+        return input[range]
+    }
 }
 
 extension Region: RandomAccessCollection {
@@ -245,4 +294,54 @@ extension Region: RandomAccessCollection {
                    encoding: regex.encoding.stringEncoding)
         }
     }
+}
+
+private func _stringRange<S: StringProtocol>(in input: S,
+                                             encodedRange: Range<Int>,
+                                             encoding: Encoding) -> Range<S.Index>? {
+    switch encoding.stringEncoding {
+    case .utf8:
+        return _utf8StringRange(in: input, utf8Range: encodedRange)
+    case .utf16BigEndian, .utf16LittleEndian:
+        guard encodedRange.lowerBound.isMultiple(of: 2), encodedRange.upperBound.isMultiple(of: 2) else {
+            return nil
+        }
+
+        return _utf16StringRange(in: input,
+                                 utf16Range: (encodedRange.lowerBound / 2)..<(encodedRange.upperBound / 2))
+    default:
+        return nil
+    }
+}
+
+private func _utf8StringRange<S: StringProtocol>(in input: S, utf8Range: Range<Int>) -> Range<S.Index>? {
+    let utf8 = input.utf8
+    guard let lowerBound = utf8.index(utf8.startIndex,
+                                      offsetBy: utf8Range.lowerBound,
+                                      limitedBy: utf8.endIndex),
+          let upperBound = utf8.index(utf8.startIndex,
+                                      offsetBy: utf8Range.upperBound,
+                                      limitedBy: utf8.endIndex),
+          let stringLowerBound = S.Index(lowerBound, within: input),
+          let stringUpperBound = S.Index(upperBound, within: input) else {
+        return nil
+    }
+
+    return stringLowerBound..<stringUpperBound
+}
+
+private func _utf16StringRange<S: StringProtocol>(in input: S, utf16Range: Range<Int>) -> Range<S.Index>? {
+    let utf16 = input.utf16
+    guard let lowerBound = utf16.index(utf16.startIndex,
+                                       offsetBy: utf16Range.lowerBound,
+                                       limitedBy: utf16.endIndex),
+          let upperBound = utf16.index(utf16.startIndex,
+                                       offsetBy: utf16Range.upperBound,
+                                       limitedBy: utf16.endIndex),
+          let stringLowerBound = S.Index(lowerBound, within: input),
+          let stringUpperBound = S.Index(upperBound, within: input) else {
+        return nil
+    }
+
+    return stringLowerBound..<stringUpperBound
 }

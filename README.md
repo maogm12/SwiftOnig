@@ -40,6 +40,7 @@ let input = "The answer is 42."
 if let region = try await regex.firstMatch(in: input) {
     print("Found: \(region.decodedString()!)") // "42"
     print("Range: \(region.range)")   // 14..<16
+    print("String range: \(region.range(in: input)!)")
 }
 ```
 

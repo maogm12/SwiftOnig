@@ -12,6 +12,12 @@ import OnigurumaC
 
 @Suite("Region Tests")
 struct RegionTests {
+    private static func utf16LittleEndianBytes(_ string: String) -> [UInt8] {
+        string.utf16.flatMap { codeUnit in
+            [UInt8(codeUnit & 0xff), UInt8(codeUnit >> 8)]
+        }
+    }
+
     final class AccessCountingString: @unchecked Sendable, OnigurumaString {
         private let base: String
         private let lock = NSLock()
@@ -66,6 +72,41 @@ struct RegionTests {
         #expect(r1[0]?.range == 0..<12)
         #expect(r1[1]?.range == 0..<6)
         #expect(r1[2]?.range == 6..<12)
+    }
+
+    @Test("String range and substring helpers for UTF-8 matches")
+    func stringRangeHelpersUTF8() async throws {
+        let input = "prefix 你好世界 suffix"
+        let regex = try await Regex(pattern: "(你好)(世界)")
+        let region = try await regex.firstMatch(in: input)!
+
+        #expect(region.substring(in: input) == "你好世界")
+        #expect(region[1]?.substring(in: input) == "你好")
+        #expect(region[2]?.substring(in: input) == "世界")
+
+        let wholeRange = try #require(region.range(in: input))
+        #expect(input[wholeRange] == "你好世界")
+
+        let captureRange = try #require(region[1]?.range(in: input))
+        #expect(input[captureRange] == "你好")
+    }
+
+    @Test("String range and substring helpers for UTF-16 matches")
+    func stringRangeHelpersUTF16() async throws {
+        let patternBytes = Self.utf16LittleEndianBytes("(你好)(世界)")
+        let input = "prefix 你好世界 suffix"
+        let regex = try await Regex(patternBytes: patternBytes, encoding: .utf16LittleEndian)
+        let region = try await regex.firstMatch(in: input)!
+
+        #expect(region.substring(in: input) == "你好世界")
+        #expect(region[1]?.substring(in: input) == "你好")
+        #expect(region[2]?.substring(in: input) == "世界")
+
+        let wholeRange = try #require(region.range(in: input))
+        #expect(input[wholeRange] == "你好世界")
+
+        let captureRange = try #require(region[2]?.range(in: input))
+        #expect(input[captureRange] == "世界")
     }
 
     @Test("Range access does not eagerly decode matched strings")
