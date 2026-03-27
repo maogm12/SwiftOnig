@@ -21,7 +21,7 @@ import RegexBuilder
  */
 public struct Regex: Sendable, CustomConsumingRegexComponent {
     public typealias RegexOutput = Substring
-    private static let fullByteRange: PartialRangeFrom<Int> = 0...
+    internal static let fullByteRange: PartialRangeFrom<Int> = 0...
 
     internal final class Storage: @unchecked Sendable {
         let rawValue: OnigRegex
@@ -202,7 +202,7 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
         }
     }
 
-    private func _firstMatchResolved<S>(
+    internal func _firstMatchResolved<S>(
         in str: S,
         start: UnsafePointer<OnigUChar>,
         count: Int,
@@ -241,7 +241,7 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
         return region
     }
 
-    private func _firstMatch<S, R>(in str: S, of range: R, options: SearchOptions = .none, matchParam: MatchParam?) throws -> Region? where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
+    internal func _firstMatch<S, R>(in str: S, of range: R, options: SearchOptions = .none, matchParam: MatchParam?) throws -> Region? where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
         return try str.withOnigurumaString(requestedEncoding: self.encoding) { (start, count) throws -> Region? in
             let range = range.relative(to: 0..<count).clamped(to: 0..<count)
             return try _firstMatchResolved(in: str,
@@ -269,6 +269,20 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
         }
     }
 
+    @available(*, deprecated, message: "Use input.firstMatch(of:) or regex.firstStringMatch(in:) for String and Substring inputs.")
+    public func firstMatch(in str: String, options: SearchOptions = .none) throws -> Region? {
+        try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
+            try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchParam: nil)
+        }
+    }
+
+    @available(*, deprecated, message: "Use input.firstMatch(of:) or regex.firstStringMatch(in:) for String and Substring inputs.")
+    public func firstMatch(in str: Substring, options: SearchOptions = .none) throws -> Region? {
+        try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
+            try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchParam: nil)
+        }
+    }
+
     /**
      Search the string and find the first matching region using the supplied match parameters.
      */
@@ -287,10 +301,38 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
         }
     }
 
+    @available(*, deprecated, message: "Use input.firstMatch(of:matchParam:) or regex.firstStringMatch(in:matchParam:) for String and Substring inputs.")
+    public func firstMatch(in str: String, options: SearchOptions = .none, matchParam: MatchParam) throws -> Region? {
+        try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
+            try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchParam: matchParam)
+        }
+    }
+
+    @available(*, deprecated, message: "Use input.firstMatch(of:matchParam:) or regex.firstStringMatch(in:matchParam:) for String and Substring inputs.")
+    public func firstMatch(in str: Substring, options: SearchOptions = .none, matchParam: MatchParam) throws -> Region? {
+        try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
+            try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchParam: matchParam)
+        }
+    }
+
     /**
      Search the full input and return a region only when the entire string matches.
      */
     public func wholeMatch<S>(in str: S, options: SearchOptions = .none) throws -> Region? {
+        try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
+            try _wholeMatch(in: supported, options: options, matchParam: nil)
+        }
+    }
+
+    @available(*, deprecated, message: "Use input.wholeMatch(of:) or regex.wholeStringMatch(in:) for String and Substring inputs.")
+    public func wholeMatch(in str: String, options: SearchOptions = .none) throws -> Region? {
+        try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
+            try _wholeMatch(in: supported, options: options, matchParam: nil)
+        }
+    }
+
+    @available(*, deprecated, message: "Use input.wholeMatch(of:) or regex.wholeStringMatch(in:) for String and Substring inputs.")
+    public func wholeMatch(in str: Substring, options: SearchOptions = .none) throws -> Region? {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
             try _wholeMatch(in: supported, options: options, matchParam: nil)
         }
@@ -305,7 +347,21 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
         }
     }
 
-    private func _wholeMatch<S>(in str: S, options: SearchOptions = .none, matchParam: MatchParam?) throws -> Region? where S: OnigurumaString {
+    @available(*, deprecated, message: "Use input.wholeMatch(of:matchParam:) or regex.wholeStringMatch(in:matchParam:) for String and Substring inputs.")
+    public func wholeMatch(in str: String, options: SearchOptions = .none, matchParam: MatchParam) throws -> Region? {
+        try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
+            try _wholeMatch(in: supported, options: options, matchParam: matchParam)
+        }
+    }
+
+    @available(*, deprecated, message: "Use input.wholeMatch(of:matchParam:) or regex.wholeStringMatch(in:matchParam:) for String and Substring inputs.")
+    public func wholeMatch(in str: Substring, options: SearchOptions = .none, matchParam: MatchParam) throws -> Region? {
+        try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
+            try _wholeMatch(in: supported, options: options, matchParam: matchParam)
+        }
+    }
+
+    internal func _wholeMatch<S>(in str: S, options: SearchOptions = .none, matchParam: MatchParam?) throws -> Region? where S: OnigurumaString {
         try str.withOnigurumaString(requestedEncoding: self.encoding) { (start, count) throws -> Region? in
             guard let region = try _firstMatchResolved(in: str,
                                                        start: start,

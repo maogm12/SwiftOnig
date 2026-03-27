@@ -78,98 +78,126 @@ extension Regex {
 
 extension Regex {
     public func firstStringMatch(in input: String, options: SearchOptions = .none) throws -> Match? {
-        guard let region = try firstMatch(in: input, options: options) else {
-            return nil
-        }
+        try withSupportedOnigurumaInput(input, requestedEncoding: self.encoding) { supported in
+            guard let region = try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchParam: nil) else {
+                return nil
+            }
 
-        return try Match(region: region, input: input[...])
+            return try Match(region: region, input: input[...])
+        }
     }
 
     public func firstStringMatch(in input: String, options: SearchOptions = .none, matchParam: MatchParam) throws -> Match? {
-        guard let region = try firstMatch(in: input, options: options, matchParam: matchParam) else {
-            return nil
-        }
+        try withSupportedOnigurumaInput(input, requestedEncoding: self.encoding) { supported in
+            guard let region = try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchParam: matchParam) else {
+                return nil
+            }
 
-        return try Match(region: region, input: input[...])
+            return try Match(region: region, input: input[...])
+        }
     }
 
     public func firstStringMatch(in input: Substring, options: SearchOptions = .none) throws -> Match? {
-        guard let region = try firstMatch(in: input, options: options) else {
-            return nil
-        }
+        try withSupportedOnigurumaInput(input, requestedEncoding: self.encoding) { supported in
+            guard let region = try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchParam: nil) else {
+                return nil
+            }
 
-        return try Match(region: region, input: input)
+            return try Match(region: region, input: input)
+        }
     }
 
     public func firstStringMatch(in input: Substring, options: SearchOptions = .none, matchParam: MatchParam) throws -> Match? {
-        guard let region = try firstMatch(in: input, options: options, matchParam: matchParam) else {
-            return nil
-        }
+        try withSupportedOnigurumaInput(input, requestedEncoding: self.encoding) { supported in
+            guard let region = try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchParam: matchParam) else {
+                return nil
+            }
 
-        return try Match(region: region, input: input)
+            return try Match(region: region, input: input)
+        }
     }
 
     public func prefixStringMatch(in input: String, options: SearchOptions = .none) throws -> Match? {
-        guard let region = try firstMatch(in: input, options: options), region.range.lowerBound == 0 else {
-            return nil
-        }
+        try withSupportedOnigurumaInput(input, requestedEncoding: self.encoding) { supported in
+            guard let region = try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchParam: nil),
+                  region.range.lowerBound == 0 else {
+                return nil
+            }
 
-        return try Match(region: region, input: input[...])
+            return try Match(region: region, input: input[...])
+        }
     }
 
     public func prefixStringMatch(in input: String, options: SearchOptions = .none, matchParam: MatchParam) throws -> Match? {
-        guard let region = try firstMatch(in: input, options: options, matchParam: matchParam), region.range.lowerBound == 0 else {
-            return nil
-        }
+        try withSupportedOnigurumaInput(input, requestedEncoding: self.encoding) { supported in
+            guard let region = try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchParam: matchParam),
+                  region.range.lowerBound == 0 else {
+                return nil
+            }
 
-        return try Match(region: region, input: input[...])
+            return try Match(region: region, input: input[...])
+        }
     }
 
     public func prefixStringMatch(in input: Substring, options: SearchOptions = .none) throws -> Match? {
-        guard let region = try firstMatch(in: input, options: options), region.range.lowerBound == 0 else {
-            return nil
-        }
+        try withSupportedOnigurumaInput(input, requestedEncoding: self.encoding) { supported in
+            guard let region = try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchParam: nil),
+                  region.range.lowerBound == 0 else {
+                return nil
+            }
 
-        return try Match(region: region, input: input)
+            return try Match(region: region, input: input)
+        }
     }
 
     public func prefixStringMatch(in input: Substring, options: SearchOptions = .none, matchParam: MatchParam) throws -> Match? {
-        guard let region = try firstMatch(in: input, options: options, matchParam: matchParam), region.range.lowerBound == 0 else {
-            return nil
-        }
+        try withSupportedOnigurumaInput(input, requestedEncoding: self.encoding) { supported in
+            guard let region = try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchParam: matchParam),
+                  region.range.lowerBound == 0 else {
+                return nil
+            }
 
-        return try Match(region: region, input: input)
+            return try Match(region: region, input: input)
+        }
     }
 
     public func wholeStringMatch(in input: String, options: SearchOptions = .none) throws -> Match? {
-        guard let region = try wholeMatch(in: input, options: options) else {
-            return nil
-        }
+        try withSupportedOnigurumaInput(input, requestedEncoding: self.encoding) { supported in
+            guard let region = try _wholeMatch(in: supported, options: options, matchParam: nil) else {
+                return nil
+            }
 
-        return try Match(region: region, input: input[...])
+            return try Match(region: region, input: input[...])
+        }
     }
 
     public func wholeStringMatch(in input: String, options: SearchOptions = .none, matchParam: MatchParam) throws -> Match? {
-        guard let region = try wholeMatch(in: input, options: options, matchParam: matchParam) else {
-            return nil
-        }
+        try withSupportedOnigurumaInput(input, requestedEncoding: self.encoding) { supported in
+            guard let region = try _wholeMatch(in: supported, options: options, matchParam: matchParam) else {
+                return nil
+            }
 
-        return try Match(region: region, input: input[...])
+            return try Match(region: region, input: input[...])
+        }
     }
 
     public func wholeStringMatch(in input: Substring, options: SearchOptions = .none) throws -> Match? {
-        guard let region = try wholeMatch(in: input, options: options) else {
-            return nil
-        }
+        try withSupportedOnigurumaInput(input, requestedEncoding: self.encoding) { supported in
+            guard let region = try _wholeMatch(in: supported, options: options, matchParam: nil) else {
+                return nil
+            }
 
-        return try Match(region: region, input: input)
+            return try Match(region: region, input: input)
+        }
     }
 
     public func wholeStringMatch(in input: Substring, options: SearchOptions = .none, matchParam: MatchParam) throws -> Match? {
-        guard let region = try wholeMatch(in: input, options: options, matchParam: matchParam) else {
-            return nil
-        }
+        try withSupportedOnigurumaInput(input, requestedEncoding: self.encoding) { supported in
+            guard let region = try _wholeMatch(in: supported, options: options, matchParam: matchParam) else {
+                return nil
+            }
 
-        return try Match(region: region, input: input)
+            return try Match(region: region, input: input)
+        }
     }
 }
