@@ -14,9 +14,11 @@ dependencies: [
 
 ## Basic Usage
 
-### 1. Initialize the Library
+### 1. Optional: Prewarm Encodings
 
-Before using SwiftOnig, you must initialize it with the encodings you plan to use. This is a thread-safe operation managed by `@OnigurumaActor`.
+SwiftOnig initializes itself automatically on first use, so no manual setup is required for normal usage.
+
+If your application wants to prewarm specific encodings during startup, you can do that explicitly through `initialize(encodings:)`.
 
 ```swift
 import SwiftOnig
@@ -44,10 +46,6 @@ if let region = try await regex.firstMatch(in: input) {
 }
 ```
 
-### 4. Cleanup
+### 4. Advanced Lifecycle Control
 
-When you are finished using the library, call `uninitialize()` to free global resources.
-
-```swift
-await SwiftOnig.uninitialize()
-```
+Most applications do not need to call `uninitialize()`. It is an advanced lifecycle API for cases where you explicitly want to tear down the shared runtime, and previously created regex objects must not be reused after that point.

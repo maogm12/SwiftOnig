@@ -194,10 +194,10 @@ internal struct OnigCGlobals {
 }
 
 /**
- Initialize the library manually with specific encodings.
+ Optionally prewarm the shared runtime with specific encodings.
 
- - Note: This is no longer required as initialization happens automatically on first use.
- - Parameter encodings: Encodings used in the application.
+ - Note: Normal library usage does not require this. SwiftOnig initializes itself automatically on first use.
+ - Parameter encodings: Encodings to initialize eagerly, typically during application startup.
  */
 @OnigurumaActor
 public func initialize<S: Sequence>(encodings: S) async throws where S.Element == Encoding {
@@ -209,8 +209,10 @@ public func initialize<S: Sequence>(encodings: S) async throws where S.Element =
 }
 
 /**
- The use of this library is finished.
- - Note: It is not allowed to use regex objects which created before `uninitialize` call.
+ Tear down the shared runtime state.
+
+ - Note: Most applications do not need to call this.
+ - Note: Regex objects created before `uninitialize()` must not be used afterwards.
  */
 @OnigurumaActor
 public func uninitialize() async {
