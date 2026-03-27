@@ -12,6 +12,7 @@ SwiftOnig provides a type-safe, concurrency-ready, and idiomatic Swift interface
 
 - <doc:Introduction>
 - <doc:GettingStarted>
+- <doc:AdvancedEncodings>
 
 ### Core Types
 
