@@ -26,6 +26,14 @@ SwiftOnig now vendors Oniguruma source in-repo, so consumers and contributors do
 
 ## Quick Start
 
+The common path is:
+
+1. Compile a `Regex` from a Swift `String`.
+2. Search another Swift `String`.
+3. Read byte ranges only if you actually need byte offsets.
+
+Everything else, including manual runtime lifecycle, non-UTF encodings, and explicit UTF-16 input preparation, is an advanced path.
+
 ### Basic Matching
 
 ```swift
@@ -90,9 +98,11 @@ if let region = try await regex.firstMatch(in: "Age: 25") {
 
 ## Advanced Usage
 
+The sections below are for workloads that need tighter control over encodings, byte-level interoperability, or repeated UTF-16 searches.
+
 ### Custom Encodings
 
-SwiftOnig excels at handling non-UTF8 data.
+Most applications do not need this section. Use it when your input is already stored in a specific byte encoding and you want SwiftOnig to search those bytes directly.
 
 ```swift
 let gbBytes: [UInt8] = [196, 227, 186, 195] // "你好" in GB18030
@@ -122,6 +132,14 @@ if let region = try await regex.firstMatch(in: preparedInput) {
 ```
 
 This makes the UTF-16 materialization behavior explicit and avoids repeating that preparation work in application code.
+
+### Runtime Lifecycle APIs
+
+Most applications do not need to call `initialize(encodings:)` or `uninitialize()`.
+
+- Use the default lazy initialization unless you have a concrete startup or teardown requirement.
+- Use `initialize(encodings:)` only when you want to prewarm specific encodings.
+- Use `uninitialize()` only when you deliberately want to tear down the shared runtime and stop using previously compiled regex values afterward.
 
 ## Documentation
 

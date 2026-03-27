@@ -12,9 +12,32 @@ dependencies: [
 ]
 ```
 
-## Basic Usage
+## Common Path
 
-### 1. Optional: Prewarm Encodings
+### 1. Create a Regex
+
+Create a compiled regular expression object. The initializer is asynchronous and actor-isolated.
+
+```swift
+let pattern = #"\d+"#
+let regex = try await Regex(pattern: pattern)
+```
+
+### 2. Perform a Match
+
+Use the `firstMatch(in:)` method to find the first occurrence of the pattern in a string.
+
+```swift
+let input = "The price is 42 dollars."
+if let region = try await regex.firstMatch(in: input) {
+    print("Matched: \(region.decodedString()!)") // "42"
+    print("Range in input: \(region.range(in: input)!)")
+}
+```
+
+## Advanced Paths
+
+### Optional Runtime Prewarming
 
 SwiftOnig initializes itself automatically on first use, so no manual setup is required for normal usage.
 
@@ -26,31 +49,21 @@ import SwiftOnig
 try await SwiftOnig.initialize(encodings: [.utf8])
 ```
 
-### 2. Create a Regex
-
-Create a compiled regular expression object. The initializer is asynchronous and actor-isolated.
-
-```swift
-let pattern = #"\d+"#
-let regex = try await Regex(pattern: pattern)
-```
-
-### 3. Perform a Match
-
-Use the `firstMatch(in:)` method to find the first occurrence of the pattern in a string.
-
-```swift
-let input = "The price is 42 dollars."
-if let region = try await regex.firstMatch(in: input) {
-    print("Matched: \(region.decodedString()!)") // "42"
-}
-```
-
-### 4. Advanced Lifecycle Control
+### Runtime Teardown
 
 Most applications do not need to call `uninitialize()`. It is an advanced lifecycle API for cases where you explicitly want to tear down the shared runtime, and previously created regex objects must not be reused after that point.
 
-## UTF-16 Input Performance
+### Non-UTF Byte Encodings
+
+If your input is already stored in a specific byte encoding, compile the regex with that encoding and search the bytes directly.
+
+```swift
+let gbBytes: [UInt8] = [196, 227, 186, 195] // "你好" in GB18030
+let regex = try await Regex(patternBytes: gbBytes, encoding: .gb18030)
+let region = try await regex.firstMatch(in: gbBytes)
+```
+
+### UTF-16 Input Performance
 
 When using a UTF-16 encoded regex, `String`, `Substring`, `String.UTF16View`, and `Substring.UTF16View` may require temporary UTF-16 materialization for each call.
 
