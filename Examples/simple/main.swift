@@ -27,7 +27,7 @@ Task {
                 print("Capture \(index) ==> nil")
                 continue
             }
-            print("Capture \(index) ==> range: \(subRegion.range), content: \(subRegion.string!))")
+            print("Capture \(index) ==> range: \(subRegion.range), content: \(subRegion.decodedString()!))")
         }
         
         await uninitialize()

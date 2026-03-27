@@ -24,7 +24,7 @@ func execute(str: String, pattern: String, syntax: Syntax, options: Regex.Option
             print("Capture \(index) ==> nil")
             continue
         }
-        print("Capture \(index) ==> range: \(subRegion.range), content: \(subRegion.string!)")
+        print("Capture \(index) ==> range: \(subRegion.range), content: \(subRegion.decodedString()!)")
     }
 }
 

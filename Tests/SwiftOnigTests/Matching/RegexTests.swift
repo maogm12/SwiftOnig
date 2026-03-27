@@ -48,7 +48,7 @@ struct RegexTests {
         }
         #expect(region.count == 1)
         #expect(region[0]?.range == 13..<29)
-        #expect(region[0]?.string == "test@example.com")
+        #expect(region[0]?.decodedString() == "test@example.com")
         
         let gb18030Bytes: [UInt8] = [196, 227, 186, 195] // 你好
         let regGb18030 = try await Regex(patternBytes: gb18030Bytes, encoding: .gb18030)
@@ -59,7 +59,7 @@ struct RegexTests {
         }
         #expect(region2.count == 1)
         #expect(region2[0]?.range == 0..<4)
-        #expect(region2[0]?.string == "你好")
+        #expect(region2[0]?.decodedString() == "你好")
     }
 
     @Test("MatchParam support on core search and match APIs")
@@ -126,7 +126,7 @@ struct RegexTests {
         matchParam.setRetryLimitInSearch(to: 1_000)
 
         let full = try await regex.wholeMatch(in: "foo", matchParam: matchParam)
-        #expect(full?[0]?.string == "foo")
+        #expect(full?[0]?.decodedString() == "foo")
         #expect(try await regex.wholeMatch(in: "foo bar") == nil)
         #expect(try await regex.wholeMatch(in: "bar foo") == nil)
     }
@@ -147,7 +147,7 @@ struct RegexTests {
 
         #expect(results.items.map { $0.0 } == [2, 6, 10, 14])
         #expect(results.items.map { $0.1[0]!.range } == [2..<4, 6..<8, 10..<12, 14..<16])
-        #expect(results.items.map { $0.1[0]!.string } == ["11", "22", "33", "44"])
+        #expect(results.items.map { $0.1[0]!.decodedString() } == ["11", "22", "33", "44"])
     }
 
     @Test("Enumerate Matches can abort and ranges are clamped")
@@ -160,7 +160,7 @@ struct RegexTests {
         let results = Results()
 
         let count = try await regex.enumerateMatches(in: "aa11bb22cc33", of: (-20)..<200) { order, matchedIndex, region in
-            results.items.append((matchedIndex, region[0]?.string ?? ""))
+            results.items.append((matchedIndex, region[0]?.decodedString() ?? ""))
             return order == 0
         }
 

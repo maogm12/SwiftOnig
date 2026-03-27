@@ -404,11 +404,11 @@ func runBenchmarks() async throws {
 
     try await runSwiftOnigOnly(
         makeCase(group: "utf16",
-                 name: "SwiftOnig UTF-16 firstMatch plus region.string",
+                name: "SwiftOnig UTF-16 firstMatch plus region.decodedString()",
                  iterations: 100_000) {
             for _ in 0..<100_000 {
                 let region = try utf16Regex.firstMatch(in: utf16Input)
-                _ = region?.string
+                _ = region?.decodedString()
             }
         }
     )

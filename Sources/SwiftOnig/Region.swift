@@ -127,7 +127,18 @@ public struct Region: Sendable {
      
      It's a convenient accessor of the string of the first `Subregion`.
      */
+    @available(*, deprecated, renamed: "decodedString()")
     public var string: String? {
+        precondition(count > 0, "Empty region")
+        return decodedString()
+    }
+
+    /**
+     Decode the matched bytes of the region into a `String`.
+     
+     This is a convenient accessor for the whole matched region and may allocate or decode text.
+     */
+    public func decodedString() -> String? {
         precondition(count > 0, "Empty region")
         return _substring(in: _activeRange(of: 0))
     }
@@ -165,7 +176,13 @@ public struct Subregion: Sendable {
     internal let str: any OnigurumaString
 
     /// The matched string of this capture group.
+    @available(*, deprecated, renamed: "decodedString()")
     public var string: String? {
+        decodedString()
+    }
+
+    /// Decode the matched bytes of this capture group into a `String`.
+    public func decodedString() -> String? {
         str.withOnigurumaString(requestedEncoding: regex.encoding) { start, _ in
             String(bytes: UnsafeBufferPointer(start: start.advanced(by: range.lowerBound),
                                              count: range.count),

@@ -49,17 +49,17 @@ struct RegexSetTests {
         var result = try await regSet.firstMatch(in: "cccaaabbb", lead: .positionLead)!
         #expect(result.regexIndex == 2)
         #expect(result.region.range == 0..<3)
-        #expect(result.region.string == "ccc")
+        #expect(result.region.decodedString() == "ccc")
 
         result = try await regSet.firstMatch(in: "cccaaabbb", lead: .regexLead)!
         #expect(result.regexIndex == 2)
         #expect(result.region.range == 0..<3)
-        #expect(result.region.string == "ccc")
+        #expect(result.region.decodedString() == "ccc")
 
         result = try await regSet.firstMatch(in: "cccaaabbb", lead: .priorityToRegexOrder)!
         #expect(result.regexIndex == 0)
         #expect(result.region.range == 3..<6)
-        #expect(result.region.string == "aaa")
+        #expect(result.region.decodedString() == "aaa")
 
         let gb18030Bytes1: [UInt8] = [202, 192, 189, 231] // 世界
         let gb18030Bytes2: [UInt8] = [196, 227, 186, 195] // 你好
@@ -69,7 +69,7 @@ struct RegexSetTests {
         result = try await regSetGb18030.firstMatch(in: target)!
         #expect(result.regexIndex == 1)
         #expect(result.region.range == 0..<4)
-        #expect(result.region.string == "你好")
+        #expect(result.region.decodedString() == "你好")
     }
 
     @Test("Mutable operations")

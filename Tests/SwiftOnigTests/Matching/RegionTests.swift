@@ -34,10 +34,10 @@ struct RegionTests {
     @Test("Matched string extraction")
     func string() async throws {
         let r1 = try await Regex(pattern: "a+").firstMatch(in: "aaabbb")!
-        #expect(r1.string == "aaa")
+        #expect(r1.decodedString() == "aaa")
         
         let r2 = try await Regex(pattern: "b+").firstMatch(in: "aaabbb")!
-        #expect(r2.string == "bbb")
+        #expect(r2.decodedString() == "bbb")
     }
 
     @Test("Collection properties")
@@ -79,9 +79,9 @@ struct RegionTests {
         #expect(input.accessCount == 1)
         #expect(region[1]?.range == 0..<3)
         #expect(input.accessCount == 1)
-        #expect(region[1]?.string == "aaa")
+        #expect(region[1]?.decodedString() == "aaa")
         #expect(input.accessCount == 2)
-        #expect(region.string == "aaabbbccc")
+        #expect(region.decodedString() == "aaabbbccc")
         #expect(input.accessCount == 3)
     }
     
@@ -103,15 +103,15 @@ struct RegionTests {
         
         let fooRegions = region["foo"]
         #expect(fooRegions.count == 1)
-        #expect(fooRegions[0].string == "aaa")
+        #expect(fooRegions[0].decodedString() == "aaa")
         
         let barRegions = region["bar"]
         #expect(barRegions.count == 1)
-        #expect(barRegions[0].string == "bbbb")
+        #expect(barRegions[0].decodedString() == "bbbb")
 
         let bazRegions = region["baz"]
         #expect(bazRegions.count == 1)
-        #expect(bazRegions[0].string == "cc")
+        #expect(bazRegions[0].decodedString() == "cc")
         #expect(region.backReferencedGroupNumber(of: "bar") == 2)
     }
     

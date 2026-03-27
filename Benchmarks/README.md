@@ -77,7 +77,7 @@ Current large-sample configuration:
 - SwiftOnig UTF-16 mismatch from `String`: `100000` iterations
 - SwiftOnig UTF-16 mismatch from `UTF16View`: `100000` iterations
 - SwiftOnig UTF-16 whole match from `String`: `100000` iterations
-- SwiftOnig UTF-16 first match plus `region.string`: `100000` iterations
+- SwiftOnig UTF-16 first match plus `region.decodedString()`: `100000` iterations
 
 Current output reports `median`, `min`, and `max` over repeated samples instead of a single timing.
 
@@ -179,7 +179,7 @@ Measured results from this workspace:
 
 - `SwiftOnig`: median `2.251751 s`
 
-### SwiftOnig UTF-16 `firstMatch` Plus `region.string`
+### SwiftOnig UTF-16 `firstMatch` Plus `region.decodedString()`
 
 - `SwiftOnig`: median `1.975839 s`
 

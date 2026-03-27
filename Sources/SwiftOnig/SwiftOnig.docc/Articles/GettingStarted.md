@@ -42,7 +42,7 @@ Use the `firstMatch(in:)` method to find the first occurrence of the pattern in 
 ```swift
 let input = "The price is 42 dollars."
 if let region = try await regex.firstMatch(in: input) {
-    print("Matched: \(region.string!)") // "42"
+    print("Matched: \(region.decodedString()!)") // "42"
 }
 ```
 
