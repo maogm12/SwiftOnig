@@ -1,73 +1,204 @@
 //
 //  main.swift
-//  
+//
 //
 //  Created by Guangming Mao on 3/25/26.
 //
 
 import Foundation
 import SwiftOnig
+import _StringProcessing
 
-@OnigurumaActor
-func benchmark(name: String, block: () async throws -> Void) async throws {
-    let start = DispatchTime.now()
-    try await block()
-    let end = DispatchTime.now()
-    let nanoTime = end.uptimeNanoseconds - start.uptimeNanoseconds
-    let timeInterval = Double(nanoTime) / 1_000_000_000
-    print("\(name): \(timeInterval) seconds")
+private struct BenchmarkCase {
+    let name: String
+    let iterations: Int
+    let body: () async throws -> Void
 }
 
-@OnigurumaActor
+private func benchmark(_ testCase: BenchmarkCase) async throws -> Double {
+    let start = DispatchTime.now()
+    try await testCase.body()
+    let end = DispatchTime.now()
+    return Double(end.uptimeNanoseconds - start.uptimeNanoseconds) / 1_000_000_000
+}
+
+private func printCaseHeader(_ name: String, iterations: Int) {
+    print("")
+    print("== \(name) (\(iterations) iterations) ==")
+}
+
+private func printResult(engine: String, seconds: Double) {
+    let padded = engine.padding(toLength: 22, withPad: " ", startingAt: 0)
+    print("\(padded) \(String(format: "%.6f", seconds)) s")
+}
+
+private func runComparison(name: String,
+                           iterations: Int,
+                           swiftOnig: @escaping () async throws -> Void,
+                           nsRegularExpression: @escaping () throws -> Void,
+                           swiftRegex: @escaping () throws -> Void) async throws {
+    printCaseHeader(name, iterations: iterations)
+
+    let onigSeconds = try await benchmark(BenchmarkCase(name: name, iterations: iterations, body: swiftOnig))
+    printResult(engine: "SwiftOnig", seconds: onigSeconds)
+
+    let nsSeconds = try await benchmark(BenchmarkCase(name: name, iterations: iterations) {
+        try nsRegularExpression()
+    })
+    printResult(engine: "NSRegularExpression", seconds: nsSeconds)
+
+    let swiftSeconds = try await benchmark(BenchmarkCase(name: name, iterations: iterations) {
+        try swiftRegex()
+    })
+    printResult(engine: "Swift Regex", seconds: swiftSeconds)
+}
+
+private func nsRange(for input: String) -> NSRange {
+    NSRange(input.startIndex..<input.endIndex, in: input)
+}
+
+@available(macOS 13.0, *)
 func runBenchmarks() async throws {
-    print("--- SwiftOnig Benchmarks ---")
-    
-    // 1. Initialization
-    try await benchmark(name: "Initialization (UTF-8)") {
-        try await SwiftOnig.initialize(encodings: [.utf8])
-    }
-    
-    // 2. Regex Compilation
-    let pattern = #"\w+@\w+\.\w+"#
-    try await benchmark(name: "Compilation (1000 times)") {
-        for _ in 0..<1000 {
-            _ = try await Regex(pattern: pattern)
+    let emailPattern = #"\w+@\w+\.\w+"#
+    let emailInput = "Contact us at support@example.com for more info."
+    let largeEmailInput = String(repeating: "Some random text with no email. ", count: 1000) + "find@me.com"
+    let unicodePattern = #"(你好)(世界)"#
+    let unicodeInput = "你好世界"
+
+    try await SwiftOnig.initialize(encodings: [.utf8, .utf16LittleEndian])
+
+    print("--- Regex Engine Benchmarks ---")
+
+    try await runComparison(
+        name: "Compile email pattern",
+        iterations: 1_000,
+        swiftOnig: {
+            for _ in 0..<1_000 {
+                _ = try await SwiftOnig.Regex(pattern: emailPattern)
+            }
+        },
+        nsRegularExpression: {
+            for _ in 0..<1_000 {
+                _ = try NSRegularExpression(pattern: emailPattern)
+            }
+        },
+        swiftRegex: {
+            for _ in 0..<1_000 {
+                _ = try _StringProcessing.Regex(emailPattern)
+            }
         }
-    }
-    
-    // 3. Simple Match
-    let regex = try await Regex(pattern: pattern)
-    let input = "Contact us at support@example.com for more info."
-    try await benchmark(name: "Match (100,000 times)") {
-        for _ in 0..<100_000 {
-            _ = try regex.firstMatch(in: input)
+    )
+
+    let onigEmail = try await SwiftOnig.Regex(pattern: emailPattern)
+    let nsEmail = try NSRegularExpression(pattern: emailPattern)
+    let swiftEmail = try _StringProcessing.Regex(emailPattern)
+
+    try await runComparison(
+        name: "First match on short input",
+        iterations: 100_000,
+        swiftOnig: {
+            for _ in 0..<100_000 {
+                _ = try await onigEmail.firstMatch(in: emailInput)
+            }
+        },
+        nsRegularExpression: {
+            let range = nsRange(for: emailInput)
+            for _ in 0..<100_000 {
+                _ = nsEmail.firstMatch(in: emailInput, range: range)
+            }
+        },
+        swiftRegex: {
+            for _ in 0..<100_000 {
+                _ = emailInput.firstMatch(of: swiftEmail)
+            }
         }
-    }
-    
-    // 4. Large Input Match
-    let largeInput = String(repeating: "Some random text with no email. ", count: 1000) + "find@me.com"
-    try await benchmark(name: "Large Input Match (100 times)") {
-        for _ in 0..<100 {
-            _ = try regex.firstMatch(in: largeInput)
+    )
+
+    try await runComparison(
+        name: "First match on large input",
+        iterations: 10_000,
+        swiftOnig: {
+            for _ in 0..<10_000 {
+                _ = try await onigEmail.firstMatch(in: largeEmailInput)
+            }
+        },
+        nsRegularExpression: {
+            let range = nsRange(for: largeEmailInput)
+            for _ in 0..<10_000 {
+                _ = nsEmail.firstMatch(in: largeEmailInput, range: range)
+            }
+        },
+        swiftRegex: {
+            for _ in 0..<10_000 {
+                _ = largeEmailInput.firstMatch(of: swiftEmail)
+            }
         }
-    }
-    
-    // 5. UTF-16 Match (Smart Negotiation)
+    )
+
+    let onigUnicode = try await SwiftOnig.Regex(pattern: unicodePattern)
+    let nsUnicode = try NSRegularExpression(pattern: unicodePattern)
+    let swiftUnicode = try _StringProcessing.Regex(unicodePattern)
+
+    try await runComparison(
+        name: "Unicode capture match",
+        iterations: 100_000,
+        swiftOnig: {
+            for _ in 0..<100_000 {
+                _ = try await onigUnicode.firstMatch(in: unicodeInput)
+            }
+        },
+        nsRegularExpression: {
+            let range = nsRange(for: unicodeInput)
+            for _ in 0..<100_000 {
+                _ = nsUnicode.firstMatch(in: unicodeInput, range: range)
+            }
+        },
+        swiftRegex: {
+            for _ in 0..<100_000 {
+                _ = unicodeInput.firstMatch(of: swiftUnicode)
+            }
+        }
+    )
+
     let utf16PatternBytes = Array("你好".utf16).withUnsafeBufferPointer { Data(buffer: $0) }
-    let utf16Regex = try await Regex(patternBytes: utf16PatternBytes, encoding: .utf16LittleEndian)
+    let utf16Regex = try await SwiftOnig.Regex(patternBytes: utf16PatternBytes, encoding: .utf16LittleEndian)
     let utf16Input = "Hello, 你好! " + String(repeating: "World", count: 1000)
-    try await benchmark(name: "UTF-16 Smart Match (10,000 times)") {
-        for _ in 0..<10_000 {
-            _ = try await utf16Regex.firstMatch(in: utf16Input.utf16)
+    let utf16Native = try _StringProcessing.Regex("你好")
+    let utf16NS = try NSRegularExpression(pattern: "你好")
+
+    try await runComparison(
+        name: "UTF-16 oriented match",
+        iterations: 10_000,
+        swiftOnig: {
+            for _ in 0..<10_000 {
+                _ = try await utf16Regex.firstMatch(in: utf16Input.utf16)
+            }
+        },
+        nsRegularExpression: {
+            let range = nsRange(for: utf16Input)
+            for _ in 0..<10_000 {
+                _ = utf16NS.firstMatch(in: utf16Input, range: range)
+            }
+        },
+        swiftRegex: {
+            for _ in 0..<10_000 {
+                _ = utf16Input.firstMatch(of: utf16Native)
+            }
         }
-    }
-    
-    print("----------------------------")
+    )
+
+    print("")
+    print("-------------------------------")
 }
 
 Task {
     do {
-        try await runBenchmarks()
+        if #available(macOS 13.0, *) {
+            try await runBenchmarks()
+        } else {
+            print("Benchmark failed: Swift Regex benchmarks require macOS 13.0 or newer")
+            exit(EXIT_FAILURE)
+        }
         exit(EXIT_SUCCESS)
     } catch {
         print("Benchmark failed: \(error)")
