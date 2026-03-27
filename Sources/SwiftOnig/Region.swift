@@ -138,7 +138,7 @@ public struct Region: Sendable {
      - Parameters:
         - name: Group name for backreference (`\k<name>`).
      */
-    public func backReferencedGroupNumber(of name: any OnigurumaString) -> Int {
+    public func backReferencedGroupNumber<S: StringProtocol>(of name: S) -> Int {
         let result = name.withOnigurumaString(requestedEncoding: regex.encoding) { start, count in
             onig_name_to_backref_number(regex.rawValue,
                                         start,
@@ -205,15 +205,8 @@ extension Region: RandomAccessCollection {
     /**
      Get the subregions of named capture groups with the specified name. Only groups participating match will be included in the result.
      */
-    public subscript(name: any OnigurumaString) -> [Subregion] {
-        let nameStr: String
-        if let s = name as? String {
-            nameStr = s
-        } else {
-            nameStr = name.withOnigurumaString(requestedEncoding: regex.encoding) { start, count in
-                String(bytes: UnsafeBufferPointer(start: start, count: count), encoding: regex.encoding.stringEncoding) ?? ""
-            }
-        }
+    public subscript<S: StringProtocol>(name: S) -> [Subregion] {
+        let nameStr = String(name)
         return regex.captureGroupNumbers(for: nameStr)
             .compactMap { self[$0] }
     }

@@ -208,12 +208,18 @@ public struct RegexSet: Sendable {
                               lead: Lead = .positionLead,
                               options: Regex.SearchOptions = .none,
                               matchParams: [MatchParam]? = nil
-    ) throws -> (regexIndex: Int, region: Region)? where S: OnigurumaString {
-        try _firstMatch(in: str,
-                        of: Self.fullByteRange,
-                        lead: lead,
-                        options: options,
-                        matchParams: matchParams)
+    ) throws -> (regexIndex: Int, region: Region)? {
+        guard let firstRegex = regexes.first else {
+            return nil
+        }
+
+        return try withSupportedOnigurumaInput(str, requestedEncoding: firstRegex.encoding) { supported in
+            try _firstMatch(in: supported,
+                            of: Self.fullByteRange,
+                            lead: lead,
+                            options: options,
+                            matchParams: matchParams)
+        }
     }
 
     /**
@@ -224,8 +230,14 @@ public struct RegexSet: Sendable {
                                  lead: Lead = .positionLead,
                                  options: Regex.SearchOptions = .none,
                                  matchParams: [MatchParam]? = nil
-    ) throws -> (regexIndex: Int, region: Region)? where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
-        try _firstMatch(in: str, of: range, lead: lead, options: options, matchParams: matchParams)
+    ) throws -> (regexIndex: Int, region: Region)? where R: RangeExpression, R.Bound == Int {
+        guard let firstRegex = regexes.first else {
+            return nil
+        }
+
+        return try withSupportedOnigurumaInput(str, requestedEncoding: firstRegex.encoding) { supported in
+            try _firstMatch(in: supported, of: range, lead: lead, options: options, matchParams: matchParams)
+        }
     }
 
     private func _firstMatch<S, R>(in str: S,
@@ -314,8 +326,14 @@ public struct RegexSet: Sendable {
                               lead: Lead = .positionLead,
                               options: Regex.SearchOptions = .none,
                               matchParams: [MatchParam]? = nil
-    ) async throws -> (regexIndex: Int, region: Region)? where S: OnigurumaString {
-        try _firstMatch(in: str, of: Self.fullByteRange, lead: lead, options: options, matchParams: matchParams)
+    ) async throws -> (regexIndex: Int, region: Region)? {
+        guard let firstRegex = regexes.first else {
+            return nil
+        }
+
+        return try withSupportedOnigurumaInput(str, requestedEncoding: firstRegex.encoding) { supported in
+            try _firstMatch(in: supported, of: Self.fullByteRange, lead: lead, options: options, matchParams: matchParams)
+        }
     }
 
     /**
@@ -326,8 +344,14 @@ public struct RegexSet: Sendable {
                                  lead: Lead = .positionLead,
                                  options: Regex.SearchOptions = .none,
                                  matchParams: [MatchParam]? = nil
-    ) async throws -> (regexIndex: Int, region: Region)? where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
-        try _firstMatch(in: str, of: range, lead: lead, options: options, matchParams: matchParams)
+    ) async throws -> (regexIndex: Int, region: Region)? where R: RangeExpression, R.Bound == Int {
+        guard let firstRegex = regexes.first else {
+            return nil
+        }
+
+        return try withSupportedOnigurumaInput(str, requestedEncoding: firstRegex.encoding) { supported in
+            try _firstMatch(in: supported, of: range, lead: lead, options: options, matchParams: matchParams)
+        }
     }
 
     /**

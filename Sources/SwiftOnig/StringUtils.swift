@@ -8,7 +8,7 @@
 import OnigurumaC
 import Foundation
 
-public protocol OnigurumaString: Sendable {
+internal protocol OnigurumaString: Sendable {
     /**
      Call `body(start, count)` with underlying `OnigUChar` bytes, where `start` is a begining address of the bytes,`count`is the count of bytes.
      
@@ -70,7 +70,7 @@ extension StringProtocol {
         }
     }
 
-    public func withOnigurumaString<Result>(requestedEncoding: Encoding, _ body: (_ start: UnsafePointer<OnigUChar>, _ count: Int) throws -> Result) rethrows -> Result {
+    internal func withOnigurumaString<Result>(requestedEncoding: Encoding, _ body: (_ start: UnsafePointer<OnigUChar>, _ count: Int) throws -> Result) rethrows -> Result {
         // Smart Encoding Negotiation:
         // If the regex is UTF-16, provide UTF-16 bytes directly (efficient for NSString).
         // Otherwise, default to UTF-8 (native for Swift String).
@@ -92,7 +92,7 @@ extension ContiguousBytes {
      Call `body(start, count)` with underlying `OnigUChar` bytes.
      Requested encoding is ignored for raw byte types as they only have one representation.
      */
-    public func withOnigurumaString<Result>(requestedEncoding: Encoding, _ body: (_ start: UnsafePointer<OnigUChar>, _ count: Int) throws -> Result) rethrows -> Result {
+    internal func withOnigurumaString<Result>(requestedEncoding: Encoding, _ body: (_ start: UnsafePointer<OnigUChar>, _ count: Int) throws -> Result) rethrows -> Result {
         return try self.withUnsafeBytes { bufPtr in
             try OnigurumaInputAdapters.withRawBytes(bufPtr, body: body)
         }
@@ -101,7 +101,7 @@ extension ContiguousBytes {
 
 // Fixed conformances to avoid conflicts
 extension ArraySlice : OnigurumaString where Element == UInt8 { 
-    public func withOnigurumaString<Result>(requestedEncoding: Encoding, _ body: (UnsafePointer<OnigUChar>, Int) throws -> Result) rethrows -> Result {
+    internal func withOnigurumaString<Result>(requestedEncoding: Encoding, _ body: (UnsafePointer<OnigUChar>, Int) throws -> Result) rethrows -> Result {
         return try self.withUnsafeBytes { bufPtr in
             try OnigurumaInputAdapters.withRawBytes(bufPtr, body: body)
         }
@@ -109,7 +109,7 @@ extension ArraySlice : OnigurumaString where Element == UInt8 {
 }
 
 extension ContiguousArray : OnigurumaString where Element == UInt8 { 
-    public func withOnigurumaString<Result>(requestedEncoding: Encoding, _ body: (UnsafePointer<OnigUChar>, Int) throws -> Result) rethrows -> Result {
+    internal func withOnigurumaString<Result>(requestedEncoding: Encoding, _ body: (UnsafePointer<OnigUChar>, Int) throws -> Result) rethrows -> Result {
         return try self.withUnsafeBytes { bufPtr in
             try OnigurumaInputAdapters.withRawBytes(bufPtr, body: body)
         }
@@ -117,7 +117,7 @@ extension ContiguousArray : OnigurumaString where Element == UInt8 {
 }
 
 extension CollectionOfOne : OnigurumaString where Element == UInt8 { 
-    public func withOnigurumaString<Result>(requestedEncoding: Encoding, _ body: (UnsafePointer<OnigUChar>, Int) throws -> Result) rethrows -> Result {
+    internal func withOnigurumaString<Result>(requestedEncoding: Encoding, _ body: (UnsafePointer<OnigUChar>, Int) throws -> Result) rethrows -> Result {
         let val = self.first!
         let bytes = [val]
         return try bytes.withUnsafeBufferPointer { bufPtr in
@@ -127,7 +127,7 @@ extension CollectionOfOne : OnigurumaString where Element == UInt8 {
 }
 
 extension Slice : OnigurumaString where Base : OnigurumaString {
-    public func withOnigurumaString<Result>(requestedEncoding: Encoding, _ body: (UnsafePointer<OnigUChar>, Int) throws -> Result) rethrows -> Result {
+    internal func withOnigurumaString<Result>(requestedEncoding: Encoding, _ body: (UnsafePointer<OnigUChar>, Int) throws -> Result) rethrows -> Result {
         let offset = base.distance(from: base.startIndex, to: self.startIndex)
         return try base.withOnigurumaString(requestedEncoding: requestedEncoding) { (baseStart, baseCount) in
             try body(baseStart.advanced(by: offset), self.count)
@@ -136,7 +136,7 @@ extension Slice : OnigurumaString where Base : OnigurumaString {
 }
 
 extension Data: OnigurumaString { 
-    public func withOnigurumaString<Result>(requestedEncoding: Encoding, _ body: (UnsafePointer<OnigUChar>, Int) throws -> Result) rethrows -> Result {
+    internal func withOnigurumaString<Result>(requestedEncoding: Encoding, _ body: (UnsafePointer<OnigUChar>, Int) throws -> Result) rethrows -> Result {
         return try self.withUnsafeBytes { bufPtr in
             try OnigurumaInputAdapters.withRawBytes(bufPtr, body: body)
         }
@@ -144,20 +144,20 @@ extension Data: OnigurumaString {
 }
 
 extension String.UTF16View: OnigurumaString {
-    public func withOnigurumaString<Result>(requestedEncoding: Encoding, _ body: (UnsafePointer<OnigUChar>, Int) throws -> Result) rethrows -> Result {
+    internal func withOnigurumaString<Result>(requestedEncoding: Encoding, _ body: (UnsafePointer<OnigUChar>, Int) throws -> Result) rethrows -> Result {
         try OnigurumaInputAdapters.withUTF16CodeUnits(self, body: body)
     }
 }
 
 extension Substring.UTF16View: OnigurumaString {
-    public func withOnigurumaString<Result>(requestedEncoding: Encoding, _ body: (UnsafePointer<OnigUChar>, Int) throws -> Result) rethrows -> Result {
+    internal func withOnigurumaString<Result>(requestedEncoding: Encoding, _ body: (UnsafePointer<OnigUChar>, Int) throws -> Result) rethrows -> Result {
         try OnigurumaInputAdapters.withUTF16CodeUnits(self, body: body)
     }
 }
 
 // Special handling for Array to avoid conflicts with generic collection conformances.
 extension Array: OnigurumaString where Element == UInt8 {
-    public func withOnigurumaString<Result>(requestedEncoding: Encoding, _ body: (UnsafePointer<OnigUChar>, Int) throws -> Result) rethrows -> Result {
+    internal func withOnigurumaString<Result>(requestedEncoding: Encoding, _ body: (UnsafePointer<OnigUChar>, Int) throws -> Result) rethrows -> Result {
         return try self.withUnsafeBytes { bufPtr in
             try OnigurumaInputAdapters.withRawBytes(bufPtr, body: body)
         }
@@ -181,12 +181,45 @@ public struct UTF16CodeUnitBuffer: OnigurumaString, Sendable {
         self.codeUnits = ContiguousArray(codeUnits)
     }
 
-    public func withOnigurumaString<Result>(
+    internal func withOnigurumaString<Result>(
         requestedEncoding: Encoding,
         _ body: (UnsafePointer<OnigUChar>, Int) throws -> Result
     ) rethrows -> Result {
         try codeUnits.withUnsafeBufferPointer { buffer in
             try OnigurumaInputAdapters.withUTF16BufferPointer(buffer, body: body)
         }
+    }
+}
+
+internal func withSupportedOnigurumaInput<Result>(
+    _ input: Any,
+    requestedEncoding: Encoding,
+    _ body: (any OnigurumaString) throws -> Result
+) throws -> Result {
+    switch input {
+    case let value as String:
+        return try body(value)
+    case let value as Substring:
+        return try body(value)
+    case let value as Data:
+        return try body(value)
+    case let value as [UInt8]:
+        return try body(value)
+    case let value as ArraySlice<UInt8>:
+        return try body(value)
+    case let value as ContiguousArray<UInt8>:
+        return try body(value)
+    case let value as CollectionOfOne<UInt8>:
+        return try body(value)
+    case let value as String.UTF16View:
+        return try body(value)
+    case let value as Substring.UTF16View:
+        return try body(value)
+    case let value as UTF16CodeUnitBuffer:
+        return try body(value)
+    case let value as any OnigurumaString:
+        return try body(value)
+    default:
+        throw OnigError.invalidArgument
     }
 }
