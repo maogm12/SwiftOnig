@@ -46,6 +46,21 @@ struct MatchTests {
         #expect(try regex.wholeStringMatch(in: "123abc") == nil)
     }
 
+    @Test("String and Substring expose native-style match APIs")
+    func stringNativeEntryPoints() async throws {
+        let regex = try await Regex(pattern: #"(?<word>\w+)-(?<digits>\d+)"#)
+        let input = "prefix item-123 suffix"
+        let slice = input[input.index(input.startIndex, offsetBy: 7)...]
+
+        let stringMatch = try #require(try input.firstMatch(of: regex))
+        #expect(stringMatch.substring == "item-123")
+        #expect(stringMatch.captures(named: "digits").map(\.substring) == ["123"])
+
+        let sliceMatch = try #require(try slice.prefixMatch(of: regex))
+        #expect(sliceMatch.substring == "item-123")
+        #expect(try input.wholeMatch(of: regex) == nil)
+    }
+
     @Test("Regex.Match maps UTF-16 regex results back to String indices")
     func utf16BackedMatch() async throws {
         let regex = try await Regex(patternBytes: Self.utf16LittleEndianBytes("(你好)(世界)"),
