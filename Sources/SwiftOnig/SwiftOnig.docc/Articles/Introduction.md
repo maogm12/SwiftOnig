@@ -15,8 +15,11 @@ While Swift provides built-in regular expression support, SwiftOnig offers sever
 ### Regex
 The core struct used to compile and execute regular expressions. This is the main entry point for most users.
 
+### Regex.Match
+Represents the string-native result of a match, including the whole-match substring, capture groups, and `String.Index` ranges.
+
 ### Region
-Represents the result of a match, including all capture groups and their ranges. Use `decodedString()`, `range(in:)`, and `substring(in:)` for common string-backed workflows.
+Represents the raw encoded result of a match. Use it for byte-oriented and advanced encoding workflows.
 
 ### Encoding
 Wraps Oniguruma's character encoding system, allowing searches in various byte formats. Most users can ignore this until they need non-UTF byte data or explicit UTF-16 control.

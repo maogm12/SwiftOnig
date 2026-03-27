@@ -16,13 +16,13 @@ Task {
         let str = "aaabbbbcc";
 
         let regex: Regex
-        let region: Region?
+        let match: Regex.Match?
         
         regex = try await Regex(patternBytes: pattern.utf8,
                           encoding: await .ascii)
-        region = try regex.firstMatch(in: str)
+        match = try str.firstMatch(of: regex)
 
-        guard let region = region else {
+        guard let match = match else {
             print("No match")
             await uninitialize()
             exit(EXIT_SUCCESS)
@@ -31,10 +31,10 @@ Task {
         print("Number of names: \(regex.namedCaptureGroupsCount)")
         regex.enumerateCaptureGroupNames { (name, groupNumber) -> Bool in
             for groupNumber in groupNumber {
-                let backRefGroupNumber = region.backReferencedGroupNumber(of: name)
-                if let subRegion = region[groupNumber] {
+                let captures = match.captures(named: name)
+                if let capture = match[groupNumber] {
                     print("\(name) (\(groupNumber)): ", terminator: "")
-                    print("\(subRegion.range) \(backRefGroupNumber == groupNumber ? "*" : "")")
+                    print("\(capture.range) \(captures.contains { $0.groupNumber == groupNumber } ? "*" : "")")
                 }
             }
 

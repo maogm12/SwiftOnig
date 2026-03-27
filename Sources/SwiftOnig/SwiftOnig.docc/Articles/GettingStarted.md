@@ -25,13 +25,13 @@ let regex = try await Regex(pattern: pattern)
 
 ### 2. Perform a Match
 
-Use the `firstMatch(in:)` method to find the first occurrence of the pattern in a string.
+Use the string-native `firstMatch(of:)` method to find the first occurrence of the pattern in a string.
 
 ```swift
 let input = "The price is 42 dollars."
-if let region = try regex.firstMatch(in: input) {
-    print("Matched: \(region.decodedString()!)") // "42"
-    print("Range in input: \(region.range(in: input)!)")
+if let match = try input.firstMatch(of: regex) {
+    print("Matched: \(match.substring)") // "42"
+    print("Range in input: \(match.range)")
 }
 ```
 

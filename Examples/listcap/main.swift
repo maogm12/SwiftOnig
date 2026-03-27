@@ -14,17 +14,17 @@ func execute(str: String, pattern: String, syntax: Syntax, options: Regex.Option
     print("String : \"\(str)\"")
 
     let regex = try await Regex(pattern: pattern, options: options, syntax: syntax)
-    guard let region = try regex.firstMatch(in: str) else {
+    guard let match = try str.firstMatch(of: regex) else {
         print("No match")
         return
     }
 
-    for (index, subRegion) in region.enumerated() {
-        guard let subRegion = subRegion else {
+    for (index, capture) in match.enumerated() {
+        guard let capture = capture else {
             print("Capture \(index) ==> nil")
             continue
         }
-        print("Capture \(index) ==> range: \(subRegion.range), content: \(subRegion.decodedString()!)")
+        print("Capture \(index) ==> range: \(capture.range), content: \(capture.substring)")
     }
 }
 

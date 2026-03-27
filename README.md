@@ -45,10 +45,9 @@ let regex = try await Regex(pattern: #"\d+"#)
 let input = "The answer is 42."
 
 // Find the first match
-if let region = try regex.firstMatch(in: input) {
-    print("Found: \(region.decodedString()!)") // "42"
-    print("Range: \(region.range)")   // 14..<16
-    print("String range: \(region.range(in: input)!)")
+if let match = try input.firstMatch(of: regex) {
+    print("Found: \(match.substring)") // "42"
+    print("String range: \(match.range)")
 }
 ```
 
@@ -90,9 +89,9 @@ if let match = "The item ID-12345! is ready.".firstMatch(of: swiftRegex) {
 
 ```swift
 let regex = try await Regex(pattern: #"(\w+):\s+(\d+)"#)
-if let region = try regex.firstMatch(in: "Age: 25") {
-    print("Field: \(region[1]!.decodedString()!)") // "Age"
-    print("Value: \(region[2]!.decodedString()!)") // "25"
+if let match = try "Age: 25".firstMatch(of: regex) {
+    print("Field: \(match[1]!.substring)") // "Age"
+    print("Value: \(match[2]!.substring)") // "25"
 }
 ```
 
@@ -131,7 +130,7 @@ if let region = try regex.firstMatch(in: preparedInput) {
 }
 ```
 
-This makes the UTF-16 materialization behavior explicit and avoids repeating that preparation work in application code.
+This makes the UTF-16 materialization behavior explicit and avoids repeating that preparation work in application code. For string-backed workflows, prefer `input.firstMatch(of: regex)` and `Regex.Match`.
 
 ### Runtime Lifecycle APIs
 
