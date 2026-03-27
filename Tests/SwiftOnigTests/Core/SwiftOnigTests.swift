@@ -276,7 +276,7 @@ struct SwiftOnigTests {
         }
 
         let regex = try await Regex(pattern: #"\Aa(?{swift-content}X)b\z"#)
-        #expect(try regex.firstMatch(in: "ab", matchParam: matchParam) != nil)
+        #expect(try "ab".firstMatch(of: regex, matchParam: matchParam) != nil)
         #expect(box.payloads.contains("payload"))
     }
 }

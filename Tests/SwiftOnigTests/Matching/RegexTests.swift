@@ -42,13 +42,13 @@ struct RegexTests {
         let naiveEmailReg = try await Regex(pattern: #"\w+@\w+\.com"#)
         let target = "Naive email: test@example.com. :)"
 
-        guard let region = try naiveEmailReg.firstMatch(in: target) else {
+        guard let match = try target.firstMatch(of: naiveEmailReg) else {
             Issue.record("Failed to match email")
             return
         }
-        #expect(region.count == 1)
-        #expect(region[0]?.range == 13..<29)
-        #expect(region[0]?.decodedString() == "test@example.com")
+        #expect(match.count == 1)
+        #expect(match.substring == "test@example.com")
+        #expect(target[match.range] == "test@example.com")
         
         let gb18030Bytes: [UInt8] = [196, 227, 186, 195] // 你好
         let regGb18030 = try await Regex(patternBytes: gb18030Bytes, encoding: .gb18030)
@@ -90,7 +90,7 @@ struct RegexTests {
         }
 
         await expectRetryLimitError {
-            _ = try regex.firstMatch(in: target, matchParam: matchParam)
+            _ = try target.firstMatch(of: regex, matchParam: matchParam)
         }
     }
 
@@ -108,8 +108,8 @@ struct RegexTests {
         #expect(try !asciiIgnoreCase.matches("É"))
 
         let wholeMatchRegex = try await Regex(pattern: #"foo"#)
-        #expect(try wholeMatchRegex.firstMatch(in: "foo bar", options: .matchWholeString) == nil)
-        #expect(try wholeMatchRegex.firstMatch(in: "foo", options: .matchWholeString) != nil)
+        #expect(try wholeMatchRegex.firstStringMatch(in: "foo bar", options: .matchWholeString) == nil)
+        #expect(try wholeMatchRegex.firstStringMatch(in: "foo", options: .matchWholeString) != nil)
 
         #expect(Regex.SearchOptions.callbackEachMatch.rawValue == ONIG_OPTION_CALLBACK_EACH_MATCH)
         #expect(Regex.Options.digitIsASCII.rawValue == ONIG_OPTION_DIGIT_IS_ASCII)
@@ -125,10 +125,10 @@ struct RegexTests {
         var matchParam = MatchParam()
         matchParam.setRetryLimitInSearch(to: 1_000)
 
-        let full = try regex.wholeMatch(in: "foo", matchParam: matchParam)
-        #expect(full?[0]?.decodedString() == "foo")
-        #expect(try regex.wholeMatch(in: "foo bar") == nil)
-        #expect(try regex.wholeMatch(in: "bar foo") == nil)
+        let full = try "foo".wholeMatch(of: regex, matchParam: matchParam)
+        #expect(full?.substring == "foo")
+        #expect(try "foo bar".wholeMatch(of: regex) == nil)
+        #expect(try "bar foo".wholeMatch(of: regex) == nil)
     }
     
     @Test("Enumerate Matches")

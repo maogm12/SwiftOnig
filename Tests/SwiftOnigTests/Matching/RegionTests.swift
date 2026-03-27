@@ -12,6 +12,10 @@ import OnigurumaC
 
 @Suite("Region Tests")
 struct RegionTests {
+    private static func utf8Bytes(_ string: String) -> [UInt8] {
+        Array(string.utf8)
+    }
+
     private static func utf16LittleEndianBytes(_ string: String) -> [UInt8] {
         string.utf16.flatMap { codeUnit in
             [UInt8(codeUnit & 0xff), UInt8(codeUnit >> 8)]
@@ -40,18 +44,18 @@ struct RegionTests {
     @Test("Matched string extraction")
     func string() async throws {
         let regex1 = try await Regex(pattern: "a+")
-        let r1 = try regex1.firstMatch(in: "aaabbb")!
+        let r1 = try regex1.firstMatch(in: Self.utf8Bytes("aaabbb"))!
         #expect(r1.decodedString() == "aaa")
         
         let regex2 = try await Regex(pattern: "b+")
-        let r2 = try regex2.firstMatch(in: "aaabbb")!
+        let r2 = try regex2.firstMatch(in: Self.utf8Bytes("aaabbb"))!
         #expect(r2.decodedString() == "bbb")
     }
 
     @Test("Collection properties")
     func collection() async throws {
         let regex = try await Regex(pattern: "(a+)(b+)(c+)")
-        let r1 = try regex.firstMatch(in: "aaabbbccc")!
+        let r1 = try regex.firstMatch(in: Self.utf8Bytes("aaabbbccc"))!
         #expect(r1.count == 4)
         #expect(r1.range == 0..<9)
         #expect(r1.startIndex == 0)
@@ -61,7 +65,7 @@ struct RegionTests {
     @Test("Single Range")
     func singleRange() async throws {
         let regex = try await Regex(pattern: "(a+)(b+)(c+)")
-        let r1 = try regex.firstMatch(in: "aaabbbccc")!
+        let r1 = try regex.firstMatch(in: Self.utf8Bytes("aaabbbccc"))!
         #expect(r1[0]?.range == 0..<9)
         #expect(r1[1]?.range == 0..<3)
         #expect(r1[2]?.range == 3..<6)
@@ -72,7 +76,7 @@ struct RegionTests {
     func multiRanges() async throws {
         let reg = try await Regex(pattern: "(你好)(世界)")
         let target = "你好世界"
-        let r1 = try reg.firstMatch(in: target)!
+        let r1 = try reg.firstMatch(in: Self.utf8Bytes(target))!
         #expect(r1[0]?.range == 0..<12)
         #expect(r1[1]?.range == 0..<6)
         #expect(r1[2]?.range == 6..<12)
@@ -82,7 +86,7 @@ struct RegionTests {
     func stringRangeHelpersUTF8() async throws {
         let input = "prefix 你好世界 suffix"
         let regex = try await Regex(pattern: "(你好)(世界)")
-        let region = try regex.firstMatch(in: input)!
+        let region = try regex.firstMatch(in: Self.utf8Bytes(input))!
 
         #expect(region.substring(in: input) == "你好世界")
         #expect(region[1]?.substring(in: input) == "你好")
@@ -100,7 +104,7 @@ struct RegionTests {
         let patternBytes = Self.utf16LittleEndianBytes("(你好)(世界)")
         let input = "prefix 你好世界 suffix"
         let regex = try await Regex(patternBytes: patternBytes, encoding: .utf16LittleEndian)
-        let region = try regex.firstMatch(in: input)!
+        let region = try regex.firstMatch(in: UTF16CodeUnitBuffer(input.utf16))!
 
         #expect(region.substring(in: input) == "你好世界")
         #expect(region[1]?.substring(in: input) == "你好")
@@ -133,7 +137,7 @@ struct RegionTests {
     @Test("Iteration")
     func iterator() async throws {
         let regex = try await Regex(pattern: "(a+)(b+)(c+)")
-        let r1 = try regex.firstMatch(in: "aaabbbccc")!
+        let r1 = try regex.firstMatch(in: Self.utf8Bytes("aaabbbccc"))!
         var count = 0
         for subregion in r1 {
             #expect(subregion != nil)
@@ -145,7 +149,7 @@ struct RegionTests {
     @Test("Named Capture Group Lookups")
     func namedCaptureGroups() async throws {
         let regex = try await Regex(pattern: #"(?<foo>a*)(?<bar>b*)(?<baz>c*)"#)
-        let region = try regex.firstMatch(in: "aaabbbbcc")!
+        let region = try regex.firstMatch(in: Self.utf8Bytes("aaabbbbcc"))!
         
         let fooRegions = region["foo"]
         #expect(fooRegions.count == 1)
@@ -164,12 +168,12 @@ struct RegionTests {
     @Test("Nil Subregions")
     func nilSubregion() async throws {
         let reg = try await Regex(pattern: "(a)|(b)")
-        let r1 = try reg.firstMatch(in: "a")!
+        let r1 = try reg.firstMatch(in: Self.utf8Bytes("a"))!
         #expect(r1[0] != nil)
         #expect(r1[1] != nil)
         #expect(r1[2] == nil)
         
-        let r2 = try reg.firstMatch(in: "b")!
+        let r2 = try reg.firstMatch(in: Self.utf8Bytes("b"))!
         #expect(r2[0] != nil)
         #expect(r2[1] == nil)
         #expect(r2[2] != nil)
@@ -190,7 +194,7 @@ struct RegionTests {
                                options: .none,
                                syntax: syntax)
         
-        let region = try regex.firstMatch(in: "abab")
+        let region = try regex.firstMatch(in: Self.utf8Bytes("abab"))
         #expect(region?.captureTree != nil)
         guard let tree = region?.captureTree else { return }
 

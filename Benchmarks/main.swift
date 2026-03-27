@@ -194,12 +194,12 @@ func runBenchmarks() async throws {
                  name: "First match on short input",
                  iterations: 1_000_000) {
             for _ in 0..<1_000_000 {
-                _ = try onigEmail.firstMatch(in: emailInput)
+                _ = try emailInput.firstMatch(of: onigEmail)
             }
         },
         swiftOnig: {
             for _ in 0..<1_000_000 {
-                _ = try onigEmail.firstMatch(in: emailInput)
+                _ = try emailInput.firstMatch(of: onigEmail)
             }
         },
         nsRegularExpression: {
@@ -220,12 +220,12 @@ func runBenchmarks() async throws {
                  name: "First match on large input",
                  iterations: 20_000) {
             for _ in 0..<20_000 {
-                _ = try onigEmail.firstMatch(in: largeEmailInput)
+                _ = try largeEmailInput.firstMatch(of: onigEmail)
             }
         },
         swiftOnig: {
             for _ in 0..<20_000 {
-                _ = try onigEmail.firstMatch(in: largeEmailInput)
+                _ = try largeEmailInput.firstMatch(of: onigEmail)
             }
         },
         nsRegularExpression: {
@@ -250,12 +250,12 @@ func runBenchmarks() async throws {
                  name: "Unicode capture match",
                  iterations: 1_000_000) {
             for _ in 0..<1_000_000 {
-                _ = try onigUnicode.firstMatch(in: unicodeInput)
+                _ = try unicodeInput.firstMatch(of: onigUnicode)
             }
         },
         swiftOnig: {
             for _ in 0..<1_000_000 {
-                _ = try onigUnicode.firstMatch(in: unicodeInput)
+                _ = try unicodeInput.firstMatch(of: onigUnicode)
             }
         },
         nsRegularExpression: {
@@ -285,12 +285,12 @@ func runBenchmarks() async throws {
                  name: "UTF-16 smart match from String",
                  iterations: 100_000) {
             for _ in 0..<100_000 {
-                _ = try utf16Regex.firstMatch(in: utf16Input)
+                _ = try utf16Input.firstMatch(of: utf16Regex)
             }
         },
         swiftOnig: {
             for _ in 0..<100_000 {
-                _ = try utf16Regex.firstMatch(in: utf16Input)
+                _ = try utf16Input.firstMatch(of: utf16Regex)
             }
         },
         nsRegularExpression: {
@@ -377,7 +377,7 @@ func runBenchmarks() async throws {
                  name: "SwiftOnig UTF-16 mismatch from String",
                  iterations: 100_000) {
             for _ in 0..<100_000 {
-                _ = try utf16Regex.firstMatch(in: utf16MissInput)
+                _ = try utf16MissInput.firstMatch(of: utf16Regex)
             }
         }
     )
@@ -397,7 +397,7 @@ func runBenchmarks() async throws {
                  name: "SwiftOnig UTF-16 wholeMatch from String",
                  iterations: 100_000) {
             for _ in 0..<100_000 {
-                _ = try utf16Regex.wholeMatch(in: utf16Input)
+                _ = try utf16Input.wholeMatch(of: utf16Regex)
             }
         }
     )
@@ -407,8 +407,8 @@ func runBenchmarks() async throws {
                 name: "SwiftOnig UTF-16 firstMatch plus region.decodedString()",
                  iterations: 100_000) {
             for _ in 0..<100_000 {
-                let region = try utf16Regex.firstMatch(in: utf16Input)
-                _ = region?.decodedString()
+                let match = try utf16Input.firstMatch(of: utf16Regex)
+                _ = match?.substring
             }
         }
     )

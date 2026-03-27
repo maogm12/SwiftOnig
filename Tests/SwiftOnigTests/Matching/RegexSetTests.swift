@@ -81,7 +81,7 @@ struct RegexSetTests {
 
         try regSet.replace(at: 1, with: try await Regex(pattern: "bb"))
         #expect(try regSet[1].matches("bb"))
-        #expect(try regSet[1].wholeMatch(in: "bbb") == nil)
+        #expect(try "bbb".wholeMatch(of: regSet[1]) == nil)
 
         try regSet.remove(at: 0)
         #expect(regSet.count == 2)
@@ -104,9 +104,9 @@ struct RegexSetTests {
         #expect(try copy.firstSetMatch(in: "ccc") == nil)
 
         try original.replace(at: 0, with: try await Regex(pattern: "aa"))
-        #expect(try original[0].wholeMatch(in: "aa") != nil)
-        #expect(try copy[0].wholeMatch(in: "a") != nil)
-        #expect(try original[0].wholeMatch(in: "a") == nil)
+        #expect(try "aa".wholeMatch(of: original[0]) != nil)
+        #expect(try "a".wholeMatch(of: copy[0]) != nil)
+        #expect(try "a".wholeMatch(of: original[0]) == nil)
 
         try original.remove(at: 1)
         #expect(original.count == 2)
