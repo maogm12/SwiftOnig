@@ -1,0 +1,175 @@
+import Foundation
+
+extension Regex {
+    public struct Match: Sendable, RandomAccessCollection {
+        public typealias Index = Int
+        public typealias Element = Capture?
+
+        public struct Capture: Sendable {
+            public let groupNumber: Int
+            public let range: Range<String.Index>
+            public let substring: Substring
+        }
+
+        private let input: Substring
+        private let regex: Regex
+        private let captures: [Capture?]
+
+        internal init(region: Region, input: Substring) throws {
+            self.input = input
+            self.regex = region.regex
+            self.captures = try (0..<region.count).map { groupNumber -> Capture? in
+                guard let subregion = region[groupNumber] else {
+                    return nil
+                }
+
+                guard let range = subregion.range(in: input) else {
+                    throw OnigError.stringIndexMappingFailed
+                }
+
+                return Capture(groupNumber: groupNumber,
+                               range: range,
+                               substring: input[range])
+            }
+        }
+
+        public var startIndex: Int {
+            captures.startIndex
+        }
+
+        public var endIndex: Int {
+            captures.endIndex
+        }
+
+        public var count: Int {
+            captures.count
+        }
+
+        public var range: Range<String.Index> {
+            precondition(count > 0, "Empty match")
+            guard let capture = captures[0] else {
+                preconditionFailure("Whole match capture missing")
+            }
+            return capture.range
+        }
+
+        public var substring: Substring {
+            precondition(count > 0, "Empty match")
+            guard let capture = captures[0] else {
+                preconditionFailure("Whole match capture missing")
+            }
+            return capture.substring
+        }
+
+        public subscript(position: Int) -> Capture? {
+            captures[position]
+        }
+
+        public func captures(named name: String) -> [Capture] {
+            regex.captureGroupNumbers(for: name).compactMap { groupNumber in
+                guard groupNumber >= 0 && groupNumber < captures.count else {
+                    return nil
+                }
+                return captures[groupNumber]
+            }
+        }
+    }
+}
+
+extension Regex {
+    public func firstStringMatch(in input: String, options: SearchOptions = .none) throws -> Match? {
+        guard let region = try firstMatch(in: input, options: options) else {
+            return nil
+        }
+
+        return try Match(region: region, input: input[...])
+    }
+
+    public func firstStringMatch(in input: String, options: SearchOptions = .none, matchParam: MatchParam) throws -> Match? {
+        guard let region = try firstMatch(in: input, options: options, matchParam: matchParam) else {
+            return nil
+        }
+
+        return try Match(region: region, input: input[...])
+    }
+
+    public func firstStringMatch(in input: Substring, options: SearchOptions = .none) throws -> Match? {
+        guard let region = try firstMatch(in: input, options: options) else {
+            return nil
+        }
+
+        return try Match(region: region, input: input)
+    }
+
+    public func firstStringMatch(in input: Substring, options: SearchOptions = .none, matchParam: MatchParam) throws -> Match? {
+        guard let region = try firstMatch(in: input, options: options, matchParam: matchParam) else {
+            return nil
+        }
+
+        return try Match(region: region, input: input)
+    }
+
+    public func prefixStringMatch(in input: String, options: SearchOptions = .none) throws -> Match? {
+        guard let region = try firstMatch(in: input, options: options), region.range.lowerBound == 0 else {
+            return nil
+        }
+
+        return try Match(region: region, input: input[...])
+    }
+
+    public func prefixStringMatch(in input: String, options: SearchOptions = .none, matchParam: MatchParam) throws -> Match? {
+        guard let region = try firstMatch(in: input, options: options, matchParam: matchParam), region.range.lowerBound == 0 else {
+            return nil
+        }
+
+        return try Match(region: region, input: input[...])
+    }
+
+    public func prefixStringMatch(in input: Substring, options: SearchOptions = .none) throws -> Match? {
+        guard let region = try firstMatch(in: input, options: options), region.range.lowerBound == 0 else {
+            return nil
+        }
+
+        return try Match(region: region, input: input)
+    }
+
+    public func prefixStringMatch(in input: Substring, options: SearchOptions = .none, matchParam: MatchParam) throws -> Match? {
+        guard let region = try firstMatch(in: input, options: options, matchParam: matchParam), region.range.lowerBound == 0 else {
+            return nil
+        }
+
+        return try Match(region: region, input: input)
+    }
+
+    public func wholeStringMatch(in input: String, options: SearchOptions = .none) throws -> Match? {
+        guard let region = try wholeMatch(in: input, options: options) else {
+            return nil
+        }
+
+        return try Match(region: region, input: input[...])
+    }
+
+    public func wholeStringMatch(in input: String, options: SearchOptions = .none, matchParam: MatchParam) throws -> Match? {
+        guard let region = try wholeMatch(in: input, options: options, matchParam: matchParam) else {
+            return nil
+        }
+
+        return try Match(region: region, input: input[...])
+    }
+
+    public func wholeStringMatch(in input: Substring, options: SearchOptions = .none) throws -> Match? {
+        guard let region = try wholeMatch(in: input, options: options) else {
+            return nil
+        }
+
+        return try Match(region: region, input: input)
+    }
+
+    public func wholeStringMatch(in input: Substring, options: SearchOptions = .none, matchParam: MatchParam) throws -> Match? {
+        guard let region = try wholeMatch(in: input, options: options, matchParam: matchParam) else {
+            return nil
+        }
+
+        return try Match(region: region, input: input)
+    }
+}

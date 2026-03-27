@@ -27,6 +27,7 @@ public enum OnigError: Error, Equatable, Sendable {
 
     /* general error */
     case invalidArgument
+    case stringIndexMappingFailed
 
     /* syntax error */
     case endPatternAtLeftBrace
@@ -240,6 +241,8 @@ extension OnigError {
 
         /* general error */
         case .invalidArgument:
+            return ONIGERR_INVALID_ARGUMENT
+        case .stringIndexMappingFailed:
             return ONIGERR_INVALID_ARGUMENT
 
         /* syntax error */

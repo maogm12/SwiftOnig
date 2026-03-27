@@ -1,0 +1,60 @@
+import Testing
+@testable import SwiftOnig
+
+@Suite("Match Tests")
+struct MatchTests {
+    private static func utf16LittleEndianBytes(_ string: String) -> [UInt8] {
+        string.utf16.flatMap { codeUnit in
+            [UInt8(codeUnit & 0xff), UInt8(codeUnit >> 8)]
+        }
+    }
+
+    @Test("Regex.Match wraps String search results")
+    func firstStringMatch() async throws {
+        let regex = try await Regex(pattern: #"(?<word>\w+)-(?<digits>\d+)"#)
+        let input = "prefix item-123 suffix"
+
+        let match = try #require(try regex.firstStringMatch(in: input))
+        #expect(match.range == input.range(of: "item-123"))
+        #expect(match.substring == "item-123")
+        #expect(match.count == 3)
+        #expect(match[0]?.substring == match.substring)
+        #expect(match[1]?.substring == "item")
+        #expect(match[2]?.substring == "123")
+        #expect(match.captures(named: "word").map(\.substring) == ["item"])
+        #expect(match.captures(named: "digits").map(\.substring) == ["123"])
+    }
+
+    @Test("Regex.Match supports Substring inputs")
+    func substringInput() async throws {
+        let regex = try await Regex(pattern: #"\d+"#)
+        let input = "aa11bb22"
+        let slice = input[input.index(input.startIndex, offsetBy: 2)...]
+
+        let match = try #require(try regex.firstStringMatch(in: slice))
+        #expect(match.substring == "11")
+        #expect(match.range.lowerBound == slice.startIndex)
+    }
+
+    @Test("Prefix and whole string match helpers")
+    func prefixAndWholeStringMatch() async throws {
+        let regex = try await Regex(pattern: #"\d+"#)
+
+        #expect(try regex.prefixStringMatch(in: "123abc")?.substring == "123")
+        #expect(try regex.prefixStringMatch(in: "abc123") == nil)
+        #expect(try regex.wholeStringMatch(in: "123")?.substring == "123")
+        #expect(try regex.wholeStringMatch(in: "123abc") == nil)
+    }
+
+    @Test("Regex.Match maps UTF-16 regex results back to String indices")
+    func utf16BackedMatch() async throws {
+        let regex = try await Regex(patternBytes: Self.utf16LittleEndianBytes("(你好)(世界)"),
+                                    encoding: .utf16LittleEndian)
+        let input = "prefix 你好世界 suffix"
+
+        let match = try #require(try regex.firstStringMatch(in: input))
+        #expect(match.substring == "你好世界")
+        #expect(match[1]?.substring == "你好")
+        #expect(match[2]?.substring == "世界")
+    }
+}
