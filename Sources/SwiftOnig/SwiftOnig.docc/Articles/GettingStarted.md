@@ -49,3 +49,17 @@ if let region = try await regex.firstMatch(in: input) {
 ### 4. Advanced Lifecycle Control
 
 Most applications do not need to call `uninitialize()`. It is an advanced lifecycle API for cases where you explicitly want to tear down the shared runtime, and previously created regex objects must not be reused after that point.
+
+## UTF-16 Input Performance
+
+When using a UTF-16 encoded regex, `String`, `Substring`, `String.UTF16View`, and `Substring.UTF16View` may require temporary UTF-16 materialization for each call.
+
+If repeated UTF-16 searches are performance-sensitive, prepare the input explicitly once:
+
+```swift
+let patternData = Array("你好".utf16).withUnsafeBufferPointer { Data(buffer: $0) }
+let regex = try await Regex(patternBytes: patternData, encoding: .utf16LittleEndian)
+
+let preparedInput = UTF16CodeUnitBuffer("Hello, 你好!".utf16)
+let region = try await regex.firstMatch(in: preparedInput)
+```

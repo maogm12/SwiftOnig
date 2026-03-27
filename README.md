@@ -103,6 +103,25 @@ if let region = try await regex.firstMatch(in: input) {
 }
 ```
 
+### Repeated UTF-16 Searches
+
+When a regex is compiled with a UTF-16 encoding, passing `String`, `Substring`, `String.UTF16View`, or `Substring.UTF16View` may require SwiftOnig to materialize a temporary contiguous UTF-16 buffer for that call.
+
+For repeated searches against the same UTF-16 data, make that buffer explicit once and reuse it:
+
+```swift
+let utf16Pattern = Array("你好".utf16).withUnsafeBufferPointer { Data(buffer: $0) }
+let regex = try await Regex(patternBytes: utf16Pattern, encoding: .utf16LittleEndian)
+
+let preparedInput = UTF16CodeUnitBuffer("Hello, 你好!".utf16)
+
+if let region = try await regex.firstMatch(in: preparedInput) {
+    print(region.range) // 14..<18
+}
+```
+
+This makes the UTF-16 materialization behavior explicit and avoids repeating that preparation work in application code.
+
 ## Documentation
 
 For detailed guides and API documentation, build the DocC target:
