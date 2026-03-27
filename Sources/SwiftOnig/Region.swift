@@ -119,7 +119,7 @@ public struct Region: Sendable {
      */
     public var range: Range<Int> {
         precondition(count > 0, "Empty region")
-        return self[0]!.range
+        return _activeRange(of: 0)
     }
 
     /**
@@ -129,7 +129,7 @@ public struct Region: Sendable {
      */
     public var string: String? {
         precondition(count > 0, "Empty region")
-        return self[0]!.string
+        return _substring(in: _activeRange(of: 0))
     }
     
     /**
@@ -161,8 +161,17 @@ public struct Subregion: Sendable {
     /// Get the range of the this capture group.
     public let range: Range<Int>
 
+    internal let regex: Regex
+    internal let str: any OnigurumaString
+
     /// The matched string of this capture group.
-    public let string: String?
+    public var string: String? {
+        str.withOnigurumaString(requestedEncoding: regex.encoding) { start, _ in
+            String(bytes: UnsafeBufferPointer(start: start.advanced(by: range.lowerBound),
+                                             count: range.count),
+                   encoding: regex.encoding.stringEncoding)
+        }
+    }
 }
 
 extension Region: RandomAccessCollection {
@@ -184,17 +193,10 @@ extension Region: RandomAccessCollection {
         precondition(groupNumber >= 0 && groupNumber < count, "Group number \(groupNumber) out of range")
         
         if _isGroupActive(groupNumber: groupNumber) {
-            let begin = Int(rawValue.pointee.beg[groupNumber])
-            let end = Int(rawValue.pointee.end[groupNumber])
-            let range = begin ..< end
-            
-            let subString = str.withOnigurumaString(requestedEncoding: regex.encoding) { start, _ in
-                String(bytes: UnsafeBufferPointer(start: start.advanced(by: range.lowerBound),
-                                                  count: range.count),
-                       encoding: regex.encoding.stringEncoding)
-            }
-            
-            return Subregion(groupNumber: groupNumber, range: range, string: subString)
+            return Subregion(groupNumber: groupNumber,
+                             range: _activeRange(of: groupNumber),
+                             regex: regex,
+                             str: str)
         } else {
             return nil
         }
@@ -218,5 +220,19 @@ extension Region: RandomAccessCollection {
     
     private func _isGroupActive(groupNumber: Int) -> Bool {
         rawValue.pointee.beg[groupNumber] != ONIG_REGION_NOTPOS
+    }
+
+    private func _activeRange(of groupNumber: Int) -> Range<Int> {
+        let begin = Int(rawValue.pointee.beg[groupNumber])
+        let end = Int(rawValue.pointee.end[groupNumber])
+        return begin..<end
+    }
+
+    private func _substring(in range: Range<Int>) -> String? {
+        str.withOnigurumaString(requestedEncoding: regex.encoding) { start, _ in
+            String(bytes: UnsafeBufferPointer(start: start.advanced(by: range.lowerBound),
+                                             count: range.count),
+                   encoding: regex.encoding.stringEncoding)
+        }
     }
 }

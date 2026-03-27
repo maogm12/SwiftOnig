@@ -7,10 +7,30 @@
 
 import Testing
 import Foundation
+import OnigurumaC
 @testable import SwiftOnig
 
 @Suite("Region Tests")
 struct RegionTests {
+    final class AccessCountingString: @unchecked Sendable, OnigurumaString {
+        private let base: String
+        private let lock = NSLock()
+        private(set) var accessCount = 0
+
+        init(_ base: String) {
+            self.base = base
+        }
+
+        func withOnigurumaString<Result>(requestedEncoding: Encoding, _ body: (_ start: UnsafePointer<OnigUChar>, _ count: Int) throws -> Result) rethrows -> Result {
+            lock.lock()
+            accessCount += 1
+            lock.unlock()
+            return try base.withOnigurumaString(requestedEncoding: requestedEncoding) { start, count in
+                try body(start, count)
+            }
+        }
+    }
+
     @Test("Matched string extraction")
     func string() async throws {
         let r1 = try await Regex(pattern: "a+").firstMatch(in: "aaabbb")!
@@ -46,6 +66,23 @@ struct RegionTests {
         #expect(r1[0]?.range == 0..<12)
         #expect(r1[1]?.range == 0..<6)
         #expect(r1[2]?.range == 6..<12)
+    }
+
+    @Test("Range access does not eagerly decode matched strings")
+    func lazySubregionStringDecoding() async throws {
+        let input = AccessCountingString("aaabbbccc")
+        let regex = try await Regex(pattern: "(a+)(b+)(c+)")
+        let region = try await regex.firstMatch(in: input)!
+
+        #expect(input.accessCount == 1)
+        #expect(region.range == 0..<9)
+        #expect(input.accessCount == 1)
+        #expect(region[1]?.range == 0..<3)
+        #expect(input.accessCount == 1)
+        #expect(region[1]?.string == "aaa")
+        #expect(input.accessCount == 2)
+        #expect(region.string == "aaabbbccc")
+        #expect(input.accessCount == 3)
     }
     
     @Test("Iteration")
