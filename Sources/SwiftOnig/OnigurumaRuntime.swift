@@ -14,18 +14,56 @@ public struct OnigurumaUnicodePropertyRange: Sendable, Equatable {
 }
 
 private enum OnigurumaWarningBridge {
-    nonisolated(unsafe) static var standardHandler: OnigurumaWarningHandler?
-    nonisolated(unsafe) static var verboseHandler: OnigurumaWarningHandler?
+    private final class State: @unchecked Sendable {
+        let lock = NSLock()
+        var standardHandler: OnigurumaWarningHandler?
+        var verboseHandler: OnigurumaWarningHandler?
+    }
+
+    private static let state = State()
+
+    static func setStandardHandler(_ handler: OnigurumaWarningHandler?) {
+        state.lock.lock()
+        state.standardHandler = handler
+        state.lock.unlock()
+    }
+
+    static func setVerboseHandler(_ handler: OnigurumaWarningHandler?) {
+        state.lock.lock()
+        state.verboseHandler = handler
+        state.lock.unlock()
+    }
+
+    static func standard(_ message: String) {
+        state.lock.lock()
+        let handler = state.standardHandler
+        state.lock.unlock()
+        handler?(message)
+    }
+
+    static func verbose(_ message: String) {
+        state.lock.lock()
+        let handler = state.verboseHandler
+        state.lock.unlock()
+        handler?(message)
+    }
+
+    static func reset() {
+        state.lock.lock()
+        state.standardHandler = nil
+        state.verboseHandler = nil
+        state.lock.unlock()
+    }
 }
 
 private func onigurumaStandardWarningCallback(_ message: UnsafePointer<CChar>?) {
     guard let message else { return }
-    OnigurumaWarningBridge.standardHandler?(String(cString: message))
+    OnigurumaWarningBridge.standard(String(cString: message))
 }
 
 private func onigurumaVerboseWarningCallback(_ message: UnsafePointer<CChar>?) {
     guard let message else { return }
-    OnigurumaWarningBridge.verboseHandler?(String(cString: message))
+    OnigurumaWarningBridge.verbose(String(cString: message))
 }
 
 /**
@@ -97,6 +135,15 @@ public actor OnigurumaActor {
 
         userUnicodePropertyStorage.append(storage)
     }
+
+    fileprivate func reset() {
+        _ = onig_end()
+        isLibraryInitialized = false
+        initializedEncodings.removeAll(keepingCapacity: false)
+        userUnicodePropertyStorage.removeAll(keepingCapacity: false)
+        OnigurumaWarningBridge.reset()
+        OnigurumaCalloutRegistry.removeAll()
+    }
 }
 
 internal struct OnigCGlobals {
@@ -166,8 +213,8 @@ public func initialize<S: Sequence>(encodings: S) async throws where S.Element =
  - Note: It is not allowed to use regex objects which created before `uninitialize` call.
  */
 @OnigurumaActor
-public func uninitialize() {
-    _ = onig_end()
+public func uninitialize() async {
+    await OnigurumaActor.shared.reset()
 }
 
 /**
@@ -175,7 +222,7 @@ public func uninitialize() {
  */
 @OnigurumaActor
 public func setWarningHandler(_ handler: OnigurumaWarningHandler?) {
-    OnigurumaWarningBridge.standardHandler = handler
+    OnigurumaWarningBridge.setStandardHandler(handler)
     onig_set_warn_func(onigurumaStandardWarningCallback)
 }
 
@@ -184,7 +231,7 @@ public func setWarningHandler(_ handler: OnigurumaWarningHandler?) {
  */
 @OnigurumaActor
 public func setVerboseWarningHandler(_ handler: OnigurumaWarningHandler?) {
-    OnigurumaWarningBridge.verboseHandler = handler
+    OnigurumaWarningBridge.setVerboseHandler(handler)
     onig_set_verb_warn_func(onigurumaVerboseWarningCallback)
 }
 

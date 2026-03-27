@@ -53,7 +53,30 @@ internal final class MatchParamCalloutState: @unchecked Sendable {
 }
 
 internal enum OnigurumaCalloutRegistry {
-    nonisolated(unsafe) static var namedHandlers = [String: OnigurumaCalloutHandler]()
+    private final class State: @unchecked Sendable {
+        let lock = NSLock()
+        var namedHandlers = [String: OnigurumaCalloutHandler]()
+    }
+
+    private static let state = State()
+
+    static func handler(named name: String) -> OnigurumaCalloutHandler? {
+        state.lock.lock()
+        defer { state.lock.unlock() }
+        return state.namedHandlers[name]
+    }
+
+    static func setHandler(_ handler: @escaping OnigurumaCalloutHandler, for name: String) {
+        state.lock.lock()
+        state.namedHandlers[name] = handler
+        state.lock.unlock()
+    }
+
+    static func removeAll() {
+        state.lock.lock()
+        state.namedHandlers.removeAll(keepingCapacity: false)
+        state.lock.unlock()
+    }
 }
 
 private func decodeCalloutBytes(start: UnsafePointer<OnigUChar>?, end: UnsafePointer<OnigUChar>?, encoding: Encoding) -> String? {
@@ -152,7 +175,7 @@ private func buildCalloutContext(args: OpaquePointer, userData: UnsafeMutableRaw
 }
 
 private func resolveCalloutHandler(for context: OnigurumaCalloutContext, state: MatchParamCalloutState?) -> OnigurumaCalloutHandler? {
-    if let name = context.name, let handler = OnigurumaCalloutRegistry.namedHandlers[name] {
+    if let name = context.name, let handler = OnigurumaCalloutRegistry.handler(named: name) {
         return handler
     }
 
@@ -201,5 +224,5 @@ public func registerCallout(named name: String,
         throw OnigError(onigErrorCode: result)
     }
 
-    OnigurumaCalloutRegistry.namedHandlers[name] = handler
+    OnigurumaCalloutRegistry.setHandler(handler, for: name)
 }
