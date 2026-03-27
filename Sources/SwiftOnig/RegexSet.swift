@@ -202,12 +202,12 @@ public struct RegexSet: Sendable {
     }
 
     /**
-     Search string and return the first matching region.
+     Search string and return the first matching regex/region pair from the set.
      */
-    public func firstMatch<S>(in str: S,
-                              lead: Lead = .positionLead,
-                              options: Regex.SearchOptions = .none,
-                              matchParams: [MatchParam]? = nil
+    public func firstSetMatch<S>(in str: S,
+                                 lead: Lead = .positionLead,
+                                 options: Regex.SearchOptions = .none,
+                                 matchParams: [MatchParam]? = nil
     ) throws -> (regexIndex: Int, region: Region)? {
         guard let firstRegex = regexes.first else {
             return nil
@@ -223,13 +223,25 @@ public struct RegexSet: Sendable {
     }
 
     /**
-     Search a range of string and return the first matching region.
+     Search string and return the first matching regex/region pair from the set.
      */
-    public func firstMatch<S, R>(in str: S,
-                                 of range: R,
-                                 lead: Lead = .positionLead,
-                                 options: Regex.SearchOptions = .none,
-                                 matchParams: [MatchParam]? = nil
+    @available(*, deprecated, renamed: "firstSetMatch(in:lead:options:matchParams:)")
+    public func firstMatch<S>(in str: S,
+                              lead: Lead = .positionLead,
+                              options: Regex.SearchOptions = .none,
+                              matchParams: [MatchParam]? = nil
+    ) throws -> (regexIndex: Int, region: Region)? {
+        try firstSetMatch(in: str, lead: lead, options: options, matchParams: matchParams)
+    }
+
+    /**
+     Search a range of string and return the first matching regex/region pair from the set.
+     */
+    public func firstSetMatch<S, R>(in str: S,
+                                    of range: R,
+                                    lead: Lead = .positionLead,
+                                    options: Regex.SearchOptions = .none,
+                                    matchParams: [MatchParam]? = nil
     ) throws -> (regexIndex: Int, region: Region)? where R: RangeExpression, R.Bound == Int {
         guard let firstRegex = regexes.first else {
             return nil
@@ -238,6 +250,19 @@ public struct RegexSet: Sendable {
         return try withSupportedOnigurumaInput(str, requestedEncoding: firstRegex.encoding) { supported in
             try _firstMatch(in: supported, of: range, lead: lead, options: options, matchParams: matchParams)
         }
+    }
+
+    /**
+     Search a range of string and return the first matching regex/region pair from the set.
+     */
+    @available(*, deprecated, renamed: "firstSetMatch(in:of:lead:options:matchParams:)")
+    public func firstMatch<S, R>(in str: S,
+                                 of range: R,
+                                 lead: Lead = .positionLead,
+                                 options: Regex.SearchOptions = .none,
+                                 matchParams: [MatchParam]? = nil
+    ) throws -> (regexIndex: Int, region: Region)? where R: RangeExpression, R.Bound == Int {
+        try firstSetMatch(in: str, of: range, lead: lead, options: options, matchParams: matchParams)
     }
 
     private func _firstMatch<S, R>(in str: S,

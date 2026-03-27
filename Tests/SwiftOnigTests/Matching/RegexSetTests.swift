@@ -46,17 +46,17 @@ struct RegexSetTests {
     func search() async throws {
         let regSet = try await RegexSet(regexes: [try await Regex(pattern: "a+"), try await Regex(pattern: "b+"), try await Regex(pattern: "c+")])
 
-        var result = try await regSet.firstMatch(in: "cccaaabbb", lead: .positionLead)!
+        var result = try regSet.firstSetMatch(in: "cccaaabbb", lead: .positionLead)!
         #expect(result.regexIndex == 2)
         #expect(result.region.range == 0..<3)
         #expect(result.region.decodedString() == "ccc")
 
-        result = try await regSet.firstMatch(in: "cccaaabbb", lead: .regexLead)!
+        result = try regSet.firstSetMatch(in: "cccaaabbb", lead: .regexLead)!
         #expect(result.regexIndex == 2)
         #expect(result.region.range == 0..<3)
         #expect(result.region.decodedString() == "ccc")
 
-        result = try await regSet.firstMatch(in: "cccaaabbb", lead: .priorityToRegexOrder)!
+        result = try regSet.firstSetMatch(in: "cccaaabbb", lead: .priorityToRegexOrder)!
         #expect(result.regexIndex == 0)
         #expect(result.region.range == 3..<6)
         #expect(result.region.decodedString() == "aaa")
@@ -85,7 +85,7 @@ struct RegexSetTests {
 
         try regSet.remove(at: 0)
         #expect(regSet.count == 2)
-        #expect(try await regSet.firstMatch(in: "bbcc")?.regexIndex == 0)
+        #expect(try regSet.firstSetMatch(in: "bbcc")?.regexIndex == 0)
     }
 
     @Test("Mutable operations preserve value semantics across copies")
