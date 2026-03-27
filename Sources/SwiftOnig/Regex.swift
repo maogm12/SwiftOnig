@@ -200,38 +200,54 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
         return try _firstMatch(in: str, of: range, options: options, matchParam: nil)
     }
 
+    private func _firstMatchResolved<S>(
+        in str: S,
+        start: UnsafePointer<OnigUChar>,
+        count: Int,
+        range: Range<Int>,
+        options: SearchOptions,
+        matchParam: MatchParam?
+    ) throws -> Region? where S: OnigurumaString {
+        let region = try Region(regex: self, str: str)
+        let result = try callOnigFunction {
+            if let matchParam {
+                return try matchParam.withRawValue { rawMatchParam in
+                    onig_search_with_param(self.rawValue,
+                                           start,
+                                           start.advanced(by: count),
+                                           start.advanced(by: range.lowerBound),
+                                           start.advanced(by: range.upperBound),
+                                           region.rawValue,
+                                           options.rawValue,
+                                           rawMatchParam)
+                }
+            }
+
+            return onig_search(self.rawValue,
+                               start,
+                               start.advanced(by: count),
+                               start.advanced(by: range.lowerBound),
+                               start.advanced(by: range.upperBound),
+                               region.rawValue,
+                               options.rawValue)
+        }
+
+        if result == ONIG_MISMATCH {
+            return nil
+        }
+
+        return region
+    }
+
     private func _firstMatch<S, R>(in str: S, of range: R, options: SearchOptions = .none, matchParam: MatchParam?) throws -> Region? where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
         return try str.withOnigurumaString(requestedEncoding: self.encoding) { (start, count) throws -> Region? in
             let range = range.relative(to: 0..<count).clamped(to: 0..<count)
-            let region = try Region(regex: self, str: str)
-            let result = try callOnigFunction {
-                if let matchParam {
-                    return try matchParam.withRawValue { rawMatchParam in
-                        onig_search_with_param(self.rawValue,
-                                               start,
-                                               start.advanced(by: count),
-                                               start.advanced(by: range.lowerBound),
-                                               start.advanced(by: range.upperBound),
-                                               region.rawValue,
-                                               options.rawValue,
-                                               rawMatchParam)
-                    }
-                }
-
-                return onig_search(self.rawValue,
-                                   start,
-                                   start.advanced(by: count),
-                                   start.advanced(by: range.lowerBound),
-                                   start.advanced(by: range.upperBound),
-                                   region.rawValue,
-                                   options.rawValue)
-            }
-            
-            if result == ONIG_MISMATCH {
-                return nil
-            }
-            
-            return region
+            return try _firstMatchResolved(in: str,
+                                           start: start,
+                                           count: count,
+                                           range: range,
+                                           options: options,
+                                           matchParam: matchParam)
         }
     }
     
@@ -320,11 +336,13 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
     }
 
     private func _wholeMatch<S>(in str: S, options: SearchOptions = .none, matchParam: MatchParam?) throws -> Region? where S: OnigurumaString {
-        try str.withOnigurumaString(requestedEncoding: self.encoding) { (_, count) throws -> Region? in
-            guard let region = try _firstMatch(in: str,
-                                               of: Self.fullByteRange,
-                                               options: options.union(.matchWholeString),
-                                               matchParam: matchParam),
+        try str.withOnigurumaString(requestedEncoding: self.encoding) { (start, count) throws -> Region? in
+            guard let region = try _firstMatchResolved(in: str,
+                                                       start: start,
+                                                       count: count,
+                                                       range: 0..<count,
+                                                       options: options.union(.matchWholeString),
+                                                       matchParam: matchParam),
                   region.range == 0..<count else {
                 return nil
             }

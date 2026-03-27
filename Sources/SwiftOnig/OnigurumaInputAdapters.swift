@@ -20,7 +20,7 @@ internal enum OnigurumaInputAdapters {
         body: (_ start: UnsafePointer<OnigUChar>, _ count: Int) throws -> Result
     ) rethrows -> Result where C: Collection, C.Element == UInt16 {
         let contiguousResult = try codeUnits.withContiguousStorageIfAvailable { buffer -> Result in
-            try withUTF16Buffer(buffer, body: body)
+            try withUTF16BufferPointer(buffer, body: body)
         }
 
         if let contiguousResult {
@@ -29,11 +29,11 @@ internal enum OnigurumaInputAdapters {
 
         let copiedUnits = Array(codeUnits)
         return try copiedUnits.withUnsafeBufferPointer { buffer in
-            try withUTF16Buffer(buffer, body: body)
+            try withUTF16BufferPointer(buffer, body: body)
         }
     }
 
-    private static func withUTF16Buffer<Result>(
+    internal static func withUTF16BufferPointer<Result>(
         _ buffer: UnsafeBufferPointer<UInt16>,
         body: (_ start: UnsafePointer<OnigUChar>, _ count: Int) throws -> Result
     ) rethrows -> Result {

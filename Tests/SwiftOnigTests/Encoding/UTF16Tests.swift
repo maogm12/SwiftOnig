@@ -45,6 +45,20 @@ struct UTF16Tests {
         #expect(region.range == 14..<18)
     }
 
+    @Test("Explicit contiguous UTF-16 input avoids implicit view adaptation")
+    func explicitContiguousUTF16Input() async throws {
+        let input = UTF16CodeUnitBuffer("Hello, 你好!".utf16)
+        let utf16Pattern = Array("你好".utf16).withUnsafeBufferPointer { Data(buffer: $0) }
+        let regex16 = try await Regex(patternBytes: utf16Pattern, encoding: .utf16LittleEndian)
+
+        guard let region = try await regex16.firstMatch(in: input) else {
+            Issue.record("Should have matched")
+            return
+        }
+
+        #expect(region.range == 14..<18)
+    }
+
     @Test("Encoding byte boundary helpers")
     func encodingBoundaryHelpers() async throws {
         let utf16Bytes: [UInt8] = [0x41, 0x00, 0x60, 0x4f, 0x42, 0x00] // "A你B" in UTF-16LE

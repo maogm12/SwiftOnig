@@ -466,12 +466,16 @@ enum UpstreamOnigurumaSupport {
     }
 
     private static func fixtureBytes(named name: String) -> [UInt8]? {
-        let url = repositoryRoot.appending(path: name)
+        let url = repositoryRoot.appendingPathComponent(name)
         return try? Data(contentsOf: url).map { $0 }
     }
 
     private static func loadSource(named name: String) throws -> String {
-        let url = repositoryRoot.appending(path: "Vendor/Oniguruma/test").appending(path: name)
+        let url = repositoryRoot
+            .appendingPathComponent("Vendor")
+            .appendingPathComponent("Oniguruma")
+            .appendingPathComponent("test")
+            .appendingPathComponent(name)
         let data = try Data(contentsOf: url)
         if let utf8 = String(data: data, encoding: .utf8) {
             return utf8

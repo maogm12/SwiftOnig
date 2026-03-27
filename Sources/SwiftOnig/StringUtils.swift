@@ -13,6 +13,9 @@ public protocol OnigurumaString: Sendable {
      Call `body(start, count)` with underlying `OnigUChar` bytes, where `start` is a begining address of the bytes,`count`is the count of bytes.
      
      The pointer passed as an argument to body might be valid only during the execution of `withOnigurumaString(_:)`. Do not store or return the pointer for later use.
+     
+     For UTF-16 encoded regexes, `String`, `Substring`, `String.UTF16View`, and `Substring.UTF16View` may need to materialize a temporary contiguous UTF-16 buffer.
+     To guarantee a no-copy UTF-16 path for repeated searches, pass an explicitly contiguous `UInt16` collection such as `[UInt16]` or `ContiguousArray<UInt16>`.
      - Parameters:
          - encoding: The requested encoding. For types that support multiple encodings (like `String`), this allows the type to choose the most efficient path.
          - body: A closure with a pointer to the underlying bytes.
@@ -152,7 +155,7 @@ extension Substring.UTF16View: OnigurumaString {
     }
 }
 
-// Special handling for Array to avoid conflicts between [UInt8] and [UInt16]
+// Special handling for Array to avoid conflicts with generic collection conformances.
 extension Array: OnigurumaString where Element == UInt8 {
     public func withOnigurumaString<Result>(requestedEncoding: Encoding, _ body: (UnsafePointer<OnigUChar>, Int) throws -> Result) rethrows -> Result {
         return try self.withUnsafeBytes { bufPtr in
@@ -164,3 +167,26 @@ extension Array: OnigurumaString where Element == UInt8 {
 extension String: OnigurumaString { }
 
 extension Substring: OnigurumaString { }
+
+/**
+ An explicitly materialized contiguous UTF-16 code-unit buffer.
+
+ Create this once and reuse it when repeated UTF-16 searches should avoid the implicit
+ temporary buffer materialization that `String` and `String.UTF16View` may perform.
+ */
+public struct UTF16CodeUnitBuffer: OnigurumaString, Sendable {
+    private let codeUnits: ContiguousArray<UInt16>
+
+    public init<S>(_ codeUnits: S) where S: Sequence, S.Element == UInt16 {
+        self.codeUnits = ContiguousArray(codeUnits)
+    }
+
+    public func withOnigurumaString<Result>(
+        requestedEncoding: Encoding,
+        _ body: (UnsafePointer<OnigUChar>, Int) throws -> Result
+    ) rethrows -> Result {
+        try codeUnits.withUnsafeBufferPointer { buffer in
+            try OnigurumaInputAdapters.withUTF16BufferPointer(buffer, body: body)
+        }
+    }
+}

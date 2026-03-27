@@ -118,6 +118,7 @@ let package = Package(
         .executableTarget(
             name: "SwiftOnigBenchmarks",
             dependencies: ["SwiftOnig"],
-            path: "Benchmarks"),
+            path: "Benchmarks",
+            exclude: ["README.md"]),
     ]
 )
