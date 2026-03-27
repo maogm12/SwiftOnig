@@ -543,7 +543,7 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
                               body: body)
     }
 
-    private class ScanContext {
+    private final class ScanContext: @unchecked Sendable {
         let region: Region
         let callback: @Sendable (Int, Int, Region) -> Bool
         init(region: Region, callback: @escaping @Sendable (Int, Int, Region) -> Bool) {
@@ -598,12 +598,17 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
                           options.rawValue,
                           { (order, matchedIndex, onigRegion, contextPtr) -> OnigInt in
                             guard let contextPtr = contextPtr else {
-                                fatalError("Fail to retrieve the context")
+                                return ONIGERR_INVALID_ARGUMENT
                             }
                             let context = Unmanaged<ScanContext>.fromOpaque(contextPtr).takeUnretainedValue()
 
-                            guard let region = try? Region(copying: onigRegion, regex: context.region.regex, str: context.region.str) else {
-                                fatalError("Fail to creating the region")
+                            let region: Region
+                            do {
+                                region = try Region(copying: onigRegion, regex: context.region.regex, str: context.region.str)
+                            } catch let error as OnigError {
+                                return error.onigErrorCode
+                            } catch {
+                                return ONIGERR_MEMORY
                             }
 
                             if context.callback(Int(order), Int(matchedIndex), region) {
