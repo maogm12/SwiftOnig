@@ -4,3 +4,6 @@
 /*.xcodeproj
 xcuserdata/
 .swiftpm
+*.swp
+*.swo
+*~

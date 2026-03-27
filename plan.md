@@ -131,3 +131,9 @@ This section tracks the packaging refactor from a system-installed Oniguruma dep
 - [x] **User Unicode Properties**: Add registration APIs for custom Unicode properties.
 - [x] **Swift-Native Callouts**: Add Swift-native registration and execution support for named/content callouts and per-match callout handlers.
 - [x] **Mutable RegexSet Operations**: Add append, replace, and remove operations while preserving regset invariants.
+
+## 13. String API Migration Planning
+
+- [x] Move the string-native API migration design document under `Docs/`.
+- [x] Record the raw-input design principle that raw encoded workflows should stay modeled as byte containers plus explicit `Encoding`, not one high-level wrapper type per encoding.
+- [ ] Implement the string-native `Regex.Match` migration described in [`Docs/string-match-migration-plan.md`](Docs/string-match-migration-plan.md).
