@@ -31,10 +31,10 @@ struct RegexTests {
         #expect(try await reg.matches("foo"))
         #expect(try await !reg.matches("bar"))
 
-        #expect(try await reg.matchCount(in: "foo") == 3)
-        #expect(try await reg.matchCount(in: "foo bar") == 3)
-        #expect(try await reg.matchCount(in: "afoo bar", of: 1...) == 3)
-        #expect(try await reg.matchCount(in: "bar") == nil)
+        #expect(try await reg.matchedByteCount(in: "foo") == 3)
+        #expect(try await reg.matchedByteCount(in: "foo bar") == 3)
+        #expect(try await reg.matchedByteCount(in: "afoo bar", of: 1...) == 3)
+        #expect(try await reg.matchedByteCount(in: "bar") == nil)
     }
     
     @Test("Search")
@@ -82,7 +82,7 @@ struct RegexTests {
         }
 
         await expectRetryLimitError {
-            _ = try await regex.matchCount(in: target, matchParam: matchParam)
+            _ = try await regex.matchedByteCount(in: target, matchParam: matchParam)
         }
 
         await expectRetryLimitError {
@@ -168,7 +168,7 @@ struct RegexTests {
         #expect(results.items.map(\.0) == [2, 6])
         #expect(results.items.map(\.1) == ["11", "22"])
         #expect(try await regex.matches("zz11yy", in: 2..<100))
-        #expect(try await regex.matchCount(in: "zz11yy", of: 2..<100) == 2)
+        #expect(try await regex.matchedByteCount(in: "zz11yy", of: 2..<100) == 2)
     }
 
     @Test("Capture Groups")

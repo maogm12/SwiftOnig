@@ -376,7 +376,7 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
     }
     
     /**
-     Search the string and find the matched byte count.
+     Search the string and return the matched byte count.
      
      If `str` conforms to `StringProtocol`, will search against the UTF-8 bytes of the string. Do not pass invalid bytes in the regular expression encoding.
      - Parameters:
@@ -386,7 +386,7 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
      - Returns: The matched byte count if there is a match, otherwise `nil`.
      - Throws: `OnigError`
      */
-    public func matchCount<S, R>(in str: S, of range: R, options: SearchOptions = .none) throws -> Int? where R: RangeExpression, R.Bound == Int {
+    public func matchedByteCount<S, R>(in str: S, of range: R, options: SearchOptions = .none) throws -> Int? where R: RangeExpression, R.Bound == Int {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
             try _matchCount(in: supported, of: range, options: options, matchParam: nil)
         }
@@ -425,73 +425,106 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
     }
     
     /**
-     Search the string and find the matched byte count.
-     
-     If `str` conforms to `StringProtocol`, will search against the UTF-8 bytes of the string. Do not pass invalid bytes in the regular expression encoding.
-     - Parameters:
-         - str: Target string to search against.
-         - option: The regular expression search options.
-     - Returns: The matched byte count if there is a match, otherwise `nil`.
-     - Throws: `OnigError`
+     Search the string and return the matched byte count.
      */
-    public func matchCount<S>(in str: S, options: SearchOptions = .none) throws -> Int? {
+    public func matchedByteCount<S>(in str: S, options: SearchOptions = .none) throws -> Int? {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
             try _matchCount(in: supported, of: Self.fullByteRange, options: options, matchParam: nil)
         }
     }
 
     /**
-     Search the string and find the matched byte count using the supplied match parameters.
+     Search the string and return the matched byte count using the supplied match parameters.
      */
-    public func matchCount<S, R>(in str: S, of range: R, options: SearchOptions = .none, matchParam: MatchParam) throws -> Int? where R: RangeExpression, R.Bound == Int {
+    public func matchedByteCount<S, R>(in str: S, of range: R, options: SearchOptions = .none, matchParam: MatchParam) throws -> Int? where R: RangeExpression, R.Bound == Int {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
             try _matchCount(in: supported, of: range, options: options, matchParam: matchParam)
         }
     }
 
     /**
-     Search the string and find the matched byte count using the supplied match parameters.
+     Search the string and return the matched byte count using the supplied match parameters.
      */
-    public func matchCount<S>(in str: S, options: SearchOptions = .none, matchParam: MatchParam) throws -> Int? {
+    public func matchedByteCount<S>(in str: S, options: SearchOptions = .none, matchParam: MatchParam) throws -> Int? {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
             try _matchCount(in: supported, of: Self.fullByteRange, options: options, matchParam: matchParam)
         }
     }
 
     /**
-     Async version of `matchCount`.
+     Async version of `matchedByteCount`.
      */
-    public func matchCount<S, R>(in str: S, of range: R, options: SearchOptions = .none) async throws -> Int? where R: RangeExpression, R.Bound == Int {
+    public func matchedByteCount<S, R>(in str: S, of range: R, options: SearchOptions = .none) async throws -> Int? where R: RangeExpression, R.Bound == Int {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
             try _matchCount(in: supported, of: range, options: options, matchParam: nil)
         }
     }
 
     /**
-     Async version of `matchCount`.
+     Async version of `matchedByteCount`.
      */
-    public func matchCount<S>(in str: S, options: SearchOptions = .none) async throws -> Int? {
+    public func matchedByteCount<S>(in str: S, options: SearchOptions = .none) async throws -> Int? {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
             try _matchCount(in: supported, of: Self.fullByteRange, options: options, matchParam: nil)
         }
     }
 
     /**
-     Async version of `matchCount`.
+     Async version of `matchedByteCount`.
      */
-    public func matchCount<S, R>(in str: S, of range: R, options: SearchOptions = .none, matchParam: MatchParam) async throws -> Int? where R: RangeExpression, R.Bound == Int {
+    public func matchedByteCount<S, R>(in str: S, of range: R, options: SearchOptions = .none, matchParam: MatchParam) async throws -> Int? where R: RangeExpression, R.Bound == Int {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
             try _matchCount(in: supported, of: range, options: options, matchParam: matchParam)
         }
     }
 
     /**
-     Async version of `matchCount`.
+     Async version of `matchedByteCount`.
      */
-    public func matchCount<S>(in str: S, options: SearchOptions = .none, matchParam: MatchParam) async throws -> Int? {
+    public func matchedByteCount<S>(in str: S, options: SearchOptions = .none, matchParam: MatchParam) async throws -> Int? {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
             try _matchCount(in: supported, of: Self.fullByteRange, options: options, matchParam: matchParam)
         }
+    }
+
+    @available(*, deprecated, renamed: "matchedByteCount(in:of:options:)")
+    public func matchCount<S, R>(in str: S, of range: R, options: SearchOptions = .none) throws -> Int? where R: RangeExpression, R.Bound == Int {
+        try matchedByteCount(in: str, of: range, options: options)
+    }
+
+    @available(*, deprecated, renamed: "matchedByteCount(in:options:)")
+    public func matchCount<S>(in str: S, options: SearchOptions = .none) throws -> Int? {
+        try matchedByteCount(in: str, options: options)
+    }
+
+    @available(*, deprecated, renamed: "matchedByteCount(in:of:options:matchParam:)")
+    public func matchCount<S, R>(in str: S, of range: R, options: SearchOptions = .none, matchParam: MatchParam) throws -> Int? where R: RangeExpression, R.Bound == Int {
+        try matchedByteCount(in: str, of: range, options: options, matchParam: matchParam)
+    }
+
+    @available(*, deprecated, renamed: "matchedByteCount(in:options:matchParam:)")
+    public func matchCount<S>(in str: S, options: SearchOptions = .none, matchParam: MatchParam) throws -> Int? {
+        try matchedByteCount(in: str, options: options, matchParam: matchParam)
+    }
+
+    @available(*, deprecated, renamed: "matchedByteCount(in:of:options:)")
+    public func matchCount<S, R>(in str: S, of range: R, options: SearchOptions = .none) async throws -> Int? where R: RangeExpression, R.Bound == Int {
+        try await matchedByteCount(in: str, of: range, options: options)
+    }
+
+    @available(*, deprecated, renamed: "matchedByteCount(in:options:)")
+    public func matchCount<S>(in str: S, options: SearchOptions = .none) async throws -> Int? {
+        try await matchedByteCount(in: str, options: options)
+    }
+
+    @available(*, deprecated, renamed: "matchedByteCount(in:of:options:matchParam:)")
+    public func matchCount<S, R>(in str: S, of range: R, options: SearchOptions = .none, matchParam: MatchParam) async throws -> Int? where R: RangeExpression, R.Bound == Int {
+        try await matchedByteCount(in: str, of: range, options: options, matchParam: matchParam)
+    }
+
+    @available(*, deprecated, renamed: "matchedByteCount(in:options:matchParam:)")
+    public func matchCount<S>(in str: S, options: SearchOptions = .none, matchParam: MatchParam) async throws -> Int? {
+        try await matchedByteCount(in: str, options: options, matchParam: matchParam)
     }
 
     private func _matches<S, R>(_ str: S, in range: R, options: SearchOptions = .none, matchParam: MatchParam?) throws -> Bool where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
