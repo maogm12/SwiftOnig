@@ -4,16 +4,16 @@ This document captures API design issues from the perspective of a consumer inte
 
 ## Priority Order
 
-1. Initialization semantics are inconsistent across docs and API messaging.
-2. `OnigurumaString` exposes implementation-level details as a public protocol.
-3. UTF-16 copy behavior is implicit instead of explicit.
-4. `matchCount` is misnamed for what it actually returns.
-5. Sync and async APIs are duplicated too broadly.
-6. `Region.range` leaks byte offsets too directly for `String` users.
-7. `Region.string` and `Subregion.string` hide decoding work behind property syntax.
-8. `RegexSet.firstMatch` has a different mental model from `Regex.firstMatch`.
-9. `Encoding` exposes low-level byte helpers too prominently.
-10. Public docs still over-emphasize low-level setup instead of common usage paths.
+1. Resolved: Initialization semantics are inconsistent across docs and API messaging.
+2. Resolved: `OnigurumaString` exposes implementation-level details as a public protocol.
+3. Resolved: UTF-16 copy behavior is implicit instead of explicit.
+4. Resolved: `matchCount` is misnamed for what it actually returns.
+5. Open: Sync and async APIs are duplicated too broadly.
+6. Resolved: `Region.range` leaks byte offsets too directly for `String` users.
+7. Resolved: `Region.string` and `Subregion.string` hide decoding work behind property syntax.
+8. Resolved: `RegexSet.firstMatch` has a different mental model from `Regex.firstMatch`.
+9. Resolved: `Encoding` exposes low-level byte helpers too prominently.
+10. Resolved: Public docs still over-emphasize low-level setup instead of common usage paths.
 
 ## Issues
 
@@ -63,11 +63,13 @@ Suggested fix:
 
 - The public API surface is much larger than it needs to be.
 - It is harder to learn and document.
+- Attempting to demote async search overloads directly runs into Swift overload-resolution behavior: in async contexts, same-signature sync/async overload pairs strongly prefer the async candidate, which makes a compatibility-preserving cleanup trickier than the other items.
 
 Suggested fix:
 
 - Decide which operations truly need async-first ergonomics.
 - Collapse the rest around one primary surface and keep the secondary surface thin.
+- Treat this as a deliberate follow-up item rather than an opportunistic cleanup.
 
 ### 6. `Region.range` is too low-level for common `String` use
 
@@ -120,3 +122,4 @@ Suggested fix:
 - Use one git commit per issue.
 - Keep tests passing after each issue.
 - Prefer compatibility-preserving fixes first, then deeper API reshaping.
+- Current unresolved item: issue 5.
