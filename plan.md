@@ -158,3 +158,11 @@ This section tracks the packaging refactor from a system-installed Oniguruma dep
 - [x] Make public `Regex` initializers synchronous and migrate affected call sites.
 - [x] Re-evaluate `RegexSet` and related APIs that may only be async because of regex compilation.
 - [x] Update README, DocC, examples, and tests to remove `await` from regex compilation where no longer needed.
+
+## 17. Oniguruma Runtime Namespace Migration
+
+- [x] Record the runtime namespace reorganization design in [`Docs/oniguruma-runtime-namespace-plan.md`](Docs/oniguruma-runtime-namespace-plan.md).
+- [ ] Introduce `Oniguruma` as the synchronous namespace for advanced runtime-control APIs.
+- [ ] Move runtime metadata, default encoding, match defaults, and global limit controls under `Oniguruma`.
+- [ ] Migrate docs, tests, and examples from top-level runtime functions to the `Oniguruma` namespace.
+- [ ] Remove the old top-level runtime-control functions and `Regex`-scoped global limit surface.
