@@ -48,6 +48,14 @@ extension String {
         return result
     }
 
+    public mutating func replace(_ regex: Regex, with replacement: String, options: Regex.SearchOptions = .none) throws {
+        self = try replacing(regex, with: replacement, options: options)
+    }
+
+    public mutating func replace(_ regex: Regex, with replacement: String, options: Regex.SearchOptions = .none, matchParam: MatchParam) throws {
+        self = try replacing(regex, with: replacement, options: options, matchParam: matchParam)
+    }
+
     public func firstMatch(of regex: Regex, options: Regex.SearchOptions = .none) throws -> Regex.Match? {
         try regex.firstStringMatch(in: self, options: options)
     }
