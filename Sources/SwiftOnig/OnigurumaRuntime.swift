@@ -66,6 +66,42 @@ private func onigurumaVerboseWarningCallback(_ message: UnsafePointer<CChar>?) {
     OnigurumaWarningBridge.verbose(String(cString: message))
 }
 
+private enum OnigurumaBootstrap {
+    private final class State: @unchecked Sendable {
+        let lock = NSLock()
+        var isLibraryInitialized = false
+        var initializedEncodings = Set<OnigEncoding>()
+    }
+
+    private static let state = State()
+
+    static func ensureInitialized(encoding: OnigEncoding? = nil) throws {
+        state.lock.lock()
+        defer { state.lock.unlock() }
+
+        if !state.isLibraryInitialized {
+            onig_initialize(nil, 0)
+            state.isLibraryInitialized = true
+        }
+
+        if let encoding, !state.initializedEncodings.contains(encoding) {
+            let result = onig_initialize_encoding(encoding)
+            if result != ONIG_NORMAL {
+                throw OnigError(onigErrorCode: result)
+            }
+            state.initializedEncodings.insert(encoding)
+        }
+    }
+
+    static func reset() {
+        state.lock.lock()
+        _ = onig_end()
+        state.isLibraryInitialized = false
+        state.initializedEncodings.removeAll(keepingCapacity: false)
+        state.lock.unlock()
+    }
+}
+
 /**
  A global actor used to synchronize access to the underlying oniguruma library's global state.
  */
@@ -73,26 +109,13 @@ private func onigurumaVerboseWarningCallback(_ message: UnsafePointer<CChar>?) {
 public actor OnigurumaActor {
     public static let shared = OnigurumaActor()
 
-    private var isLibraryInitialized = false
-    private var initializedEncodings = Set<OnigEncoding>()
     private var userUnicodePropertyStorage = [ContiguousArray<OnigCodePoint>]()
 
     /**
      Ensures that the oniguruma library and the specified encoding are initialized.
      */
     internal func ensureInitialized(encoding: OnigEncoding? = nil) throws {
-        if !isLibraryInitialized {
-            onig_initialize(nil, 0)
-            isLibraryInitialized = true
-        }
-
-        if let encoding = encoding, !initializedEncodings.contains(encoding) {
-            let result = onig_initialize_encoding(encoding)
-            if result != ONIG_NORMAL {
-                throw OnigError(onigErrorCode: result)
-            }
-            initializedEncodings.insert(encoding)
-        }
+        try OnigurumaBootstrap.ensureInitialized(encoding: encoding)
     }
 
     fileprivate func defineUserUnicodeProperty(named name: String, ranges: [OnigurumaUnicodePropertyRange]) throws {
@@ -137,9 +160,7 @@ public actor OnigurumaActor {
     }
 
     fileprivate func reset() {
-        _ = onig_end()
-        isLibraryInitialized = false
-        initializedEncodings.removeAll(keepingCapacity: false)
+        OnigurumaBootstrap.reset()
         userUnicodePropertyStorage.removeAll(keepingCapacity: false)
         OnigurumaWarningBridge.reset()
         OnigurumaCalloutRegistry.removeAll()
