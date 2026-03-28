@@ -192,5 +192,5 @@ This section tracks the packaging refactor from a system-installed Oniguruma dep
 - [x] Remove the final unnecessary public async accessor from `Regex`.
 - [x] Replace `MatchParam` with immutable `Regex.MatchConfiguration`.
 - [x] Introduce `RegexSet.Match` and rename `firstSetMatch` to `firstMatch`.
-- [ ] Make callout raw-offset naming explicit and continue treating callouts as advanced raw APIs.
+- [x] Make callout raw-offset naming explicit and continue treating callouts as advanced raw APIs.
 - [ ] Revisit Unicode-property public modeling around `Unicode.Scalar` and de-emphasize `OnigCodePoint` in the public surface.

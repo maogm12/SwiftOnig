@@ -35,11 +35,11 @@ public struct OnigurumaCalloutContext: Sendable {
     public let phase: OnigurumaCalloutPhase
     public let name: String?
     public let contents: String?
-    public let currentOffset: Int
-    public let startOffset: Int
-    public let searchRangeUpperBound: Int
+    public let currentByteOffset: Int
+    public let startByteOffset: Int
+    public let searchByteRangeUpperBound: Int
     public let retryCount: UInt
-    public let captureRanges: [Range<Int>?]
+    public let captureByteRanges: [Range<Int>?]
     public let arguments: [OnigurumaCalloutArgument]
 }
 
@@ -155,11 +155,11 @@ private func buildCalloutContext(args: OpaquePointer) -> OnigurumaCalloutContext
         phase: phase,
         name: calloutName,
         contents: decodeCalloutBytes(start: onig_get_contents_by_callout_args(args), end: onig_get_contents_end_by_callout_args(args), encoding: encoding),
-        currentOffset: stringStart.distance(to: current),
-        startOffset: stringStart.distance(to: start),
-        searchRangeUpperBound: stringStart.distance(to: rightRange),
+        currentByteOffset: stringStart.distance(to: current),
+        startByteOffset: stringStart.distance(to: start),
+        searchByteRangeUpperBound: stringStart.distance(to: rightRange),
         retryCount: UInt(onig_get_retry_counter_by_callout_args(args)),
-        captureRanges: captures,
+        captureByteRanges: captures,
         arguments: buildCalloutArguments(args)
     )
 }

@@ -387,11 +387,11 @@ struct SwiftOnigTests {
         #expect(box.contexts[0].phase == .progress)
         #expect(box.contexts[0].name == nil)
         #expect(box.contexts[0].contents == "X")
-        #expect(box.contexts[0].currentOffset == 1)
-        #expect(box.contexts[0].startOffset == 0)
-        #expect(box.contexts[0].searchRangeUpperBound == 2)
+        #expect(box.contexts[0].currentByteOffset == 1)
+        #expect(box.contexts[0].startByteOffset == 0)
+        #expect(box.contexts[0].searchByteRangeUpperBound == 2)
         #expect(box.contexts[0].arguments.isEmpty)
-        #expect(box.contexts[0].captureRanges.count == 1)
+        #expect(box.contexts[0].captureByteRanges.count == 1)
     }
 
     @Test("Callout support types expose stable raw values")
