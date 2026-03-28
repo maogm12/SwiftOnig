@@ -61,6 +61,19 @@ struct MatchTests {
         #expect(try input.wholeMatch(of: regex) == nil)
     }
 
+    @Test("String and Substring expose regex contains")
+    func stringNativeContains() async throws {
+        let regex = try await Regex(pattern: #"\d+"#)
+        let missRegex = try await Regex(pattern: #"xyz"#)
+        let input = "prefix 123 suffix"
+        let slice = input[input.index(input.startIndex, offsetBy: 7)...]
+
+        #expect(try input.contains(regex))
+        #expect(try !input.contains(missRegex))
+        #expect(try slice.contains(regex))
+        #expect(try !"prefix".contains(regex))
+    }
+
     @Test("Regex.Match maps UTF-16 regex results back to String indices")
     func utf16BackedMatch() async throws {
         let regex = try await Regex(patternBytes: Self.utf16LittleEndianBytes("(你好)(世界)"),

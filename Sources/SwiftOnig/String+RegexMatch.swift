@@ -1,6 +1,14 @@
 import Foundation
 
 extension String {
+    public func contains(_ regex: Regex, options: Regex.SearchOptions = .none) throws -> Bool {
+        try regex.firstStringMatch(in: self, options: options) != nil
+    }
+
+    public func contains(_ regex: Regex, options: Regex.SearchOptions = .none, matchParam: MatchParam) throws -> Bool {
+        try regex.firstStringMatch(in: self, options: options, matchParam: matchParam) != nil
+    }
+
     public func firstMatch(of regex: Regex, options: Regex.SearchOptions = .none) throws -> Regex.Match? {
         try regex.firstStringMatch(in: self, options: options)
     }
@@ -27,6 +35,14 @@ extension String {
 }
 
 extension Substring {
+    public func contains(_ regex: Regex, options: Regex.SearchOptions = .none) throws -> Bool {
+        try regex.firstStringMatch(in: self, options: options) != nil
+    }
+
+    public func contains(_ regex: Regex, options: Regex.SearchOptions = .none, matchParam: MatchParam) throws -> Bool {
+        try regex.firstStringMatch(in: self, options: options, matchParam: matchParam) != nil
+    }
+
     public func firstMatch(of regex: Regex, options: Regex.SearchOptions = .none) throws -> Regex.Match? {
         try regex.firstStringMatch(in: self, options: options)
     }
