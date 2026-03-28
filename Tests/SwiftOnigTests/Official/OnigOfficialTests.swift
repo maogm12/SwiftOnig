@@ -126,7 +126,7 @@ struct OnigOfficialTests {
                         Issue.record("Pattern /\(pattern)/ failed to match '\(input)'")
                         continue
                     }
-                    #expect(region[group]?.range == expectedRange, "Pattern /\(pattern)/ matched wrong range in '\(input)' for group \(group)")
+                    #expect(region[group]?.byteRange == expectedRange, "Pattern /\(pattern)/ matched wrong range in '\(input)' for group \(group)")
                 } catch {
                     Issue.record("Pattern /\(pattern)/ threw error: \(error)")
                 }

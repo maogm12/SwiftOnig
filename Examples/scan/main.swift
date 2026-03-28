@@ -21,7 +21,7 @@ func execute(pattern: String, str: String, options: Regex.SearchOptions) async t
                 continue
             }
             
-            print("\(i): \(subRegion.range)")
+            print("\(i): \(subRegion.byteRange)")
         }
         
         return true

@@ -82,8 +82,8 @@ enum UpstreamOnigurumaSupport {
                         Issue.record("Missing capture \(group) for \(testCase.suite) case \(index): \(debugBytes(testCase.pattern)) :: \(debugBytes(testCase.input))")
                         continue
                     }
-                    if subregion.range != range {
-                        Issue.record("Wrong range for \(testCase.suite) case \(index): expected \(range), got \(subregion.range) :: \(debugBytes(testCase.pattern)) :: \(debugBytes(testCase.input))")
+                    if subregion.byteRange != range {
+                        Issue.record("Wrong range for \(testCase.suite) case \(index): expected \(range), got \(subregion.byteRange) :: \(debugBytes(testCase.pattern)) :: \(debugBytes(testCase.input))")
                     }
                 case .noMatch:
                     if region != nil {
@@ -139,8 +139,8 @@ enum UpstreamOnigurumaSupport {
                         Issue.record("Missing regset capture \(group) for \(testCase.suite) case \(index)")
                         continue
                     }
-                    if subregion.range != range {
-                        Issue.record("Wrong regset range for \(testCase.suite) case \(index): expected \(range), got \(subregion.range)")
+                    if subregion.byteRange != range {
+                        Issue.record("Wrong regset range for \(testCase.suite) case \(index): expected \(range), got \(subregion.byteRange)")
                     }
                 case .noMatch:
                     if result != nil {

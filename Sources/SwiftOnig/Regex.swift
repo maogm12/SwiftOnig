@@ -122,7 +122,7 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
             return nil
         }
         
-        let matchRange = region.range
+        let matchRange = region.byteRange
         // Ensure the match starts exactly at the requested index
         guard matchRange.lowerBound == startOffset else {
             return nil
@@ -392,7 +392,7 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
                                                        range: 0..<count,
                                                        options: options.union(.matchWholeString),
                                                        matchConfiguration: matchConfiguration),
-                  region.range == 0..<count else {
+                  region.byteRange == 0..<count else {
                 return nil
             }
 

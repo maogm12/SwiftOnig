@@ -177,7 +177,7 @@ extension Regex {
     public func prefixStringMatch(in input: String, options: SearchOptions = .none) throws -> Match? {
         try withSupportedOnigurumaInput(input, requestedEncoding: self.encoding) { supported in
             guard let region = try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchConfiguration: nil),
-                  region.range.lowerBound == 0 else {
+                  region.byteRange.lowerBound == 0 else {
                 return nil
             }
 
@@ -188,7 +188,7 @@ extension Regex {
     public func prefixStringMatch(in input: String, options: SearchOptions = .none, matchConfiguration: MatchConfiguration) throws -> Match? {
         try withSupportedOnigurumaInput(input, requestedEncoding: self.encoding) { supported in
             guard let region = try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchConfiguration: matchConfiguration),
-                  region.range.lowerBound == 0 else {
+                  region.byteRange.lowerBound == 0 else {
                 return nil
             }
 
@@ -199,7 +199,7 @@ extension Regex {
     public func prefixStringMatch(in input: Substring, options: SearchOptions = .none) throws -> Match? {
         try withSupportedOnigurumaInput(input, requestedEncoding: self.encoding) { supported in
             guard let region = try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchConfiguration: nil),
-                  region.range.lowerBound == 0 else {
+                  region.byteRange.lowerBound == 0 else {
                 return nil
             }
 
@@ -210,7 +210,7 @@ extension Regex {
     public func prefixStringMatch(in input: Substring, options: SearchOptions = .none, matchConfiguration: MatchConfiguration) throws -> Match? {
         try withSupportedOnigurumaInput(input, requestedEncoding: self.encoding) { supported in
             guard let region = try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchConfiguration: matchConfiguration),
-                  region.range.lowerBound == 0 else {
+                  region.byteRange.lowerBound == 0 else {
                 return nil
             }
 

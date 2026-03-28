@@ -117,7 +117,7 @@ public struct Region: Sendable {
 
      It's a convenient accessor of the range of the first `Subregion`.
      */
-    public var range: Range<Int> {
+    public var byteRange: Range<Int> {
         precondition(count > 0, "Empty region")
         return _activeRange(of: 0)
     }
@@ -184,7 +184,7 @@ public struct Subregion: Sendable {
     public let groupNumber: Int
 
     /// Get the range of the this capture group.
-    public let range: Range<Int>
+    public let byteRange: Range<Int>
 
     internal let regex: Regex
     internal let str: any OnigurumaString
@@ -192,8 +192,8 @@ public struct Subregion: Sendable {
     /// Decode the matched bytes of this capture group into a `String`.
     public func decodedString() -> String? {
         str.withOnigurumaString(requestedEncoding: regex.encoding) { start, _ in
-            String(bytes: UnsafeBufferPointer(start: start.advanced(by: range.lowerBound),
-                                             count: range.count),
+            String(bytes: UnsafeBufferPointer(start: start.advanced(by: byteRange.lowerBound),
+                                             count: byteRange.count),
                    encoding: regex.encoding.stringEncoding)
         }
     }
@@ -205,7 +205,7 @@ public struct Subregion: Sendable {
      when the regex encoding cannot be mapped back to Swift string indices.
      */
     public func range<S: StringProtocol>(in input: S) -> Range<S.Index>? {
-        _stringRange(in: input, encodedRange: range, encoding: regex.encoding)
+        _stringRange(in: input, encodedRange: byteRange, encoding: regex.encoding)
     }
 
     /**
@@ -243,7 +243,7 @@ extension Region: RandomAccessCollection {
         
         if _isGroupActive(groupNumber: groupNumber) {
             return Subregion(groupNumber: groupNumber,
-                             range: _activeRange(of: groupNumber),
+                             byteRange: _activeRange(of: groupNumber),
                              regex: regex,
                              str: str)
         } else {

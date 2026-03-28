@@ -28,7 +28,7 @@ struct UTF16Tests {
         }
         
         // Each UTF-16 unit is 2 bytes. "Hello, " is 7 units = 14 bytes.
-        #expect(region.range == 14..<18)
+        #expect(region.byteRange == 14..<18)
     }
     
     @Test("String.UTF16View smart negotiation")
@@ -42,7 +42,7 @@ struct UTF16Tests {
             return
         }
         
-        #expect(region.range == 14..<18)
+        #expect(region.byteRange == 14..<18)
     }
 
     @Test("Explicit raw UTF-16 bytes avoid implicit view adaptation")
@@ -56,7 +56,7 @@ struct UTF16Tests {
             return
         }
 
-        #expect(region.range == 14..<18)
+        #expect(region.byteRange == 14..<18)
     }
 
     @Test("Encoding byte boundary helpers")

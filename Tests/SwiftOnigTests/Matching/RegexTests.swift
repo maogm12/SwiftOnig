@@ -60,7 +60,7 @@ struct RegexTests {
             return
         }
         #expect(region2.count == 1)
-        #expect(region2[0]?.range == 0..<4)
+        #expect(region2[0]?.byteRange == 0..<4)
         #expect(region2[0]?.decodedString() == "你好")
     }
 
@@ -182,7 +182,7 @@ struct RegexTests {
         }
 
         #expect(results.items.map { $0.0 } == [2, 6, 10, 14])
-        #expect(results.items.map { $0.1[0]!.range } == [2..<4, 6..<8, 10..<12, 14..<16])
+        #expect(results.items.map { $0.1[0]!.byteRange } == [2..<4, 6..<8, 10..<12, 14..<16])
         #expect(results.items.map { $0.1[0]!.decodedString() } == ["11", "22", "33", "44"])
     }
 

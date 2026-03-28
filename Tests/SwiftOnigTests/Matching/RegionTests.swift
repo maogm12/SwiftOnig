@@ -57,7 +57,7 @@ struct RegionTests {
         let regex = try Regex(pattern: "(a+)(b+)(c+)")
         let r1 = try regex.firstMatch(in: Self.utf8Bytes("aaabbbccc"))!
         #expect(r1.count == 4)
-        #expect(r1.range == 0..<9)
+        #expect(r1.byteRange == 0..<9)
         #expect(r1.startIndex == 0)
         #expect(r1.endIndex == 4)
     }
@@ -66,10 +66,10 @@ struct RegionTests {
     func singleRange() async throws {
         let regex = try Regex(pattern: "(a+)(b+)(c+)")
         let r1 = try regex.firstMatch(in: Self.utf8Bytes("aaabbbccc"))!
-        #expect(r1[0]?.range == 0..<9)
-        #expect(r1[1]?.range == 0..<3)
-        #expect(r1[2]?.range == 3..<6)
-        #expect(r1[3]?.range == 6..<9)
+        #expect(r1[0]?.byteRange == 0..<9)
+        #expect(r1[1]?.byteRange == 0..<3)
+        #expect(r1[2]?.byteRange == 3..<6)
+        #expect(r1[3]?.byteRange == 6..<9)
     }
 
     @Test("Multi-byte Ranges")
@@ -77,9 +77,9 @@ struct RegionTests {
         let reg = try Regex(pattern: "(你好)(世界)")
         let target = "你好世界"
         let r1 = try reg.firstMatch(in: Self.utf8Bytes(target))!
-        #expect(r1[0]?.range == 0..<12)
-        #expect(r1[1]?.range == 0..<6)
-        #expect(r1[2]?.range == 6..<12)
+        #expect(r1[0]?.byteRange == 0..<12)
+        #expect(r1[1]?.byteRange == 0..<6)
+        #expect(r1[2]?.byteRange == 6..<12)
     }
 
     @Test("String range and substring helpers for UTF-8 matches")
@@ -124,9 +124,9 @@ struct RegionTests {
         let region = try regex.firstMatch(in: input)!
 
         #expect(input.accessCount == 1)
-        #expect(region.range == 0..<9)
+        #expect(region.byteRange == 0..<9)
         #expect(input.accessCount == 1)
-        #expect(region[1]?.range == 0..<3)
+        #expect(region[1]?.byteRange == 0..<3)
         #expect(input.accessCount == 1)
         #expect(region[1]?.decodedString() == "aaa")
         #expect(input.accessCount == 2)
