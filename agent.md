@@ -29,9 +29,7 @@ This file captures repo-specific working rules for agents collaborating in this 
 
 
 - Use Semantic Versioning.
-- Track release notes in `CHANGELOG.md`.
 - For every commit, explicitly decide whether the change requires a version bump.
-- If a bump is needed, update the top `Unreleased` or new release section in `CHANGELOG.md`.
 - When the package version changes, create the matching Git tag for the new version because SwiftPM resolves releases from tags.
 - Bump rules:
   - `MAJOR` for breaking public API or CLI contract changes, always ask for approval for MAJOR version bump
