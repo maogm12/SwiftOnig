@@ -30,7 +30,7 @@ Task {
             print("Capture \(index) ==> range: \(capture.range), content: \(capture.substring))")
         }
         
-        await uninitialize()
+        Oniguruma.uninitialize()
         exit(EXIT_SUCCESS)
     } catch {
         print("Error: \(error)")

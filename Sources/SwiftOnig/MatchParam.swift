@@ -115,45 +115,4 @@ public struct MatchParam: Sendable {
         return try body(rawValue)
     }
     
-    /**
-     Get or set the default value of maximum number of stack size, `0` means unlimited.
-     */
-    @OnigurumaActor
-    public static var defaultMatchStackLimitSize: UInt {
-        get {
-            UInt(onig_get_match_stack_limit_size())
-        }
-        
-        set {
-            onig_set_match_stack_limit_size(OnigUInt(newValue))
-        }
-    }
-    
-    /**
-     Get or set the default value of retry counts in a matching process., `0` means unlimited. The initial default value is `10000000`.
-     */
-    @OnigurumaActor
-    public static var defaultRetryLimitInMatch: UInt {
-        get {
-            UInt(onig_get_retry_limit_in_match())
-        }
-        
-        set {
-            onig_set_retry_limit_in_match(OnigULong(newValue))
-        }
-    }
-
-    /**
-     Get or set the default value of retry counts in a matching process., `0` means unlimited.
-     */
-    @OnigurumaActor
-    public static var defaultRetryLimitInSearch: UInt {
-        get {
-            UInt(onig_get_retry_limit_in_search())
-        }
-        
-        set {
-            onig_set_retry_limit_in_search(OnigULong(newValue))
-        }
-    }
 }

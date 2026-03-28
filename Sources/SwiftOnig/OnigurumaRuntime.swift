@@ -28,10 +28,24 @@ private enum OnigurumaWarningBridge {
         state.lock.unlock()
     }
 
+    static func standardHandler() -> OnigurumaWarningHandler? {
+        state.lock.lock()
+        let handler = state.standardHandler
+        state.lock.unlock()
+        return handler
+    }
+
     static func setVerboseHandler(_ handler: OnigurumaWarningHandler?) {
         state.lock.lock()
         state.verboseHandler = handler
         state.lock.unlock()
+    }
+
+    static func verboseHandler() -> OnigurumaWarningHandler? {
+        state.lock.lock()
+        let handler = state.verboseHandler
+        state.lock.unlock()
+        return handler
     }
 
     static func standard(_ message: String) {
@@ -102,24 +116,41 @@ enum OnigurumaBootstrap {
     }
 }
 
-/**
- A global actor used to synchronize access to the underlying oniguruma library's global state.
- */
-@globalActor
-public actor OnigurumaActor {
-    public static let shared = OnigurumaActor()
-
-    private var userUnicodePropertyStorage = [ContiguousArray<OnigCodePoint>]()
-
-    /**
-     Ensures that the oniguruma library and the specified encoding are initialized.
-     */
-    internal func ensureInitialized(encoding: OnigEncoding? = nil) throws {
-        try OnigurumaBootstrap.ensureInitialized(encoding: encoding)
+private enum OnigurumaRuntimeCoordinator {
+    private final class State: @unchecked Sendable {
+        let lock = NSLock()
+        var userUnicodePropertyStorage = [ContiguousArray<OnigCodePoint>]()
     }
 
-    fileprivate func defineUserUnicodeProperty(named name: String, ranges: [OnigurumaUnicodePropertyRange]) throws {
-        try ensureInitialized()
+    private static let state = State()
+
+    static func initialize<S: Sequence>(encodings: S) throws where S.Element == Encoding {
+        state.lock.lock()
+        defer { state.lock.unlock() }
+
+        try OnigurumaBootstrap.ensureInitialized()
+        for encoding in encodings {
+            try OnigurumaBootstrap.ensureInitialized(encoding: encoding.rawValue)
+        }
+    }
+
+    static func uninitialize() {
+        state.lock.lock()
+        defer { state.lock.unlock() }
+
+        OnigurumaBootstrap.reset()
+        state.userUnicodePropertyStorage.removeAll(keepingCapacity: false)
+        OnigurumaWarningBridge.reset()
+        OnigurumaCalloutRegistry.removeAll()
+        onig_set_warn_func(onigurumaStandardWarningCallback)
+        onig_set_verb_warn_func(onigurumaVerboseWarningCallback)
+    }
+
+    static func defineUnicodeProperty(named name: String, ranges: [OnigurumaUnicodePropertyRange]) throws {
+        state.lock.lock()
+        defer { state.lock.unlock() }
+
+        try OnigurumaBootstrap.ensureInitialized()
 
         guard !name.isEmpty,
               name.unicodeScalars.allSatisfy(\.isASCII),
@@ -156,14 +187,40 @@ public actor OnigurumaActor {
             throw OnigError(onigErrorCode: result)
         }
 
-        userUnicodePropertyStorage.append(storage)
+        state.userUnicodePropertyStorage.append(storage)
     }
 
-    fileprivate func reset() {
-        OnigurumaBootstrap.reset()
-        userUnicodePropertyStorage.removeAll(keepingCapacity: false)
-        OnigurumaWarningBridge.reset()
-        OnigurumaCalloutRegistry.removeAll()
+    static func registerCallout(
+        named name: String,
+        encoding: Encoding,
+        phases: OnigurumaCalloutPhaseSet,
+        handler: @escaping OnigurumaCalloutHandler
+    ) throws {
+        state.lock.lock()
+        defer { state.lock.unlock() }
+
+        try OnigurumaBootstrap.ensureInitialized(encoding: encoding.rawValue)
+
+        let bytes = ContiguousArray(name.utf8)
+        let result = bytes.withUnsafeBufferPointer { buffer -> OnigInt in
+            onig_set_callout_of_name(encoding.rawValue,
+                                     ONIG_CALLOUT_TYPE_SINGLE,
+                                     UnsafeMutablePointer(mutating: buffer.baseAddress),
+                                     UnsafeMutablePointer(mutating: buffer.baseAddress?.advanced(by: buffer.count)),
+                                     phases.rawValue,
+                                     onigurumaCalloutCallback,
+                                     nil,
+                                     0,
+                                     nil,
+                                     0,
+                                     nil)
+        }
+
+        if result < 0 {
+            throw OnigError(onigErrorCode: result)
+        }
+
+        OnigurumaCalloutRegistry.setHandler(handler, for: name)
     }
 }
 
@@ -214,56 +271,113 @@ internal struct OnigCGlobals {
     static var defaultSyntax: UnsafeMutablePointer<OnigSyntaxType> { get_onig_default_syntax() }
 }
 
-/**
- Optionally prewarm the shared runtime with specific encodings.
+public enum Oniguruma {
+    /**
+     Optionally prewarm the shared runtime with specific encodings.
 
- - Note: Normal library usage does not require this. SwiftOnig initializes itself automatically on first use.
- - Parameter encodings: Encodings to initialize eagerly, typically during application startup.
- */
-@OnigurumaActor
-public func initialize<S: Sequence>(encodings: S) async throws where S.Element == Encoding {
-    try await OnigurumaActor.shared.ensureInitialized()
-
-    for encoding in encodings {
-        try await OnigurumaActor.shared.ensureInitialized(encoding: encoding.rawValue)
+     - Note: Normal library usage does not require this. SwiftOnig initializes itself automatically on first use.
+     - Parameter encodings: Encodings to initialize eagerly, typically during application startup.
+     */
+    public static func initialize<S: Sequence>(encodings: S) throws where S.Element == Encoding {
+        try OnigurumaRuntimeCoordinator.initialize(encodings: encodings)
     }
-}
 
-/**
- Tear down the shared runtime state.
+    /**
+     Tear down the shared runtime state.
 
- - Note: Most applications do not need to call this.
- - Note: Regex objects created before `uninitialize()` must not be used afterwards.
- */
-@OnigurumaActor
-public func uninitialize() async {
-    await OnigurumaActor.shared.reset()
-}
+     - Note: Most applications do not need to call this.
+     - Note: Regex objects created before `uninitialize()` must not be used afterwards.
+     */
+    public static func uninitialize() {
+        OnigurumaRuntimeCoordinator.uninitialize()
+    }
 
-/**
- Register the global standard warning handler used by Oniguruma during regex compilation.
- */
-@OnigurumaActor
-public func setWarningHandler(_ handler: OnigurumaWarningHandler?) {
-    OnigurumaWarningBridge.setStandardHandler(handler)
-    onig_set_warn_func(onigurumaStandardWarningCallback)
-}
+    /**
+     Register the global standard warning handler used by Oniguruma during regex compilation.
+     */
+    public static var warningHandler: OnigurumaWarningHandler? {
+        get { OnigurumaWarningBridge.standardHandler() }
+        set {
+            OnigurumaWarningBridge.setStandardHandler(newValue)
+            onig_set_warn_func(onigurumaStandardWarningCallback)
+        }
+    }
 
-/**
- Register the global verbose warning handler used by Oniguruma during regex compilation.
- */
-@OnigurumaActor
-public func setVerboseWarningHandler(_ handler: OnigurumaWarningHandler?) {
-    OnigurumaWarningBridge.setVerboseHandler(handler)
-    onig_set_verb_warn_func(onigurumaVerboseWarningCallback)
-}
+    /**
+     Register the global verbose warning handler used by Oniguruma during regex compilation.
+     */
+    public static var verboseWarningHandler: OnigurumaWarningHandler? {
+        get { OnigurumaWarningBridge.verboseHandler() }
+        set {
+            OnigurumaWarningBridge.setVerboseHandler(newValue)
+            onig_set_verb_warn_func(onigurumaVerboseWarningCallback)
+        }
+    }
 
-/**
- Register a user-defined Unicode property for later use in regex patterns.
- */
-@OnigurumaActor
-public func defineUserUnicodeProperty(named name: String, ranges: [OnigurumaUnicodePropertyRange]) async throws {
-    try await OnigurumaActor.shared.defineUserUnicodeProperty(named: name, ranges: ranges)
+    /**
+     Register a user-defined Unicode property for later use in regex patterns.
+     */
+    public static func defineUnicodeProperty(named name: String, scalarRanges: [ClosedRange<Unicode.Scalar>]) throws {
+        let ranges = scalarRanges.map {
+            OnigurumaUnicodePropertyRange(OnigCodePoint($0.lowerBound.value), OnigCodePoint($0.upperBound.value))
+        }
+        try OnigurumaRuntimeCoordinator.defineUnicodeProperty(named: name, ranges: ranges)
+    }
+
+    public static func registerCallout(
+        named name: String,
+        encoding: Encoding = .utf8,
+        phases: OnigurumaCalloutPhaseSet = .both,
+        handler: @escaping OnigurumaCalloutHandler
+    ) throws {
+        try OnigurumaRuntimeCoordinator.registerCallout(named: name,
+                                                        encoding: encoding,
+                                                        phases: phases,
+                                                        handler: handler)
+    }
+
+    public static var version: String {
+        String(cString: onig_version())
+    }
+
+    public static var copyright: String {
+        String(cString: onig_copyright())
+    }
+
+    public static var defaultEncoding: Encoding {
+        get { Encoding(rawValue: onigenc_get_default_encoding()) }
+        set { _ = onigenc_set_default_encoding(newValue.rawValue) }
+    }
+
+    public static var defaultMatchStackLimitSize: UInt {
+        get { UInt(onig_get_match_stack_limit_size()) }
+        set { onig_set_match_stack_limit_size(OnigUInt(newValue)) }
+    }
+
+    public static var defaultRetryLimitInMatch: UInt {
+        get { UInt(onig_get_retry_limit_in_match()) }
+        set { onig_set_retry_limit_in_match(OnigULong(newValue)) }
+    }
+
+    public static var defaultRetryLimitInSearch: UInt {
+        get { UInt(onig_get_retry_limit_in_search()) }
+        set { onig_set_retry_limit_in_search(OnigULong(newValue)) }
+    }
+
+    public static var subexpCallLimitInSearch: UInt {
+        get { UInt(onig_get_subexp_call_limit_in_search()) }
+        set { _ = onig_set_subexp_call_limit_in_search(OnigULong(newValue)) }
+    }
+
+    public static var subexpCallMaxNestLevel: Int {
+        get { Int(onig_get_subexp_call_max_nest_level()) }
+        set { _ = onig_set_subexp_call_max_nest_level(OnigInt(newValue)) }
+    }
+
+    public static var parseDepthLimit: UInt {
+        get { UInt(onig_get_parse_depth_limit()) }
+        set { _ = onig_set_parse_depth_limit(OnigUInt(newValue)) }
+    }
 }
 
 /**
@@ -291,13 +405,3 @@ internal func callOnigFunction(_ body: () throws -> OnigInt) throws -> OnigInt {
 /**
  Get the oniguruma library version string.
  */
-public func version() -> String {
-    String(cString: onig_version())
-}
-
-/**
- Get the oniguruma library copyright string.
- */
-public func copyright() -> String {
-    String(cString: onig_copyright())
-}

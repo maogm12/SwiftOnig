@@ -39,7 +39,7 @@ Task {
         try await execute(pattern: #"(?!\G)a+\s*"#, str: "a aa aaa baaa", options: .notBeginPosition)
         try await execute(pattern: #"a+\s*"#, str: "a aa aaa baaa", options: .none)
         
-        await uninitialize()
+        Oniguruma.uninitialize()
         exit(EXIT_SUCCESS)
     } catch {
         print("Error: \(error)")

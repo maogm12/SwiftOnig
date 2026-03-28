@@ -8,8 +8,7 @@
 import Foundation
 import SwiftOnig
 
-@OnigurumaActor
-func execute(str: String, pattern: String, syntax: Syntax, options: Regex.Options) async throws {
+func execute(str: String, pattern: String, syntax: Syntax, options: Regex.Options) throws {
     print("Pattern: /\(pattern)/")
     print("String : \"\(str)\"")
 
@@ -28,8 +27,7 @@ func execute(str: String, pattern: String, syntax: Syntax, options: Regex.Option
     }
 }
 
-@OnigurumaActor
-func runListcap() async throws {
+func runListcap() throws {
     // SwiftOnig now handles initialization automatically on first use.
     
     let str1 = #"((())())"#
@@ -43,15 +41,15 @@ func runListcap() async throws {
     operators.insert(.variableMetaCharacters)
     syntax.operators = operators
 
-    try await execute(str: str1, pattern: pattern1, syntax: syntax, options: .none)
+    try execute(str: str1, pattern: pattern1, syntax: syntax, options: .none)
     print()
-    try await execute(str: str2, pattern: pattern2, syntax: syntax, options: .none)
+    try execute(str: str2, pattern: pattern2, syntax: syntax, options: .none)
 }
 
 Task {
     do {
-        try await runListcap()
-        await uninitialize()
+        try runListcap()
+        Oniguruma.uninitialize()
         exit(EXIT_SUCCESS)
     } catch {
         print("Error: \(error)")

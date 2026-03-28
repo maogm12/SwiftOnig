@@ -3,7 +3,6 @@ import OnigurumaC
 import Testing
 @testable import SwiftOnig
 
-@OnigurumaActor
 enum UpstreamOnigurumaSupport {
     enum SourceLiteralMode: Sendable {
         case utf8
@@ -51,7 +50,7 @@ enum UpstreamOnigurumaSupport {
         let expectation: RegsetExpectation
     }
 
-    static func verifyRegexSuite(_ cases: [RegexCase]) async {
+    static func verifyRegexSuite(_ cases: [RegexCase]) {
         for (index, testCase) in cases.enumerated() {
             do {
                 let regex = try Regex(patternBytes: testCase.pattern,
@@ -108,7 +107,7 @@ enum UpstreamOnigurumaSupport {
         }
     }
 
-    static func verifyRegsetSuite(_ cases: [RegsetCase]) async {
+    static func verifyRegsetSuite(_ cases: [RegsetCase]) {
         for (index, testCase) in cases.enumerated() {
             let inputBytes: [UInt8]
             switch testCase.input {

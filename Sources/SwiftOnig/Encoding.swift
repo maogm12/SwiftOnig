@@ -121,18 +121,6 @@ public struct Encoding: Equatable, CustomStringConvertible, Sendable {
     /// GB 18030
     public static var gb18030: Encoding { Encoding(rawValue: get_onig_gb18030()) }
 
-    /// Get or set the default encoding
-    @OnigurumaActor
-    public static var `default`: Encoding {
-        get {
-            Encoding(rawValue: onigenc_get_default_encoding())
-        }
-
-        set {
-            _ = onigenc_set_default_encoding(newValue.rawValue)
-        }
-    }
-    
     public var description: String {
         self.stringEncoding.description
     }

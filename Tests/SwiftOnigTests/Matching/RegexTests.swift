@@ -189,7 +189,7 @@ struct RegexTests {
         #expect(!noUnnamedCapture.nonameGroupCaptureIsActive)
 
         var syntax = Syntax(copying: Syntax.default)
-        await configureCaptureOnlyNamedGroup(on: &syntax)
+        configureCaptureOnlyNamedGroup(on: &syntax)
         let captureOnlyNamedRegex = try Regex(pattern: #"(?<name>\w+)(\d+)"#, syntax: syntax)
         #expect(!captureOnlyNamedRegex.nonameGroupCaptureIsActive)
 
@@ -197,7 +197,6 @@ struct RegexTests {
         #expect(optInUnnamedCapture.nonameGroupCaptureIsActive)
     }
 
-    @OnigurumaActor
     private func configureCaptureOnlyNamedGroup(on syntax: inout Syntax) {
         var behaviors = syntax.behaviors
         behaviors.insert(.captureOnlyNamedGroup)

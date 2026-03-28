@@ -179,8 +179,7 @@ struct RegionTests {
         #expect(r2[2] != nil)
     }
     
-    @OnigurumaActor
-    private func setupCaptureTreeSyntax() async -> Syntax {
+    private func setupCaptureTreeSyntax() -> Syntax {
         var syntax = Syntax(copying: Syntax.default)
         syntax.operators2.insert(.asteriskBraceCallout)
         return syntax
@@ -188,7 +187,7 @@ struct RegionTests {
 
     @Test("Capture Tree")
     func captureTree() async throws {
-        let syntax = await setupCaptureTreeSyntax()
+        let syntax = setupCaptureTreeSyntax()
         
         let regex = try Regex(pattern: #"(?@a(?@b))+"#,
                                options: .none,

@@ -24,7 +24,7 @@ Task {
 
         guard let match = match else {
             print("No match")
-            await uninitialize()
+            Oniguruma.uninitialize()
             exit(EXIT_SUCCESS)
         }
 
@@ -41,7 +41,7 @@ Task {
             return true
         }
         
-        await uninitialize()
+        Oniguruma.uninitialize()
         exit(EXIT_SUCCESS)
     } catch {
         print("Error: \(error)")

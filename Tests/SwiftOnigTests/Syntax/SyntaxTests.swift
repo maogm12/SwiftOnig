@@ -47,7 +47,6 @@ struct SyntaxTests {
 
     @Test("Python syntax preset and additional flags")
     func pythonSyntax() async throws {
-        @OnigurumaActor
         func configureAdditionalFlags(on syntax: inout Syntax) {
             var operators2 = syntax.operators2
             operators2.insert(.qmarkLtNamedGroup)
@@ -65,7 +64,7 @@ struct SyntaxTests {
         #expect(try !regex.matches("helloworld"))
 
         var custom = Syntax(copying: Syntax.default)
-        await configureAdditionalFlags(on: &custom)
+        configureAdditionalFlags(on: &custom)
         #expect(custom.operators2.contains(.qmarkLtNamedGroup))
         #expect(custom.operators2.contains(.escPBraceCircumflexNot))
         #expect(custom.operators2.contains(.escGSubexpCall))

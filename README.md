@@ -5,7 +5,7 @@ SwiftOnig is a modern, high-performance Swift wrapper for the [Oniguruma](https:
 ## Key Features
 
 - **Swift 6.0 Native**: Fully modernized with strict concurrency checking.
-- **Swift Concurrency**: Asynchronous APIs for regex compilation and searching.
+- **Modern Swift APIs**: Synchronous regex compilation plus string-native matching APIs.
 - **Thread Safe**: All core types (`Regex`, `Region`, `Encoding`, `Syntax`) are `Sendable`.
 - **RegexBuilder Support**: Seamlessly use SwiftOnig patterns within Swift's `RegexBuilder` DSL.
 - **Automatic Initialization**: No manual library setup required; encodings are initialized lazily on first use.
@@ -141,11 +141,11 @@ This keeps the raw-input model consistent across encodings: bytes plus explicit 
 
 ### Runtime Lifecycle APIs
 
-Most applications do not need to call `initialize(encodings:)` or `uninitialize()`.
+Most applications do not need to call `Oniguruma.initialize(encodings:)` or `Oniguruma.uninitialize()`.
 
 - Use the default lazy initialization unless you have a concrete startup or teardown requirement.
-- Use `initialize(encodings:)` only when you want to prewarm specific encodings.
-- Use `uninitialize()` only when you deliberately want to tear down the shared runtime and stop using previously compiled regex values afterward.
+- Use `Oniguruma.initialize(encodings:)` only when you want to prewarm specific encodings.
+- Use `Oniguruma.uninitialize()` only when you deliberately want to tear down the shared runtime and stop using previously compiled regex values afterward.
 
 ## Documentation
 

@@ -8,9 +8,8 @@
 import Testing
 import SwiftOnig
 
-@OnigurumaActor
 struct SwiftOnigTestSupport {
-    static func setup() async throws {
+    static func setup() throws {
         // SwiftOnig now handles initialization automatically,
         // but we can pre-warm if needed.
     }

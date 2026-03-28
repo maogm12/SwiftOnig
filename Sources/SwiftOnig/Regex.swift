@@ -683,54 +683,6 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
     public func captureGroupNumbers(for name: String) -> [Int] {
         storage.matchMetadata.namedCaptureGroupNumbers[name] ?? []
     }
-    
-    // MARK: Static properties
-    
-    /**
-     Get the limit of subexp call count.
-     - Note: Defaul value is `0` which means unlimited.
-     */
-    @OnigurumaActor
-    public static var subexpCallLimitInSearch: UInt {
-        get {
-            UInt(onig_get_subexp_call_limit_in_search())
-        }
-        
-        set {
-            _ = onig_set_subexp_call_limit_in_search(OnigULong(newValue))
-        }
-    }
-    
-    /**
-     Get or set the limit level of subexp call nest level.
-     - Note: Default value is `24`.
-     */
-    @OnigurumaActor
-    public static var subexpCallMaxNestLevel: Int {
-        get {
-            Int(onig_get_subexp_call_max_nest_level())
-        }
-        
-        set {
-            _ = onig_set_subexp_call_max_nest_level(OnigInt(newValue))
-        }
-    }
-    
-    /**
-     Get or set the maximum depth of parser recursion.
-     - Note: Default value is `4096`, if the `newValue` is `0`, default value which is `4096` will be set,
-     */
-    @OnigurumaActor
-    public static var parseDepthLimit: UInt {
-        get {
-            UInt(onig_get_parse_depth_limit())
-        }
-        
-        set {
-            _ = onig_set_parse_depth_limit(OnigUInt(newValue))
-        }
-    }
-    
 }
 
 // MARK: Regex options and search options

@@ -32,12 +32,12 @@ struct SwiftOnigTests {
 
     @Test("Verify Version")
     func version() async throws {
-        #expect(SwiftOnig.version().count > 0)
+        #expect(SwiftOnig.Oniguruma.version.count > 0)
     }
 
     @Test("Verify Copyright")
     func copyright() async throws {
-        #expect(SwiftOnig.copyright().count > 0)
+        #expect(SwiftOnig.Oniguruma.copyright.count > 0)
     }
 
     @Test("Capture standard and verbose warnings")
@@ -45,8 +45,8 @@ struct SwiftOnigTests {
         let standardMessages = MessageBox()
         let verboseMessages = MessageBox()
 
-        await setWarningHandler { standardMessages.append($0) }
-        await setVerboseWarningHandler { verboseMessages.append($0) }
+        Oniguruma.warningHandler = { standardMessages.append($0) }
+        Oniguruma.verboseWarningHandler = { verboseMessages.append($0) }
 
         _ = try Regex(pattern: "[a-b-c]")
         _ = try Regex(pattern: "(?:a*)+")
@@ -54,17 +54,17 @@ struct SwiftOnigTests {
         #expect(standardMessages.values.contains { $0.localizedCaseInsensitiveContains("character class") || $0.localizedCaseInsensitiveContains("escaped") })
         #expect(verboseMessages.values.contains { $0.localizedCaseInsensitiveContains("nested repeat") })
 
-        await setWarningHandler(nil)
-        await setVerboseWarningHandler(nil)
+        Oniguruma.warningHandler = nil
+        Oniguruma.verboseWarningHandler = nil
     }
 
     @Test("Define user Unicode property")
     func userUnicodeProperty() async throws {
-        try await defineUserUnicodeProperty(
+        try Oniguruma.defineUnicodeProperty(
             named: "SwiftOnigKana",
-            ranges: [
-                OnigurumaUnicodePropertyRange(0x3042, 0x3042), // あ
-                OnigurumaUnicodePropertyRange(0x3044, 0x3044), // い
+            scalarRanges: [
+                Unicode.Scalar(0x3042)! ... Unicode.Scalar(0x3042)!,
+                Unicode.Scalar(0x3044)! ... Unicode.Scalar(0x3044)!,
             ]
         )
 
@@ -75,28 +75,24 @@ struct SwiftOnigTests {
 
     @Test("Reject invalid user Unicode property definitions")
     func invalidUserUnicodeProperty() async throws {
-        await #expect(throws: OnigError.invalidArgument) {
-            try await defineUserUnicodeProperty(named: "", ranges: [OnigurumaUnicodePropertyRange(0x3042, 0x3042)])
+        #expect(throws: OnigError.invalidArgument) {
+            try Oniguruma.defineUnicodeProperty(named: "", scalarRanges: [Unicode.Scalar(0x3042)! ... Unicode.Scalar(0x3042)!])
         }
 
-        await #expect(throws: OnigError.invalidArgument) {
-            try await defineUserUnicodeProperty(named: "名前", ranges: [OnigurumaUnicodePropertyRange(0x3042, 0x3042)])
+        #expect(throws: OnigError.invalidArgument) {
+            try Oniguruma.defineUnicodeProperty(named: "名前", scalarRanges: [Unicode.Scalar(0x3042)! ... Unicode.Scalar(0x3042)!])
         }
 
-        await #expect(throws: OnigError.invalidArgument) {
-            try await defineUserUnicodeProperty(named: "SwiftOnigEmpty", ranges: [])
+        #expect(throws: OnigError.invalidArgument) {
+            try Oniguruma.defineUnicodeProperty(named: "SwiftOnigEmpty", scalarRanges: [])
         }
 
-        await #expect(throws: OnigError.invalidArgument) {
-            try await defineUserUnicodeProperty(named: "SwiftOnigReverse", ranges: [OnigurumaUnicodePropertyRange(0x3044, 0x3042)])
-        }
-
-        await #expect(throws: OnigError.invalidArgument) {
-            try await defineUserUnicodeProperty(
+        #expect(throws: OnigError.invalidArgument) {
+            try Oniguruma.defineUnicodeProperty(
                 named: "SwiftOnigOverlap",
-                ranges: [
-                    OnigurumaUnicodePropertyRange(0x3042, 0x3044),
-                    OnigurumaUnicodePropertyRange(0x3044, 0x3046),
+                scalarRanges: [
+                    Unicode.Scalar(0x3042)! ... Unicode.Scalar(0x3044)!,
+                    Unicode.Scalar(0x3044)! ... Unicode.Scalar(0x3046)!,
                 ]
             )
         }
@@ -105,7 +101,7 @@ struct SwiftOnigTests {
     @Test("Named callout registration")
     func namedCallout() async throws {
         let phases = MessageBox()
-        try await registerCallout(named: "swiftTestCallout") { context in
+        try Oniguruma.registerCallout(named: "swiftTestCallout") { context in
             phases.append("\(context.phase):\(context.name ?? "")")
             return .continue
         }
@@ -117,9 +113,9 @@ struct SwiftOnigTests {
 
     @Test("Repeated initialize calls are idempotent")
     func repeatedInitializeIsIdempotent() async throws {
-        try await initialize(encodings: [Encoding.utf8, .utf8, .gb18030])
-        try await initialize(encodings: [Encoding.gb18030, .utf8])
-        try await initialize(encodings: [Encoding]())
+        try Oniguruma.initialize(encodings: [Encoding.utf8, .utf8, .gb18030])
+        try Oniguruma.initialize(encodings: [Encoding.gb18030, .utf8])
+        try Oniguruma.initialize(encodings: [Encoding]())
 
         let utf8Regex = try Regex(pattern: #"\A\d+\z"#)
         #expect(try utf8Regex.matches("123"))
@@ -135,7 +131,7 @@ struct SwiftOnigTests {
         let autoBootstrapped = try Regex(pattern: #"\Aabc\z"#)
         #expect(try autoBootstrapped.matches("abc"))
 
-        try await initialize(encodings: [Encoding.utf8, .utf16LittleEndian, .gb18030])
+        try Oniguruma.initialize(encodings: [Encoding.utf8, .utf16LittleEndian, .gb18030])
 
         let utf16Pattern = Array("你好".utf16).withUnsafeBufferPointer { Data(buffer: $0) }
         let utf16Regex = try Regex(patternBytes: utf16Pattern, encoding: .utf16LittleEndian)
@@ -151,9 +147,9 @@ struct SwiftOnigTests {
     @Test("Explicit initialize works after uninitialize")
     func explicitInitializeAfterReset() async throws {
         _ = try Regex(pattern: #"\Afoo\z"#)
-        await uninitialize()
+        Oniguruma.uninitialize()
 
-        try await initialize(encodings: [Encoding.utf8, .utf16LittleEndian])
+        try Oniguruma.initialize(encodings: [Encoding.utf8, .utf16LittleEndian])
 
         let utf8Regex = try Regex(pattern: #"\Abar\z"#)
         #expect(try utf8Regex.matches("bar"))
@@ -166,15 +162,15 @@ struct SwiftOnigTests {
 
     @Test("Uninitialize resets runtime state for reuse")
     func uninitializeResetsRuntimeState() async throws {
-        try await defineUserUnicodeProperty(
+        try Oniguruma.defineUnicodeProperty(
             named: "SwiftOnigResetKana",
-            ranges: [OnigurumaUnicodePropertyRange(0x3042, 0x3042)]
+            scalarRanges: [Unicode.Scalar(0x3042)! ... Unicode.Scalar(0x3042)!]
         )
         let before = try Regex(pattern: #"\A\p{SwiftOnigResetKana}\z"#)
         #expect(try before.matches("あ"))
 
         let firstPhases = MessageBox()
-        try await registerCallout(named: "swiftResetCallout") { context in
+        try Oniguruma.registerCallout(named: "swiftResetCallout") { context in
             firstPhases.append("before:\(context.name ?? "")")
             return .continue
         }
@@ -182,7 +178,7 @@ struct SwiftOnigTests {
         #expect(try beforeCalloutRegex.matches("ok"))
         #expect(firstPhases.values == ["before:swiftResetCallout"])
 
-        await uninitialize()
+        Oniguruma.uninitialize()
 
         let after = try Regex(pattern: #"\A\p{SwiftOnigResetKana}\z"#)
         #expect(try !after.matches("あ"))
@@ -190,16 +186,16 @@ struct SwiftOnigTests {
             _ = try Regex(pattern: #"\A(*swiftResetCallout)ok\z"#)
         }
 
-        try await defineUserUnicodeProperty(
+        try Oniguruma.defineUnicodeProperty(
             named: "SwiftOnigResetKana",
-            ranges: [OnigurumaUnicodePropertyRange(0x3044, 0x3044)]
+            scalarRanges: [Unicode.Scalar(0x3044)! ... Unicode.Scalar(0x3044)!]
         )
         let redefined = try Regex(pattern: #"\A\p{SwiftOnigResetKana}\z"#)
         #expect(try !redefined.matches("あ"))
         #expect(try redefined.matches("い"))
 
         let secondPhases = MessageBox()
-        try await registerCallout(named: "swiftResetCallout") { context in
+        try Oniguruma.registerCallout(named: "swiftResetCallout") { context in
             secondPhases.append("after:\(context.name ?? "")")
             return .continue
         }
@@ -213,8 +209,8 @@ struct SwiftOnigTests {
         let firstStandard = MessageBox()
         let firstVerbose = MessageBox()
 
-        await setWarningHandler { firstStandard.append("first:\($0)") }
-        await setVerboseWarningHandler { firstVerbose.append("first:\($0)") }
+        Oniguruma.warningHandler = { firstStandard.append("first:\($0)") }
+        Oniguruma.verboseWarningHandler = { firstVerbose.append("first:\($0)") }
 
         _ = try Regex(pattern: "[a-b-c]")
         _ = try Regex(pattern: "(?:a*)+")
@@ -222,7 +218,7 @@ struct SwiftOnigTests {
         #expect(!firstStandard.values.isEmpty)
         #expect(!firstVerbose.values.isEmpty)
 
-        await uninitialize()
+        Oniguruma.uninitialize()
 
         _ = try Regex(pattern: "[a-b-c]")
         _ = try Regex(pattern: "(?:a*)+")
@@ -232,8 +228,8 @@ struct SwiftOnigTests {
 
         let secondStandard = MessageBox()
         let secondVerbose = MessageBox()
-        await setWarningHandler { secondStandard.append("second:\($0)") }
-        await setVerboseWarningHandler { secondVerbose.append("second:\($0)") }
+        Oniguruma.warningHandler = { secondStandard.append("second:\($0)") }
+        Oniguruma.verboseWarningHandler = { secondVerbose.append("second:\($0)") }
 
         _ = try Regex(pattern: "[a-b-c]")
         _ = try Regex(pattern: "(?:a*)+")
@@ -245,15 +241,15 @@ struct SwiftOnigTests {
         #expect(firstStandard.values.allSatisfy { $0.hasPrefix("first:") })
         #expect(firstVerbose.values.allSatisfy { $0.hasPrefix("first:") })
 
-        await setWarningHandler(nil)
-        await setVerboseWarningHandler(nil)
+        Oniguruma.warningHandler = nil
+        Oniguruma.verboseWarningHandler = nil
     }
 
     @Test("Warning handlers release captured values when cleared")
     func warningHandlerStorageReleasesClosures() async throws {
         var standardToken: LifetimeToken? = LifetimeToken("standard")
         weak let weakStandardToken = standardToken
-        await setWarningHandler { [retained = standardToken!] _ in
+        Oniguruma.warningHandler = { [retained = standardToken!] _ in
             _ = retained.id
         }
         standardToken = nil
@@ -261,14 +257,14 @@ struct SwiftOnigTests {
 
         var verboseToken: LifetimeToken? = LifetimeToken("verbose")
         weak let weakVerboseToken = verboseToken
-        await setVerboseWarningHandler { [retained = verboseToken!] _ in
+        Oniguruma.verboseWarningHandler = { [retained = verboseToken!] _ in
             _ = retained.id
         }
         verboseToken = nil
         #expect(weakVerboseToken != nil)
 
-        await setWarningHandler(nil)
-        await setVerboseWarningHandler(nil)
+        Oniguruma.warningHandler = nil
+        Oniguruma.verboseWarningHandler = nil
 
         #expect(weakStandardToken == nil)
         #expect(weakVerboseToken == nil)
@@ -278,7 +274,7 @@ struct SwiftOnigTests {
     func namedCalloutStorageReleasesClosures() async throws {
         var firstToken: LifetimeToken? = LifetimeToken("first")
         weak let weakFirstToken = firstToken
-        try await registerCallout(named: "swiftLifetimeCallout") { [retained = firstToken!] _ in
+        try Oniguruma.registerCallout(named: "swiftLifetimeCallout") { [retained = firstToken!] _ in
             _ = retained.id
             return .continue
         }
@@ -287,7 +283,7 @@ struct SwiftOnigTests {
 
         var secondToken: LifetimeToken? = LifetimeToken("second")
         weak let weakSecondToken = secondToken
-        try await registerCallout(named: "swiftLifetimeCallout") { [retained = secondToken!] _ in
+        try Oniguruma.registerCallout(named: "swiftLifetimeCallout") { [retained = secondToken!] _ in
             _ = retained.id
             return .continue
         }
@@ -296,7 +292,7 @@ struct SwiftOnigTests {
         #expect(weakFirstToken == nil)
         #expect(weakSecondToken != nil)
 
-        await uninitialize()
+        Oniguruma.uninitialize()
 
         #expect(weakSecondToken == nil)
     }

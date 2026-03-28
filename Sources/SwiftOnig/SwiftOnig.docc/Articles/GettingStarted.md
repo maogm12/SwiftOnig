@@ -48,17 +48,17 @@ let trimmed = try input.trimmingPrefix(regex)
 
 SwiftOnig initializes itself automatically on first use, so no manual setup is required for normal usage.
 
-If your application wants to prewarm specific encodings during startup, you can do that explicitly through `initialize(encodings:)`.
+If your application wants to prewarm specific encodings during startup, you can do that explicitly through `Oniguruma.initialize(encodings:)`.
 
 ```swift
 import SwiftOnig
 
-try await SwiftOnig.initialize(encodings: [.utf8])
+try SwiftOnig.Oniguruma.initialize(encodings: [.utf8])
 ```
 
 ### Runtime Teardown
 
-Most applications do not need to call `uninitialize()`. It is an advanced lifecycle API for cases where you explicitly want to tear down the shared runtime, and previously created regex objects must not be reused after that point.
+Most applications do not need to call `Oniguruma.uninitialize()`. It is an advanced lifecycle API for cases where you explicitly want to tear down the shared runtime, and previously created regex objects must not be reused after that point.
 
 ### Non-UTF Byte Encodings
 

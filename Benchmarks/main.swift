@@ -148,7 +148,7 @@ func runBenchmarks() async throws {
     let unicodePattern = #"(你好)(世界)"#
     let unicodeInput = "你好世界"
 
-    try await SwiftOnig.initialize(encodings: [.utf8, .utf16LittleEndian])
+    try SwiftOnig.Oniguruma.initialize(encodings: [.utf8, .utf16LittleEndian])
 
     print("--- Regex Engine Benchmarks ---")
     print("Warmup runs: \(benchmarkWarmupRuns)")

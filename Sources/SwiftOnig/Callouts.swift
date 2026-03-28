@@ -197,32 +197,3 @@ internal func onigurumaCalloutCallback(_ args: OpaquePointer?, _ userData: Unsaf
     let action = resolveCalloutHandler(for: context, state: state)?(context) ?? .continue
     return action.rawValue
 }
-
-@OnigurumaActor
-public func registerCallout(named name: String,
-                            encoding: Encoding = .utf8,
-                            phases: OnigurumaCalloutPhaseSet = .both,
-                            handler: @escaping OnigurumaCalloutHandler) async throws {
-    try await OnigurumaActor.shared.ensureInitialized(encoding: encoding.rawValue)
-
-    let bytes = ContiguousArray(name.utf8)
-    let result = bytes.withUnsafeBufferPointer { buffer -> OnigInt in
-        onig_set_callout_of_name(encoding.rawValue,
-                                 ONIG_CALLOUT_TYPE_SINGLE,
-                                 UnsafeMutablePointer(mutating: buffer.baseAddress),
-                                 UnsafeMutablePointer(mutating: buffer.baseAddress?.advanced(by: buffer.count)),
-                                 phases.rawValue,
-                                 onigurumaCalloutCallback,
-                                 nil,
-                                 0,
-                                 nil,
-                                 0,
-                                 nil)
-    }
-
-    if result < 0 {
-        throw OnigError(onigErrorCode: result)
-    }
-
-    OnigurumaCalloutRegistry.setHandler(handler, for: name)
-}
