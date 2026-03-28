@@ -427,4 +427,23 @@ struct SwiftOnigTests {
         let regex = try Regex(pattern: #"\Aa(?{Y}X)b\z"#)
         #expect(try "ab".firstMatch(of: regex, matchParam: matchParam) != nil)
     }
+
+    @Test("Retraction callouts fire on backtracking")
+    func retractionCallout() async throws {
+        let phases = MessageBox()
+        var matchParam = MatchParam()
+        matchParam.setProgressCallout { context in
+            phases.append("progress:\(context.contents ?? "")")
+            return .continue
+        }
+        matchParam.setRetractionCallout { context in
+            phases.append("retraction:\(context.contents ?? "")")
+            return .continue
+        }
+
+        let regex = try Regex(pattern: #"\A(?:(?{R}X)a)?a\z"#)
+        #expect(try "a".firstMatch(of: regex, matchParam: matchParam) != nil)
+        #expect(phases.values.contains("progress:R"))
+        #expect(phases.values.contains("retraction:R"))
+    }
 }

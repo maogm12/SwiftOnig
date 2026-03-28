@@ -5,6 +5,14 @@ import OnigurumaC
 
 @Suite("Internal Coverage Tests")
 struct InternalCoverageTests {
+    struct ByteBox: ContiguousBytes, OnigurumaString {
+        let storage: [UInt8]
+
+        func withUnsafeBytes<Result>(_ body: (UnsafeRawBufferPointer) throws -> Result) rethrows -> Result {
+            try storage.withUnsafeBytes(body)
+        }
+    }
+
     final class FakeOwnedResource: OnigOwnedResource {
         typealias RawResource = Int
 
@@ -114,8 +122,40 @@ struct InternalCoverageTests {
 
         let dataCount = emptyData.withOnigurumaString(requestedEncoding: .utf8) { _, count in count }
         let arrayCount = emptyArray.withOnigurumaString(requestedEncoding: .utf8) { _, count in count }
+        let nilBufferCount = try OnigurumaInputAdapters.withRawBytes(UnsafeRawBufferPointer(start: nil, count: 0)) { _, count in
+            count
+        }
 
         #expect(dataCount == 0)
         #expect(arrayCount == 0)
+        #expect(nilBufferCount == 0)
+    }
+
+    @Test("Contiguous byte and slice adapters forward through generic helpers")
+    func genericByteAndSliceAdapters() throws {
+        let byteBox = ByteBox(storage: [9, 8, 7])
+        let byteBoxResult = byteBox.withOnigurumaString(requestedEncoding: .utf8) { start, count in
+            Array(UnsafeBufferPointer(start: start, count: count))
+        }
+        #expect(byteBoxResult == [9, 8, 7])
+
+        let singleton = CollectionOfOne<UInt8>(42)
+        let singletonSlice = singleton[singleton.startIndex...]
+        let sliceResult = singletonSlice.withOnigurumaString(requestedEncoding: .utf8) { start, count in
+            (count, start.pointee)
+        }
+        #expect(sliceResult.0 == 1)
+        #expect(sliceResult.1 == 42)
+    }
+
+    @Test("UTF-16 helpers handle contiguous buffers and bridged strings")
+    func utf16HelperFastPaths() throws {
+        let units = ContiguousArray<UInt16>([0x4F60, 0x597D])
+        let directCount = try OnigurumaInputAdapters.withUTF16CodeUnits(units) { _, count in count }
+        #expect(directCount == units.count * 2)
+
+        let bridged = String(NSString(string: "你好"))
+        let bridgedCount = bridged._withUTF16OnigurumaString { _, count in count }
+        #expect(bridgedCount == bridged.utf16.count * 2)
     }
 }
