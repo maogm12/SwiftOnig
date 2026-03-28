@@ -204,9 +204,7 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
      The syntax used to create this regex.
      */
     public var syntax: Syntax {
-        get async {
-            storage.syntax
-        }
+        storage.syntax
     }
     
     // MARK: Match & Search

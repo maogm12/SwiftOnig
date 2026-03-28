@@ -189,7 +189,7 @@ This section tracks the packaging refactor from a system-installed Oniguruma dep
 ## 20. Swifty API Cleanup Pass
 
 - [x] Record the remaining non-Swifty public APIs and the leftover unnecessary async surface in [`Docs/swifty-api-cleanup-plan.md`](Docs/swifty-api-cleanup-plan.md).
-- [ ] Remove the final unnecessary public async accessor from `Regex`.
+- [x] Remove the final unnecessary public async accessor from `Regex`.
 - [ ] Rework `MatchParam` toward property-style configuration.
 - [ ] Introduce a dedicated `RegexSet` result type instead of returning an anonymous tuple from `firstSetMatch`.
 - [ ] Make callout raw-offset naming explicit and continue treating callouts as advanced raw APIs.
