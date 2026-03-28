@@ -89,21 +89,20 @@ public struct RegexSet: Sendable {
      - Parameter regexes: A sequence of regular expressions.
      - Throws: `OnigError`
      */
-    public init<S>(regexes: S) async throws where S: Sequence, S.Element == Regex {
+    public init<S>(regexes: S) throws where S: Sequence, S.Element == Regex {
         let regexes = [Regex](regexes)
         try Self.validateRegexes(regexes)
-        try await Self.initializeRuntime(for: regexes)
+        try Self.initializeRuntime(for: regexes)
         self.storage = try Storage(regexes: regexes)
     }
 
     /**
      Create a `RegexSet` with a sequence of string patterns.
      */
-    @OnigurumaActor
     public init<S, P>(patterns: S,
                       options: Regex.Options = .none,
                       syntax: Syntax? = nil
-    ) async throws where S: Sequence, S.Element == P, P: StringProtocol {
+    ) throws where S: Sequence, S.Element == P, P: StringProtocol {
         var compiledRegexes = [Regex]()
         for pattern in patterns {
             compiledRegexes.append(try Regex(pattern: pattern, options: options, syntax: syntax))
@@ -115,12 +114,11 @@ public struct RegexSet: Sendable {
     /**
      Create a `RegexSet` with a sequence of patterns.
      */
-    @OnigurumaActor
     public init<S, P>(patternsBytes: S,
                       encoding: Encoding,
                       options: Regex.Options = .none,
                       syntax: Syntax? = nil
-    ) async throws where S: Sequence, S.Element == P, P: Sequence, P.Element == UInt8 {
+    ) throws where S: Sequence, S.Element == P, P: Sequence, P.Element == UInt8 {
         var compiledRegexes = [Regex]()
         for patternBytes in patternsBytes {
             compiledRegexes.append(try Regex(patternBytes: patternBytes, encoding: encoding, options: options, syntax: syntax))
@@ -143,11 +141,11 @@ public struct RegexSet: Sendable {
         }
     }
 
-    private static func initializeRuntime(for regexes: [Regex]) async throws {
+    private static func initializeRuntime(for regexes: [Regex]) throws {
         if let firstRegex = regexes.first {
-            try await OnigurumaActor.shared.ensureInitialized(encoding: firstRegex.encoding.rawValue)
+            try OnigurumaBootstrap.ensureInitialized(encoding: firstRegex.encoding.rawValue)
         } else {
-            try await OnigurumaActor.shared.ensureInitialized()
+            try OnigurumaBootstrap.ensureInitialized()
         }
     }
 

@@ -127,7 +127,7 @@ enum UpstreamOnigurumaSupport {
                 for pattern in testCase.patterns {
                     regexes.append(try Regex(patternBytes: pattern, encoding: .utf8))
                 }
-                let regset = try await RegexSet(regexes: regexes)
+                let regset = try RegexSet(regexes: regexes)
                 let result = try regset.firstSetMatch(in: inputBytes, lead: testCase.lead)
 
                 switch testCase.expectation {
