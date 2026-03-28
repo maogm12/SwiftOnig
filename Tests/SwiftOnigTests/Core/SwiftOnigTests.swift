@@ -363,10 +363,12 @@ struct SwiftOnigTests {
         final class CalloutBox: @unchecked Sendable {
             private let lock = NSLock()
             private(set) var payloads = [String]()
+            private(set) var contexts = [OnigurumaCalloutContext]()
 
-            func append(_ value: String) {
+            func append(_ value: String, context: OnigurumaCalloutContext) {
                 lock.lock()
                 payloads.append(value)
+                contexts.append(context)
                 lock.unlock()
             }
         }
@@ -376,13 +378,53 @@ struct SwiftOnigTests {
         matchParam.setCalloutUserData("payload")
         matchParam.setProgressCallout { context in
             if let userData = context.userData as? String {
-                box.append(userData)
+                box.append(userData, context: context)
             }
             return .continue
         }
 
-        let regex = try Regex(pattern: #"\Aa(?{swift-content}X)b\z"#)
+        let regex = try Regex(pattern: #"\Aa(?{X}X)b\z"#)
         #expect(try "ab".firstMatch(of: regex, matchParam: matchParam) != nil)
         #expect(box.payloads.contains("payload"))
+        #expect(box.contexts.count == 1)
+        #expect(box.contexts[0].phase == .progress)
+        #expect(box.contexts[0].name == nil)
+        #expect(box.contexts[0].contents == "X")
+        #expect(box.contexts[0].currentOffset == 1)
+        #expect(box.contexts[0].startOffset == 0)
+        #expect(box.contexts[0].searchRangeUpperBound == 2)
+        #expect(box.contexts[0].arguments.isEmpty)
+        #expect(box.contexts[0].captureRanges.count == 1)
+    }
+
+    @Test("Callout support types expose stable raw values")
+    func calloutSupportTypes() async throws {
+        #expect(OnigurumaCalloutPhaseSet.progress.rawValue != 0)
+        #expect(OnigurumaCalloutPhaseSet.retraction.rawValue != 0)
+        #expect(OnigurumaCalloutPhaseSet.both.contains(.progress))
+        #expect(OnigurumaCalloutPhaseSet.both.contains(.retraction))
+        #expect(OnigurumaCalloutAction.continue.rawValue == 0)
+        #expect(OnigurumaCalloutAction.fail.rawValue == 1)
+
+        let arguments: [OnigurumaCalloutArgument] = [
+            .long(1),
+            .codePoint(Unicode.Scalar("A").value),
+            .string("hello"),
+            .pointer(123),
+            .tag(9),
+        ]
+        #expect(arguments.count == 5)
+
+        var matchParam = MatchParam()
+        matchParam.setMatchStackLimitSize(to: 64)
+        matchParam.setRetryLimitInMatch(to: 65)
+        matchParam.setRetryLimitInSearch(to: 66)
+        matchParam.setCalloutUserData("payload")
+        matchParam.setProgressCallout { _ in .fail }
+        matchParam.setRetractionCallout { _ in .continue }
+        matchParam.reset()
+
+        let regex = try Regex(pattern: #"\Aa(?{Y}X)b\z"#)
+        #expect(try "ab".firstMatch(of: regex, matchParam: matchParam) != nil)
     }
 }

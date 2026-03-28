@@ -40,6 +40,8 @@ struct RegexSetTests {
         let regex1 = regSet[0]
         #expect(try regex1.matches("aaaa"))
         #expect(try !regex1.matches("bbbb"))
+        #expect(regSet.startIndex == 0)
+        #expect(regSet.endIndex == 2)
     }
 
     @Test("Search")
@@ -70,6 +72,32 @@ struct RegexSetTests {
         #expect(result.regexIndex == 1)
         #expect(result.region.range == 0..<4)
         #expect(result.region.decodedString() == "你好")
+    }
+
+    @Test("RegexSet empty and matchParam search paths")
+    func emptyAndMatchParamSearch() async throws {
+        let empty = try RegexSet(regexes: [Regex]())
+        #expect(try empty.firstSetMatch(in: "abc") == nil)
+
+        let regSet = try RegexSet(regexes: [try Regex(pattern: "a+"), try Regex(pattern: "b+")])
+        var matchParam = MatchParam()
+        matchParam.setRetryLimitInSearch(to: 1_000)
+        let params = [matchParam, matchParam]
+
+        let result = try regSet.firstSetMatch(in: "xxbbb", of: 2..<5, lead: .regexLead, matchParams: params)
+        #expect(result?.regexIndex == 1)
+        #expect(result?.region.decodedString() == "bbb")
+    }
+
+    @Test("RegexSet lead enum matches Oniguruma constants")
+    func leadEnumValues() async throws {
+        let positionLead = RegexSet.Lead.positionLead.onigRegSetLead
+        let regexLead = RegexSet.Lead.regexLead.onigRegSetLead
+        let priorityLead = RegexSet.Lead.priorityToRegexOrder.onigRegSetLead
+
+        #expect(positionLead != regexLead)
+        #expect(regexLead != priorityLead)
+        #expect(positionLead != priorityLead)
     }
 
     @Test("Mutable operations")

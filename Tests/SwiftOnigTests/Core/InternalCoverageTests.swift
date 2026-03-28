@@ -106,4 +106,16 @@ struct InternalCoverageTests {
         #expect(stringCount == input.utf16.count * 2)
         #expect(substringCount == input.utf16.count * 2)
     }
+
+    @Test("Empty raw byte containers expose zero-length buffers")
+    func emptyRawByteAdapters() throws {
+        let emptyData = Data()
+        let emptyArray = [UInt8]()
+
+        let dataCount = emptyData.withOnigurumaString(requestedEncoding: .utf8) { _, count in count }
+        let arrayCount = emptyArray.withOnigurumaString(requestedEncoding: .utf8) { _, count in count }
+
+        #expect(dataCount == 0)
+        #expect(arrayCount == 0)
+    }
 }

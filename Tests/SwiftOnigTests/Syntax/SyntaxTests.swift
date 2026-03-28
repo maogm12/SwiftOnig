@@ -70,4 +70,38 @@ struct SyntaxTests {
         #expect(custom.operators2.contains(.escGSubexpCall))
         #expect(custom.operators2.contains(.escCapitalNSuperDot))
     }
+
+    @Test("All syntax presets are synchronously accessible")
+    func syntaxPresets() async throws {
+        let presets: [Syntax] = [
+            .asis,
+            .posixBasic,
+            .posixExtended,
+            .emacs,
+            .grep,
+            .gnuRegex,
+            .java,
+            .perl,
+            .perlNg,
+            .python,
+            .ruby,
+            .oniguruma,
+            .default,
+        ]
+
+        #expect(presets.count == 13)
+        #expect(presets.contains { $0.operators.contains(.dotAnyChar) || $0.operators.contains(.asteriskZeroOrMore) })
+    }
+
+    @Test("Meta character tables can be mutated")
+    func metaCharMutation() async throws {
+        var syntax = Syntax(copying: .default)
+        var table = syntax.metaCharTable
+        table[.AnyChar] = .CodePoint(Unicode.Scalar(".").value)
+        table[.AnyTime] = .Ineffective
+        syntax.metaCharTable = table
+
+        #expect(syntax.metaCharTable[.AnyChar].description == ".")
+        #expect(syntax.metaCharTable[.AnyTime].description.isEmpty)
+    }
 }
