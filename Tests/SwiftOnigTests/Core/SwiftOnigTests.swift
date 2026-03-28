@@ -40,6 +40,67 @@ struct SwiftOnigTests {
         #expect(SwiftOnig.Oniguruma.copyright.count > 0)
     }
 
+    @Test("Runtime defaults and global limits are synchronously configurable")
+    func runtimeProperties() async throws {
+        let originalEncoding = Oniguruma.defaultEncoding
+        let originalMatchStack = Oniguruma.defaultMatchStackLimitSize
+        let originalRetryInMatch = Oniguruma.defaultRetryLimitInMatch
+        let originalRetryInSearch = Oniguruma.defaultRetryLimitInSearch
+        let originalSubexpLimit = Oniguruma.subexpCallLimitInSearch
+        let originalSubexpNest = Oniguruma.subexpCallMaxNestLevel
+        let originalParseDepth = Oniguruma.parseDepthLimit
+
+        defer {
+            Oniguruma.defaultEncoding = originalEncoding
+            Oniguruma.defaultMatchStackLimitSize = originalMatchStack
+            Oniguruma.defaultRetryLimitInMatch = originalRetryInMatch
+            Oniguruma.defaultRetryLimitInSearch = originalRetryInSearch
+            Oniguruma.subexpCallLimitInSearch = originalSubexpLimit
+            Oniguruma.subexpCallMaxNestLevel = originalSubexpNest
+            Oniguruma.parseDepthLimit = originalParseDepth
+        }
+
+        Oniguruma.defaultEncoding = .utf8
+        Oniguruma.defaultMatchStackLimitSize = 1024
+        Oniguruma.defaultRetryLimitInMatch = 2048
+        Oniguruma.defaultRetryLimitInSearch = 4096
+        Oniguruma.subexpCallLimitInSearch = 123
+        Oniguruma.subexpCallMaxNestLevel = 7
+        Oniguruma.parseDepthLimit = 55
+
+        #expect(Oniguruma.defaultEncoding == .utf8)
+        #expect(Oniguruma.defaultMatchStackLimitSize == 1024)
+        #expect(Oniguruma.defaultRetryLimitInMatch == 2048)
+        #expect(Oniguruma.defaultRetryLimitInSearch == 4096)
+        #expect(Oniguruma.subexpCallLimitInSearch == 123)
+        #expect(Oniguruma.subexpCallMaxNestLevel == 7)
+        #expect(Oniguruma.parseDepthLimit == 55)
+    }
+
+    @Test("Warning handler properties round-trip synchronously")
+    func warningHandlerProperties() async throws {
+        let standardBox = MessageBox()
+        let verboseBox = MessageBox()
+
+        Oniguruma.warningHandler = { standardBox.append("std:\($0)") }
+        Oniguruma.verboseWarningHandler = { verboseBox.append("verb:\($0)") }
+
+        #expect(Oniguruma.warningHandler != nil)
+        #expect(Oniguruma.verboseWarningHandler != nil)
+
+        _ = try Regex(pattern: "[a-b-c]")
+        _ = try Regex(pattern: "(?:a*)+")
+
+        #expect(standardBox.values.contains { $0.hasPrefix("std:") })
+        #expect(verboseBox.values.contains { $0.hasPrefix("verb:") })
+
+        Oniguruma.warningHandler = nil
+        Oniguruma.verboseWarningHandler = nil
+
+        #expect(Oniguruma.warningHandler == nil)
+        #expect(Oniguruma.verboseWarningHandler == nil)
+    }
+
     @Test("Capture standard and verbose warnings")
     func warnings() async throws {
         let standardMessages = MessageBox()

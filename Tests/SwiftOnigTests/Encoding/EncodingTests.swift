@@ -50,4 +50,43 @@ struct EncodingTests {
         #expect(Encoding.utf8.stringEncoding == .utf8)
         #expect(Encoding.big5.stringEncoding != .utf8)
     }
+
+    @Test("All built-in encoding presets expose stable descriptions")
+    func allBuiltInPresets() {
+        let encodings: [Encoding] = [
+            .ascii,
+            .iso8859Part1,
+            .iso8859Part2,
+            .iso8859Part3,
+            .iso8859Part4,
+            .iso8859Part5,
+            .iso8859Part6,
+            .iso8859Part7,
+            .iso8859Part8,
+            .iso8859Part9,
+            .iso8859Part10,
+            .iso8859Part11,
+            .iso8859Part13,
+            .iso8859Part14,
+            .iso8859Part15,
+            .iso8859Part16,
+            .utf8,
+            .utf16BigEndian,
+            .utf16LittleEndian,
+            .utf32BigEndian,
+            .utf32LittleEndian,
+            .eucJP,
+            .eucTW,
+            .eucKR,
+            .eucCN,
+            .shiftJIS,
+            .koi8r,
+            .cp1251,
+            .big5,
+            .gb18030,
+        ]
+
+        #expect(Set(encodings.map(\.description)).count > 10)
+        #expect(encodings.allSatisfy { !$0.description.isEmpty })
+    }
 }

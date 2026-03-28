@@ -166,3 +166,22 @@ This section tracks the packaging refactor from a system-installed Oniguruma dep
 - [ ] Move runtime metadata, default encoding, match defaults, and global limit controls under `Oniguruma`.
 - [ ] Migrate docs, tests, and examples from top-level runtime functions to the `Oniguruma` namespace.
 - [ ] Remove the old top-level runtime-control functions and `Regex`-scoped global limit surface.
+
+## 18. Coverage Improvement Push
+
+- [ ] Add targeted tests for low-coverage error and runtime utility paths in `Error.swift`, `OnigOwnedResource.swift`, and `OnigurumaRuntime.swift`.
+- [ ] Add targeted tests for low-coverage string/input adapter paths in `StringUtils.swift` and `Regex+Match.swift`.
+- [ ] Re-run code coverage and continue iterating on the worst remaining files until the easy uncovered branches are exhausted.
+
+## 19. Oniguruma API Parity Gap Notes
+
+### Worth Exposing Later
+
+- [ ] Add an explicit error-message helper for raw Oniguruma error codes, analogous to `onig_error_code_to_str`, for advanced debugging and interop scenarios.
+- [ ] Evaluate whether SwiftOnig should expose an advanced compile path analogous to deprecated `onig_new_deluxe` when a caller truly needs pattern/input encoding combinations that differ from the current one-encoding-per-regex model.
+
+### Intentionally Not Exposing
+
+- [x] Keep `onig_new_without_alloc` and `onig_free_body` unwrapped; they are C memory-management hooks, not Swift-first public API.
+- [x] Keep regset low-level introspection APIs (`onig_regset_number_of_regex`, `onig_regset_get_regex`) unwrapped as standalone surface; `RegexSet.count`, collection conformance, and subscripting already cover their useful behavior.
+- [x] Keep callback-each-match as a higher-level Swift API (`scan`, `enumerateMatches`) rather than exposing the raw `ONIG_OPTION_CALLBACK_EACH_MATCH` callback contract directly.
