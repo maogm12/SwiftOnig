@@ -136,4 +136,4 @@ This section tracks the packaging refactor from a system-installed Oniguruma dep
 
 - [x] Move the string-native API migration design document under `Docs/`.
 - [x] Record the raw-input design principle that raw encoded workflows should stay modeled as byte containers plus explicit `Encoding`, not one high-level wrapper type per encoding.
-- [ ] Implement the string-native `Regex.Match` migration described in [`Docs/string-match-migration-plan.md`](Docs/string-match-migration-plan.md).
+- [x] Implement the string-native `Regex.Match` migration described in [`Docs/string-match-migration-plan.md`](Docs/string-match-migration-plan.md).
