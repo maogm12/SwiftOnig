@@ -56,6 +56,22 @@ extension String {
         self = try replacing(regex, with: replacement, options: options, matchParam: matchParam)
     }
 
+    public func trimmingPrefix(_ regex: Regex, options: Regex.SearchOptions = .none) throws -> Substring {
+        if let match = try prefixMatch(of: regex, options: options) {
+            return self[match.range.upperBound...]
+        }
+
+        return self[...]
+    }
+
+    public func trimmingPrefix(_ regex: Regex, options: Regex.SearchOptions = .none, matchParam: MatchParam) throws -> Substring {
+        if let match = try prefixMatch(of: regex, options: options, matchParam: matchParam) {
+            return self[match.range.upperBound...]
+        }
+
+        return self[...]
+    }
+
     public func firstMatch(of regex: Regex, options: Regex.SearchOptions = .none) throws -> Regex.Match? {
         try regex.firstStringMatch(in: self, options: options)
     }
@@ -104,6 +120,22 @@ extension Substring {
 
     public func ranges(of regex: Regex, options: Regex.SearchOptions = .none, matchParam: MatchParam) throws -> [Range<String.Index>] {
         try matches(of: regex, options: options, matchParam: matchParam).map(\.range)
+    }
+
+    public func trimmingPrefix(_ regex: Regex, options: Regex.SearchOptions = .none) throws -> Substring {
+        if let match = try prefixMatch(of: regex, options: options) {
+            return self[match.range.upperBound...]
+        }
+
+        return self[...]
+    }
+
+    public func trimmingPrefix(_ regex: Regex, options: Regex.SearchOptions = .none, matchParam: MatchParam) throws -> Substring {
+        if let match = try prefixMatch(of: regex, options: options, matchParam: matchParam) {
+            return self[match.range.upperBound...]
+        }
+
+        return self[...]
     }
 
     public func firstMatch(of regex: Regex, options: Regex.SearchOptions = .none) throws -> Regex.Match? {

@@ -116,6 +116,18 @@ struct MatchTests {
         #expect(untouched == "prefix")
     }
 
+    @Test("String and Substring expose trimmingPrefix")
+    func stringTrimmingPrefix() async throws {
+        let regex = try await Regex(pattern: #"\d+"#)
+
+        #expect(try "123abc".trimmingPrefix(regex) == "abc")
+        #expect(try "abc123".trimmingPrefix(regex) == "abc123")
+
+        let input = "0012-item"
+        let slice = input[input.startIndex...]
+        #expect(try slice.trimmingPrefix(regex) == "-item")
+    }
+
     @Test("Regex.Match maps UTF-16 regex results back to String indices")
     func utf16BackedMatch() async throws {
         let regex = try await Regex(patternBytes: Self.utf16LittleEndianBytes("(你好)(世界)"),
