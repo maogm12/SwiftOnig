@@ -72,6 +72,35 @@ extension String {
         return self[...]
     }
 
+    public func split(separator regex: Regex, options: Regex.SearchOptions = .none) throws -> [Substring] {
+        try split(separator: regex, options: options, matchParam: MatchParam())
+    }
+
+    public func split(separator regex: Regex, options: Regex.SearchOptions = .none, matchParam: MatchParam) throws -> [Substring] {
+        let separatorRanges = try ranges(of: regex, options: options, matchParam: matchParam)
+        guard !separatorRanges.isEmpty else {
+            return [self[...]]
+        }
+
+        var segments = [Substring]()
+        var currentIndex = startIndex
+
+        for range in separatorRanges {
+            let segment = self[currentIndex..<range.lowerBound]
+            if !segment.isEmpty {
+                segments.append(segment)
+            }
+            currentIndex = range.upperBound
+        }
+
+        let trailing = self[currentIndex...]
+        if !trailing.isEmpty {
+            segments.append(trailing)
+        }
+
+        return segments
+    }
+
     public func firstMatch(of regex: Regex, options: Regex.SearchOptions = .none) throws -> Regex.Match? {
         try regex.firstStringMatch(in: self, options: options)
     }
@@ -136,6 +165,35 @@ extension Substring {
         }
 
         return self[...]
+    }
+
+    public func split(separator regex: Regex, options: Regex.SearchOptions = .none) throws -> [Substring] {
+        try split(separator: regex, options: options, matchParam: MatchParam())
+    }
+
+    public func split(separator regex: Regex, options: Regex.SearchOptions = .none, matchParam: MatchParam) throws -> [Substring] {
+        let separatorRanges = try ranges(of: regex, options: options, matchParam: matchParam)
+        guard !separatorRanges.isEmpty else {
+            return [self[...]]
+        }
+
+        var segments = [Substring]()
+        var currentIndex = startIndex
+
+        for range in separatorRanges {
+            let segment = self[currentIndex..<range.lowerBound]
+            if !segment.isEmpty {
+                segments.append(segment)
+            }
+            currentIndex = range.upperBound
+        }
+
+        let trailing = self[currentIndex...]
+        if !trailing.isEmpty {
+            segments.append(trailing)
+        }
+
+        return segments
     }
 
     public func firstMatch(of regex: Regex, options: Regex.SearchOptions = .none) throws -> Regex.Match? {

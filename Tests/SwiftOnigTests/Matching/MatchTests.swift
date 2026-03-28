@@ -128,6 +128,20 @@ struct MatchTests {
         #expect(try slice.trimmingPrefix(regex) == "-item")
     }
 
+    @Test("String and Substring expose regex split")
+    func stringSplit() async throws {
+        let comma = try await Regex(pattern: ",")
+        let digits = try await Regex(pattern: #"\d+"#)
+
+        #expect(try "a,,b,".split(separator: comma) == ["a", "b"])
+        #expect(try ",,".split(separator: comma) == [])
+        #expect(try "a1b22c".split(separator: digits) == ["a", "b", "c"])
+
+        let input = "1a22b"
+        let slice = input[input.index(after: input.startIndex)...]
+        #expect(try slice.split(separator: digits) == ["a", "b"])
+    }
+
     @Test("Regex.Match maps UTF-16 regex results back to String indices")
     func utf16BackedMatch() async throws {
         let regex = try await Regex(patternBytes: Self.utf16LittleEndianBytes("(你好)(世界)"),
