@@ -133,7 +133,7 @@ let regex = try Regex(patternBytes: utf16Pattern, encoding: .utf16LittleEndian)
 let preparedInput = Array("Hello, 你好!".utf16).withUnsafeBufferPointer { Data(buffer: $0) }
 
 if let region = try regex.firstMatch(in: preparedInput) {
-    print(region.range) // 14..<18
+    print(region.byteRange) // 14..<18
 }
 ```
 

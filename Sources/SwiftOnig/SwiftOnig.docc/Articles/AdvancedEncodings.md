@@ -25,7 +25,7 @@ let gbBytes: [UInt8] = [196, 227, 186, 195] // "你好" in GB18030
 let regex = try Regex(patternBytes: gbBytes, encoding: .gb18030)
 
 if let region = try regex.firstMatch(in: gbBytes) {
-    print(region.range)
+    print(region.byteRange)
 }
 ```
 

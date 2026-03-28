@@ -194,4 +194,4 @@ This section tracks the packaging refactor from a system-installed Oniguruma dep
 - [x] Introduce `RegexSet.Match` and rename `firstSetMatch` to `firstMatch`.
 - [x] Make callout raw-offset naming explicit and continue treating callouts as advanced raw APIs.
 - [x] Rename raw `Region` and `Subregion` ranges to `byteRange`.
-- [ ] Revisit Unicode-property public modeling around `Unicode.Scalar` and de-emphasize `OnigCodePoint` in the public surface.
+- [x] Revisit Unicode-property public modeling around `Unicode.Scalar` and de-emphasize `OnigCodePoint` in the public surface.

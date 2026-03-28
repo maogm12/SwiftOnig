@@ -3,14 +3,9 @@ import Foundation
 
 public typealias OnigurumaWarningHandler = @Sendable (String) -> Void
 
-public struct OnigurumaUnicodePropertyRange: Sendable, Equatable {
-    public let lowerBound: OnigCodePoint
-    public let upperBound: OnigCodePoint
-
-    public init(_ lowerBound: OnigCodePoint, _ upperBound: OnigCodePoint) {
-        self.lowerBound = lowerBound
-        self.upperBound = upperBound
-    }
+private struct UserUnicodePropertyRange: Sendable, Equatable {
+    let lowerBound: OnigCodePoint
+    let upperBound: OnigCodePoint
 }
 
 private enum OnigurumaWarningBridge {
@@ -146,7 +141,7 @@ private enum OnigurumaRuntimeCoordinator {
         onig_set_verb_warn_func(onigurumaVerboseWarningCallback)
     }
 
-    static func defineUnicodeProperty(named name: String, ranges: [OnigurumaUnicodePropertyRange]) throws {
+    static func defineUnicodeProperty(named name: String, ranges: [UserUnicodePropertyRange]) throws {
         state.lock.lock()
         defer { state.lock.unlock() }
 
@@ -319,7 +314,8 @@ public enum Oniguruma {
      */
     public static func defineUnicodeProperty(named name: String, scalarRanges: [ClosedRange<Unicode.Scalar>]) throws {
         let ranges = scalarRanges.map {
-            OnigurumaUnicodePropertyRange(OnigCodePoint($0.lowerBound.value), OnigCodePoint($0.upperBound.value))
+            UserUnicodePropertyRange(lowerBound: OnigCodePoint($0.lowerBound.value),
+                                     upperBound: OnigCodePoint($0.upperBound.value))
         }
         try OnigurumaRuntimeCoordinator.defineUnicodeProperty(named: name, ranges: ranges)
     }
