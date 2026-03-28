@@ -56,4 +56,4 @@ let inputBytes = Array("Hello, 你好!".utf16).withUnsafeBufferPointer { Data(bu
 let region = try regex.firstMatch(in: inputBytes)
 ```
 
-`UTF16CodeUnitBuffer` may remain available as a narrow advanced helper, but it is not the preferred public direction for raw encoded inputs.
+This keeps UTF-16 aligned with the rest of the raw-input model: encoded bytes plus explicit `Encoding`.

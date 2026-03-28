@@ -142,4 +142,4 @@ This section tracks the packaging refactor from a system-installed Oniguruma dep
 
 - [x] Record that UTF-16 remains supported, but the preferred raw-input model is still byte containers plus explicit `Encoding`, not a dedicated family of encoding-specific wrapper types.
 - [x] Migrate docs and benchmarks to prefer raw UTF-16 bytes over `UTF16CodeUnitBuffer` as the public advanced-path recommendation.
-- [ ] Decide whether `UTF16CodeUnitBuffer` should remain a narrow advanced helper or move toward deprecation in a future major release.
+- [x] Remove `UTF16CodeUnitBuffer`; raw UTF-16 byte buffers plus explicit `Encoding` fully cover the supported advanced path.

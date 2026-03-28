@@ -168,31 +168,6 @@ extension String: OnigurumaString { }
 
 extension Substring: OnigurumaString { }
 
-/**
- A narrow advanced helper for explicitly materialized contiguous UTF-16 code units.
-
- Prefer raw UTF-16 bytes plus explicit `Encoding` for general raw-input workflows.
- Use this helper only when an existing call site specifically wants to work with
- contiguous `UInt16` code units while avoiding the implicit temporary buffer
- materialization that `String` and `String.UTF16View` may perform.
- */
-public struct UTF16CodeUnitBuffer: OnigurumaString, Sendable {
-    private let codeUnits: ContiguousArray<UInt16>
-
-    public init<S>(_ codeUnits: S) where S: Sequence, S.Element == UInt16 {
-        self.codeUnits = ContiguousArray(codeUnits)
-    }
-
-    internal func withOnigurumaString<Result>(
-        requestedEncoding: Encoding,
-        _ body: (UnsafePointer<OnigUChar>, Int) throws -> Result
-    ) rethrows -> Result {
-        try codeUnits.withUnsafeBufferPointer { buffer in
-            try OnigurumaInputAdapters.withUTF16BufferPointer(buffer, body: body)
-        }
-    }
-}
-
 internal func withSupportedOnigurumaInput<Result>(
     _ input: Any,
     requestedEncoding: Encoding,
@@ -216,8 +191,6 @@ internal func withSupportedOnigurumaInput<Result>(
     case let value as String.UTF16View:
         return try body(value)
     case let value as Substring.UTF16View:
-        return try body(value)
-    case let value as UTF16CodeUnitBuffer:
         return try body(value)
     case let value as any OnigurumaString:
         return try body(value)
