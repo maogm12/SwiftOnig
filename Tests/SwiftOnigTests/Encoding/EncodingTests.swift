@@ -29,7 +29,7 @@ struct EncodingTests {
             0xA1, 0x43  // 。
         ]
 
-        let encoding = await Encoding.big5
+        let encoding = Encoding.big5
         let decoded = String(bytes: big5Bytes, encoding: encoding.stringEncoding)
         #expect(decoded == "空山新雨後，天氣晚來秋。")
     }
@@ -37,11 +37,17 @@ struct EncodingTests {
     @Test("Null-terminated byte helpers stop at embedded null")
     func nullTerminatedHelpers() async throws {
         let bytes: [UInt8] = [0x41, 0x00, 0x42, 0x43]
-        let encoding = await Encoding.utf8
+        let encoding = Encoding.utf8
 
         #expect(encoding.characterCount(in: bytes) == 4)
         #expect(encoding.nullTerminatedCharacterCount(in: bytes) == 1)
         #expect(encoding.nullTerminatedByteCount(in: bytes) == 1)
         #expect(encoding.previousCharacterHead(in: bytes, before: 0) == nil)
+    }
+
+    @Test("Built-in encoding presets are synchronously accessible")
+    func builtInPresetsAreSync() {
+        #expect(Encoding.utf8.stringEncoding == .utf8)
+        #expect(Encoding.big5.stringEncoding != .utf8)
     }
 }

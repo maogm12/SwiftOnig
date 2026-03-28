@@ -32,94 +32,94 @@ public struct Encoding: Equatable, CustomStringConvertible, Sendable {
     }
 
     /// ACSII
-    @OnigurumaActor public static var ascii: Encoding { Encoding(rawValue: get_onig_ascii()) }
+    public static var ascii: Encoding { Encoding(rawValue: get_onig_ascii()) }
 
     /// ISO/IEC 8859-1, Latin-1, Western European
-    @OnigurumaActor public static var iso8859Part1: Encoding { Encoding(rawValue: get_onig_iso8859_1()) }
+    public static var iso8859Part1: Encoding { Encoding(rawValue: get_onig_iso8859_1()) }
 
     /// ISO/IEC 8859-2, Latin-2, Central European
-    @OnigurumaActor public static var iso8859Part2: Encoding { Encoding(rawValue: get_onig_iso8859_2()) }
+    public static var iso8859Part2: Encoding { Encoding(rawValue: get_onig_iso8859_2()) }
 
     /// ISO/IEC 8859-3, Latin-3, South European
-    @OnigurumaActor public static var iso8859Part3: Encoding { Encoding(rawValue: get_onig_iso8859_3()) }
+    public static var iso8859Part3: Encoding { Encoding(rawValue: get_onig_iso8859_3()) }
 
     /// ISO/IEC 8859-4, Latin-4, North European
-    @OnigurumaActor public static var iso8859Part4: Encoding { Encoding(rawValue: get_onig_iso8859_4()) }
+    public static var iso8859Part4: Encoding { Encoding(rawValue: get_onig_iso8859_4()) }
 
     /// ISO/IEC 8859-5, Latin/Cyrillic
-    @OnigurumaActor public static var iso8859Part5: Encoding { Encoding(rawValue: get_onig_iso8859_5()) }
+    public static var iso8859Part5: Encoding { Encoding(rawValue: get_onig_iso8859_5()) }
 
     /// ISO/IEC 8859-6, Latin/Arabic
-    @OnigurumaActor public static var iso8859Part6: Encoding { Encoding(rawValue: get_onig_iso8859_6()) }
+    public static var iso8859Part6: Encoding { Encoding(rawValue: get_onig_iso8859_6()) }
 
     /// ISO/IEC 8859-7, Latin/Greek
-    @OnigurumaActor public static var iso8859Part7: Encoding { Encoding(rawValue: get_onig_iso8859_7()) }
+    public static var iso8859Part7: Encoding { Encoding(rawValue: get_onig_iso8859_7()) }
 
     /// ISO/IEC 8859-8, Latin/Hebrew
-    @OnigurumaActor public static var iso8859Part8: Encoding { Encoding(rawValue: get_onig_iso8859_8()) }
+    public static var iso8859Part8: Encoding { Encoding(rawValue: get_onig_iso8859_8()) }
 
     /// ISO/IEC 8859-9, Latin-5/Turkish
-    @OnigurumaActor public static var iso8859Part9: Encoding { Encoding(rawValue: get_onig_iso8859_9()) }
+    public static var iso8859Part9: Encoding { Encoding(rawValue: get_onig_iso8859_9()) }
 
     /// ISO/IEC 8859-10, Latin-6, Nordic
-    @OnigurumaActor public static var iso8859Part10: Encoding { Encoding(rawValue: get_onig_iso8859_10()) }
+    public static var iso8859Part10: Encoding { Encoding(rawValue: get_onig_iso8859_10()) }
 
     /// ISO/IEC 8859-11, Latin/Thai
-    @OnigurumaActor public static var iso8859Part11: Encoding { Encoding(rawValue: get_onig_iso8859_11()) }
+    public static var iso8859Part11: Encoding { Encoding(rawValue: get_onig_iso8859_11()) }
 
     /// ISO/IEC 8859-13, Latin-7, Baltic Rim
-    @OnigurumaActor public static var iso8859Part13: Encoding { Encoding(rawValue: get_onig_iso8859_13()) }
+    public static var iso8859Part13: Encoding { Encoding(rawValue: get_onig_iso8859_13()) }
 
     /// ISO/IEC 8859-14, Latin-8, Celtic
-    @OnigurumaActor public static var iso8859Part14: Encoding { Encoding(rawValue: get_onig_iso8859_14()) }
+    public static var iso8859Part14: Encoding { Encoding(rawValue: get_onig_iso8859_14()) }
 
     /// ISO/IEC 8859-15, Latin-9
-    @OnigurumaActor public static var iso8859Part15: Encoding { Encoding(rawValue: get_onig_iso8859_15()) }
+    public static var iso8859Part15: Encoding { Encoding(rawValue: get_onig_iso8859_15()) }
 
     /// ISO/IEC 8859-16, Latin-10, South-Eastern European
-    @OnigurumaActor public static var iso8859Part16: Encoding { Encoding(rawValue: get_onig_iso8859_16()) }
+    public static var iso8859Part16: Encoding { Encoding(rawValue: get_onig_iso8859_16()) }
     
     /// UTF-8
-    @OnigurumaActor public static var utf8: Encoding { Encoding(rawValue: get_onig_utf8()) }
+    public static var utf8: Encoding { Encoding(rawValue: get_onig_utf8()) }
     
     /// UTF-16 big endian
-    @OnigurumaActor public static var utf16BigEndian: Encoding { Encoding(rawValue: get_onig_utf16be()) }
+    public static var utf16BigEndian: Encoding { Encoding(rawValue: get_onig_utf16be()) }
     
     /// UTF-16 little endian
-    @OnigurumaActor public static var utf16LittleEndian: Encoding { Encoding(rawValue: get_onig_utf16le()) }
+    public static var utf16LittleEndian: Encoding { Encoding(rawValue: get_onig_utf16le()) }
     
     /// UTF-32 big endian
-    @OnigurumaActor public static var utf32BigEndian: Encoding { Encoding(rawValue: get_onig_utf32be()) }
+    public static var utf32BigEndian: Encoding { Encoding(rawValue: get_onig_utf32be()) }
     
     /// UTF-32 little endian
-    @OnigurumaActor public static var utf32LittleEndian: Encoding { Encoding(rawValue: get_onig_utf32le()) }
+    public static var utf32LittleEndian: Encoding { Encoding(rawValue: get_onig_utf32le()) }
     
     /// EUC JP
-    @OnigurumaActor public static var eucJP: Encoding { Encoding(rawValue: get_onig_eucjp()) }
+    public static var eucJP: Encoding { Encoding(rawValue: get_onig_eucjp()) }
     
     /// EUC TW
-    @OnigurumaActor public static var eucTW: Encoding { Encoding(rawValue: get_onig_euctw()) }
+    public static var eucTW: Encoding { Encoding(rawValue: get_onig_euctw()) }
 
     /// EUC KR
-    @OnigurumaActor public static var eucKR: Encoding { Encoding(rawValue: get_onig_euckr()) }
+    public static var eucKR: Encoding { Encoding(rawValue: get_onig_euckr()) }
 
     /// EUC CN
-    @OnigurumaActor public static var eucCN: Encoding { Encoding(rawValue: get_onig_euccn()) }
+    public static var eucCN: Encoding { Encoding(rawValue: get_onig_euccn()) }
 
     /// Shift JIS
-    @OnigurumaActor public static var shiftJIS: Encoding { Encoding(rawValue: get_onig_sjis()) }
+    public static var shiftJIS: Encoding { Encoding(rawValue: get_onig_sjis()) }
     
     /// KOI8-R
-    @OnigurumaActor public static var koi8r: Encoding { Encoding(rawValue: get_onig_koi8r()) }
+    public static var koi8r: Encoding { Encoding(rawValue: get_onig_koi8r()) }
     
     /// CP1251, Windows-1251
-    @OnigurumaActor public static var cp1251: Encoding { Encoding(rawValue: get_onig_cp1251()) }
+    public static var cp1251: Encoding { Encoding(rawValue: get_onig_cp1251()) }
     
     /// BIG 5
-    @OnigurumaActor public static var big5: Encoding { Encoding(rawValue: get_onig_big5()) }
+    public static var big5: Encoding { Encoding(rawValue: get_onig_big5()) }
     
     /// GB 18030
-    @OnigurumaActor public static var gb18030: Encoding { Encoding(rawValue: get_onig_gb18030()) }
+    public static var gb18030: Encoding { Encoding(rawValue: get_onig_gb18030()) }
 
     /// Get or set the default encoding
     @OnigurumaActor

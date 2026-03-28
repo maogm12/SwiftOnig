@@ -62,7 +62,7 @@ struct UTF16Tests {
     @Test("Encoding byte boundary helpers")
     func encodingBoundaryHelpers() async throws {
         let utf16Bytes: [UInt8] = [0x41, 0x00, 0x60, 0x4f, 0x42, 0x00] // "A你B" in UTF-16LE
-        let encoding = await Encoding.utf16LittleEndian
+        let encoding = Encoding.utf16LittleEndian
 
         #expect(encoding.previousCharacterHead(in: utf16Bytes, before: 4) == 2)
         #expect(encoding.leftAdjustedCharacterHead(in: utf16Bytes, at: 3) == 2)

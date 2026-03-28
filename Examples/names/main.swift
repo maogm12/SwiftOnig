@@ -19,7 +19,7 @@ Task {
         let match: Regex.Match?
         
         regex = try await Regex(patternBytes: pattern.utf8,
-                          encoding: await .ascii)
+                          encoding: .ascii)
         match = try str.firstMatch(of: regex)
 
         guard let match = match else {
