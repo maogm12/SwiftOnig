@@ -169,10 +169,12 @@ extension String: OnigurumaString { }
 extension Substring: OnigurumaString { }
 
 /**
- An explicitly materialized contiguous UTF-16 code-unit buffer.
+ A narrow advanced helper for explicitly materialized contiguous UTF-16 code units.
 
- Create this once and reuse it when repeated UTF-16 searches should avoid the implicit
- temporary buffer materialization that `String` and `String.UTF16View` may perform.
+ Prefer raw UTF-16 bytes plus explicit `Encoding` for general raw-input workflows.
+ Use this helper only when an existing call site specifically wants to work with
+ contiguous `UInt16` code units while avoiding the implicit temporary buffer
+ materialization that `String` and `String.UTF16View` may perform.
  */
 public struct UTF16CodeUnitBuffer: OnigurumaString, Sendable {
     private let codeUnits: ContiguousArray<UInt16>
