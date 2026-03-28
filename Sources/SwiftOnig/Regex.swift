@@ -30,6 +30,7 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
         let syntax: Syntax
         let encoding: Encoding
         let options: Options
+        let matchMetadata: MatchMetadata
 
         init<S>(patternBytes: S,
                 encoding: Encoding,
@@ -62,12 +63,34 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
                 throw OnigError.memory
             }
 
+            let matchMetadata = Self.makeMatchMetadata(rawValue: rawValue, encoding: encoding)
+
             self.rawValue = rawValue
             self.patternBytes = compiledPatternBytes
             self.rawSyntax = rawSyntax
             self.syntax = syntax
             self.encoding = encoding
             self.options = options
+            self.matchMetadata = matchMetadata
+        }
+
+        private static func makeMatchMetadata(rawValue: OnigRegex, encoding: Encoding) -> MatchMetadata {
+            final class MatchMetadataBox: @unchecked Sendable {
+                var namedCaptureGroupNumbers = [String: [Int]]()
+            }
+
+            let box = MatchMetadataBox()
+            let context = ForeachNameContext(encoding: encoding) { name, numbers in
+                box.namedCaptureGroupNumbers[name] = numbers
+                return true
+            }
+
+            withExtendedLifetime(context) {
+                let contextPtr = Unmanaged.passUnretained(context).toOpaque()
+                onig_foreach_name(rawValue, onigForeachNameCallback, contextPtr)
+            }
+
+            return MatchMetadata(namedCaptureGroupNumbers: box.namedCaptureGroupNumbers)
         }
 
         deinit {
@@ -110,6 +133,10 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
     }
     internal var rawValue: OnigRegex {
         storage.rawValue
+    }
+
+    internal var matchMetadata: MatchMetadata {
+        storage.matchMetadata
     }
     
     // MARK: init & deinit
@@ -656,21 +683,7 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
      - Returns: A array of group numbers. Empty if no named group matches.
      */
     public func captureGroupNumbers(for name: String) -> [Int] {
-        final class CaptureGroupNumbersBox: @unchecked Sendable {
-            var numbers = [Int]()
-        }
-
-        let box = CaptureGroupNumbersBox()
-        self.enumerateCaptureGroupNames { groupName, numbers in
-            guard groupName == name else {
-                return true
-            }
-
-            box.numbers = numbers
-            return false
-        }
-
-        return box.numbers
+        storage.matchMetadata.namedCaptureGroupNumbers[name] ?? []
     }
     
     // MARK: Static properties

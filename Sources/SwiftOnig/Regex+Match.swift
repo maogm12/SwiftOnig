@@ -1,6 +1,10 @@
 import Foundation
 
 extension Regex {
+    internal struct MatchMetadata: Sendable {
+        let namedCaptureGroupNumbers: [String: [Int]]
+    }
+
     public struct Match: Sendable, RandomAccessCollection {
         public typealias Index = Int
         public typealias Element = Capture?
@@ -12,12 +16,12 @@ extension Regex {
         }
 
         private let input: Substring
-        private let regex: Regex
+        private let metadata: MatchMetadata
         private let captures: [Capture?]
 
         internal init(region: Region, input: Substring) throws {
             self.input = input
-            self.regex = region.regex
+            self.metadata = region.regex.matchMetadata
             self.captures = try (0..<region.count).map { groupNumber -> Capture? in
                 guard let subregion = region[groupNumber] else {
                     return nil
@@ -66,7 +70,7 @@ extension Regex {
         }
 
         public func captures(named name: String) -> [Capture] {
-            regex.captureGroupNumbers(for: name).compactMap { groupNumber in
+            metadata.namedCaptureGroupNumbers[name, default: []].compactMap { groupNumber in
                 guard groupNumber >= 0 && groupNumber < captures.count else {
                     return nil
                 }
