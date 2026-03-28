@@ -81,6 +81,59 @@ extension Regex {
 }
 
 extension Regex {
+    private final class MatchCollectionState: @unchecked Sendable {
+        var matches = [Match]()
+        var error: Error?
+    }
+
+    internal func stringMatches(in input: String, options: SearchOptions = .none, matchParam: MatchParam = MatchParam()) throws -> [Match] {
+        let state = MatchCollectionState()
+        try withSupportedOnigurumaInput(input, requestedEncoding: self.encoding) { supported in
+            _ = try _enumerateMatches(in: supported,
+                                      of: Self.fullByteRange,
+                                      options: options,
+                                      matchParam: matchParam) { _, _, region in
+                do {
+                    state.matches.append(try Match(region: region, input: input[...]))
+                    return true
+                } catch {
+                    state.error = error
+                    return false
+                }
+            }
+        }
+
+        if let error = state.error {
+            throw error
+        }
+
+        return state.matches
+    }
+
+    internal func stringMatches(in input: Substring, options: SearchOptions = .none, matchParam: MatchParam = MatchParam()) throws -> [Match] {
+        let state = MatchCollectionState()
+        try withSupportedOnigurumaInput(input, requestedEncoding: self.encoding) { supported in
+            _ = try _enumerateMatches(in: supported,
+                                      of: Self.fullByteRange,
+                                      options: options,
+                                      matchParam: matchParam) { _, _, region in
+                do {
+                    state.matches.append(try Match(region: region, input: input))
+                    return true
+                } catch {
+                    state.error = error
+                    return false
+                }
+            }
+        }
+
+        if let error = state.error {
+            throw error
+        }
+
+        return state.matches
+    }
+
     public func firstStringMatch(in input: String, options: SearchOptions = .none) throws -> Match? {
         try withSupportedOnigurumaInput(input, requestedEncoding: self.encoding) { supported in
             guard let region = try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchParam: nil) else {

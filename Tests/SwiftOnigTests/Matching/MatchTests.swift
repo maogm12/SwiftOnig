@@ -74,6 +74,27 @@ struct MatchTests {
         #expect(try !"prefix".contains(regex))
     }
 
+    @Test("String and Substring expose regex matches and ranges")
+    func stringNativeMatchesAndRanges() async throws {
+        let regex = try await Regex(pattern: #"(?<digits>\d+)"#)
+        let input = "aa11bb22cc333"
+        let slice = input[input.index(input.startIndex, offsetBy: 2)...]
+
+        let matches = try input.matches(of: regex)
+        #expect(matches.map(\.substring) == ["11", "22", "333"])
+        #expect(matches.map { $0.captures(named: "digits").map(\.substring) } == [["11"], ["22"], ["333"]])
+
+        let ranges = try input.ranges(of: regex)
+        #expect(ranges.map { input[$0] } == ["11", "22", "333"])
+        #expect(ranges == matches.map(\.range))
+
+        let sliceMatches = try slice.matches(of: regex)
+        #expect(sliceMatches.map(\.substring) == ["11", "22", "333"])
+
+        let sliceRanges = try slice.ranges(of: regex)
+        #expect(sliceRanges.map { slice[$0] } == ["11", "22", "333"])
+    }
+
     @Test("Regex.Match maps UTF-16 regex results back to String indices")
     func utf16BackedMatch() async throws {
         let regex = try await Regex(patternBytes: Self.utf16LittleEndianBytes("(你好)(世界)"),

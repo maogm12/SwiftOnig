@@ -585,11 +585,11 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
         }
     }
 
-    private func _enumerateMatches<S, R>(in str: S,
-                                         of range: R,
-                                         options: SearchOptions = .none,
-                                         matchParam: MatchParam = MatchParam(),
-                                         body: @escaping @Sendable (_ order: Int, _ matchedIndex: Int, _ region: Region) -> Bool
+    func _enumerateMatches<S, R>(in str: S,
+                                 of range: R,
+                                 options: SearchOptions = .none,
+                                 matchParam: MatchParam = MatchParam(),
+                                 body: @escaping @Sendable (_ order: Int, _ matchedIndex: Int, _ region: Region) -> Bool
     ) throws -> Int where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
         let result = try str.withOnigurumaString(requestedEncoding: self.encoding) { (start, count) throws -> OnigInt in
             let range = range.relative(to: 0..<count).clamped(to: 0..<count)
