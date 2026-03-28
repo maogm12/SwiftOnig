@@ -49,6 +49,10 @@ if let match = try input.firstMatch(of: regex) {
     print("Found: \(match.substring)") // "42"
     print("String range: \(match.range)")
 }
+
+let hasDigits = try input.contains(regex)
+let allDigitMatches = try input.matches(of: regex)
+let digitRanges = try input.ranges(of: regex)
 ```
 
 ### Using RegexBuilder

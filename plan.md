@@ -147,6 +147,6 @@ This section tracks the packaging refactor from a system-installed Oniguruma dep
 ## 15. Swift Regex String API Parity
 
 - [x] Record the verified standard-library string regex APIs and the recommended parity phases in [`Docs/swift-regex-string-api-parity-plan.md`](Docs/swift-regex-string-api-parity-plan.md).
-- [ ] Implement Phase 1 parity APIs: `contains(_:)`, `matches(of:)`, and `ranges(of:)` for `String` and `Substring`.
+- [x] Implement Phase 1 parity APIs: `contains(_:)`, `matches(of:)`, and `ranges(of:)` for `String` and `Substring`.
 - [ ] Implement Phase 2 parity APIs: `replacing(_:with:)` and mutating `replace(_:with:)`.
 - [ ] Evaluate Phase 3 convenience APIs: `split(separator:)` and `trimmingPrefix(_:)`.

@@ -33,6 +33,10 @@ if let match = try input.firstMatch(of: regex) {
     print("Matched: \(match.substring)") // "42"
     print("Range in input: \(match.range)")
 }
+
+let hasMatch = try input.contains(regex)
+let matches = try input.matches(of: regex)
+let ranges = try input.ranges(of: regex)
 ```
 
 ## Advanced Paths
