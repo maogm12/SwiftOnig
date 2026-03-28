@@ -14,19 +14,19 @@ import OnigurumaC
 struct RegexTests {
     @Test("Initialization")
     func initialization() async throws {
-        let r1 = try? await Regex(pattern: "(a+)(b+)(c+)")
+        let r1 = try? Regex(pattern: "(a+)(b+)(c+)")
         #expect(r1 != nil)
-        let r2 = try? await Regex(pattern: "+++++")
+        let r2 = try? Regex(pattern: "+++++")
         #expect(r2 == nil)
         
-        await #expect(throws: OnigError.targetOfRepeatOperatorNotSpecified) {
-            _ = try await Regex(pattern: "???")
+        #expect(throws: OnigError.targetOfRepeatOperatorNotSpecified) {
+            _ = try Regex(pattern: "???")
         }
     }
 
     @Test("Basic Matching")
     func match() async throws {
-        let reg = try await Regex(pattern: "foo")
+        let reg = try Regex(pattern: "foo")
 
         #expect(try reg.matches("foo"))
         #expect(try !reg.matches("bar"))
@@ -39,7 +39,7 @@ struct RegexTests {
     
     @Test("Search")
     func search() async throws {
-        let naiveEmailReg = try await Regex(pattern: #"\w+@\w+\.com"#)
+        let naiveEmailReg = try Regex(pattern: #"\w+@\w+\.com"#)
         let target = "Naive email: test@example.com. :)"
 
         guard let match = try target.firstMatch(of: naiveEmailReg) else {
@@ -51,7 +51,7 @@ struct RegexTests {
         #expect(target[match.range] == "test@example.com")
         
         let gb18030Bytes: [UInt8] = [196, 227, 186, 195] // 你好
-        let regGb18030 = try await Regex(patternBytes: gb18030Bytes, encoding: .gb18030)
+        let regGb18030 = try Regex(patternBytes: gb18030Bytes, encoding: .gb18030)
         let gb18030String: [UInt8] = [196, 227, 186, 195, 163, 172, 202, 192, 189, 231] // 你好，世界
         guard let region2 = try regGb18030.firstMatch(in: gb18030String) else {
             Issue.record("Failed to match GB18030")
@@ -64,7 +64,7 @@ struct RegexTests {
 
     @Test("MatchParam support on core search and match APIs")
     func matchParamSupport() async throws {
-        let regex = try await Regex(pattern: "(a|aa)+b")
+        let regex = try Regex(pattern: "(a|aa)+b")
         let target = String(repeating: "a", count: 24)
         var matchParam = MatchParam()
         matchParam.setRetryLimitInMatch(to: 1)
@@ -96,18 +96,18 @@ struct RegexTests {
 
     @Test("Compile and search option flags")
     func optionFlags() async throws {
-        let defaultWordRegex = try await Regex(pattern: #"^\w+$"#)
-        let asciiWordRegex = try await Regex(pattern: #"^\w+$"#, options: .wordIsASCII)
+        let defaultWordRegex = try Regex(pattern: #"^\w+$"#)
+        let asciiWordRegex = try Regex(pattern: #"^\w+$"#, options: .wordIsASCII)
         #expect(try defaultWordRegex.matches("cafe"))
         #expect(try defaultWordRegex.matches("café"))
         #expect(try !asciiWordRegex.matches("café"))
 
-        let unicodeIgnoreCase = try await Regex(pattern: "é", options: .ignoreCase)
-        let asciiIgnoreCase = try await Regex(pattern: "é", options: [.ignoreCase, .ignoreCaseIsASCII])
+        let unicodeIgnoreCase = try Regex(pattern: "é", options: .ignoreCase)
+        let asciiIgnoreCase = try Regex(pattern: "é", options: [.ignoreCase, .ignoreCaseIsASCII])
         #expect(try unicodeIgnoreCase.matches("É"))
         #expect(try !asciiIgnoreCase.matches("É"))
 
-        let wholeMatchRegex = try await Regex(pattern: #"foo"#)
+        let wholeMatchRegex = try Regex(pattern: #"foo"#)
         #expect(try wholeMatchRegex.firstStringMatch(in: "foo bar", options: .matchWholeString) == nil)
         #expect(try wholeMatchRegex.firstStringMatch(in: "foo", options: .matchWholeString) != nil)
 
@@ -121,7 +121,7 @@ struct RegexTests {
 
     @Test("Whole match convenience")
     func wholeMatch() async throws {
-        let regex = try await Regex(pattern: #"foo"#)
+        let regex = try Regex(pattern: #"foo"#)
         var matchParam = MatchParam()
         matchParam.setRetryLimitInSearch(to: 1_000)
 
@@ -133,7 +133,7 @@ struct RegexTests {
     
     @Test("Enumerate Matches")
     func enumerateMatches() async throws {
-        let reg = try await Regex(pattern: #"\d+"#)
+        let reg = try Regex(pattern: #"\d+"#)
         
         final class Results: @unchecked Sendable {
             var items = [(Int, Region)]()
@@ -152,7 +152,7 @@ struct RegexTests {
 
     @Test("Enumerate Matches can abort and ranges are clamped")
     func enumerateAbortAndRangeClamping() async throws {
-        let regex = try await Regex(pattern: #"\d+"#)
+        let regex = try Regex(pattern: #"\d+"#)
 
         final class Results: @unchecked Sendable {
             var items = [(Int, String)]()
@@ -173,27 +173,27 @@ struct RegexTests {
 
     @Test("Capture Groups")
     func captureGroups() async throws {
-        let reg = try await Regex(pattern: #"(?<name>\w+):\s+(?<id>\d+)(\s+)(//.*)"#)
+        let reg = try Regex(pattern: #"(?<name>\w+):\s+(?<id>\d+)(\s+)(//.*)"#)
         #expect(reg.captureGroupsCount == 2)
     }
 
     @Test("Noname group capture activity")
     func nonameGroupCaptureActivity() async throws {
-        let unnamedOnlyRegex = try await Regex(pattern: #"(\w+)(\d+)"#)
+        let unnamedOnlyRegex = try Regex(pattern: #"(\w+)(\d+)"#)
         #expect(unnamedOnlyRegex.nonameGroupCaptureIsActive)
 
-        let defaultNamedRegex = try await Regex(pattern: #"(?<name>\w+)(\d+)"#)
+        let defaultNamedRegex = try Regex(pattern: #"(?<name>\w+)(\d+)"#)
         #expect(!defaultNamedRegex.nonameGroupCaptureIsActive)
 
-        let noUnnamedCapture = try await Regex(pattern: #"(\w+)(\d+)"#, options: .dontCaptureGroup)
+        let noUnnamedCapture = try Regex(pattern: #"(\w+)(\d+)"#, options: .dontCaptureGroup)
         #expect(!noUnnamedCapture.nonameGroupCaptureIsActive)
 
         var syntax = Syntax(copying: Syntax.default)
         await configureCaptureOnlyNamedGroup(on: &syntax)
-        let captureOnlyNamedRegex = try await Regex(pattern: #"(?<name>\w+)(\d+)"#, syntax: syntax)
+        let captureOnlyNamedRegex = try Regex(pattern: #"(?<name>\w+)(\d+)"#, syntax: syntax)
         #expect(!captureOnlyNamedRegex.nonameGroupCaptureIsActive)
 
-        let optInUnnamedCapture = try await Regex(pattern: #"(?<name>\w+)(\d+)"#, options: .captureGroup, syntax: syntax)
+        let optInUnnamedCapture = try Regex(pattern: #"(?<name>\w+)(\d+)"#, options: .captureGroup, syntax: syntax)
         #expect(optInUnnamedCapture.nonameGroupCaptureIsActive)
     }
 

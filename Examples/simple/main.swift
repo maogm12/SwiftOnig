@@ -15,7 +15,7 @@ Task {
         let pattern = #"a(.*)b|[e-f]+"#
         let str = "zzzzaffffffffb"
 
-        let regex = try await Regex(pattern: pattern)
+        let regex = try Regex(pattern: pattern)
 
         guard let match = try str.firstMatch(of: regex) else {
             print("No match")

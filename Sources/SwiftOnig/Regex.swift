@@ -151,12 +151,11 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
          - syntax: Syntax used to create the regular expression. If `nil`, `Syntax.default` will be used.
      - Throws: `OnigError`
      */
-    @OnigurumaActor
     public init<S>(pattern: S,
                    options: Options = .none,
                    syntax: Syntax? = nil
-    ) async throws where S: StringProtocol {
-        try await self.init(patternBytes: pattern.utf8, encoding: Encoding.utf8, options: options, syntax: syntax)
+    ) throws where S: StringProtocol {
+        try self.init(patternBytes: pattern.utf8, encoding: Encoding.utf8, options: options, syntax: syntax)
     }
 
     /**
@@ -168,13 +167,12 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
          - syntax: Syntax used to create the regular expression. If `nil`, `Syntax.default` will be used.
      - Throws: `OnigError`
      */
-    @OnigurumaActor
     public init<S>(patternBytes: S,
                    encoding: Encoding,
                    options: Options = .none,
                    syntax: Syntax? = nil
-    ) async throws where S: Sequence, S.Element == UInt8 {
-        try await OnigurumaActor.shared.ensureInitialized(encoding: encoding.rawValue)
+    ) throws where S: Sequence, S.Element == UInt8 {
+        try OnigurumaBootstrap.ensureInitialized(encoding: encoding.rawValue)
         let actualSyntax = syntax ?? Syntax.default
         self.storage = try Storage(patternBytes: patternBytes,
                                    encoding: encoding,

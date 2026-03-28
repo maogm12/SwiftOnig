@@ -16,11 +16,11 @@ dependencies: [
 
 ### 1. Create a Regex
 
-Create a compiled regular expression object. The initializer is asynchronous and actor-isolated.
+Create a compiled regular expression object. Compilation is synchronous, while automatic runtime initialization still happens internally.
 
 ```swift
 let pattern = #"\d+"#
-let regex = try await Regex(pattern: pattern)
+let regex = try Regex(pattern: pattern)
 ```
 
 ### 2. Perform a Match
@@ -66,7 +66,7 @@ If your input is already stored in a specific byte encoding, compile the regex w
 
 ```swift
 let gbBytes: [UInt8] = [196, 227, 186, 195] // "你好" in GB18030
-let regex = try await Regex(patternBytes: gbBytes, encoding: .gb18030)
+let regex = try Regex(patternBytes: gbBytes, encoding: .gb18030)
 let region = try regex.firstMatch(in: gbBytes)
 ```
 
@@ -78,7 +78,7 @@ If repeated UTF-16 searches are performance-sensitive, prepare raw UTF-16 bytes 
 
 ```swift
 let patternData = Array("你好".utf16).withUnsafeBufferPointer { Data(buffer: $0) }
-let regex = try await Regex(patternBytes: patternData, encoding: .utf16LittleEndian)
+let regex = try Regex(patternBytes: patternData, encoding: .utf16LittleEndian)
 
 let preparedInput = Array("Hello, 你好!".utf16).withUnsafeBufferPointer { Data(buffer: $0) }
 let region = try regex.firstMatch(in: preparedInput)

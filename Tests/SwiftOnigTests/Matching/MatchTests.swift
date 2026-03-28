@@ -11,7 +11,7 @@ struct MatchTests {
 
     @Test("Regex.Match wraps String search results")
     func firstStringMatch() async throws {
-        let regex = try await Regex(pattern: #"(?<word>\w+)-(?<digits>\d+)"#)
+        let regex = try Regex(pattern: #"(?<word>\w+)-(?<digits>\d+)"#)
         let input = "prefix item-123 suffix"
 
         let match = try #require(try regex.firstStringMatch(in: input))
@@ -27,7 +27,7 @@ struct MatchTests {
 
     @Test("Regex.Match supports Substring inputs")
     func substringInput() async throws {
-        let regex = try await Regex(pattern: #"\d+"#)
+        let regex = try Regex(pattern: #"\d+"#)
         let input = "aa11bb22"
         let slice = input[input.index(input.startIndex, offsetBy: 2)...]
 
@@ -38,7 +38,7 @@ struct MatchTests {
 
     @Test("Prefix and whole string match helpers")
     func prefixAndWholeStringMatch() async throws {
-        let regex = try await Regex(pattern: #"\d+"#)
+        let regex = try Regex(pattern: #"\d+"#)
 
         #expect(try regex.prefixStringMatch(in: "123abc")?.substring == "123")
         #expect(try regex.prefixStringMatch(in: "abc123") == nil)
@@ -48,7 +48,7 @@ struct MatchTests {
 
     @Test("String and Substring expose native-style match APIs")
     func stringNativeEntryPoints() async throws {
-        let regex = try await Regex(pattern: #"(?<word>\w+)-(?<digits>\d+)"#)
+        let regex = try Regex(pattern: #"(?<word>\w+)-(?<digits>\d+)"#)
         let input = "prefix item-123 suffix"
         let slice = input[input.index(input.startIndex, offsetBy: 7)...]
 
@@ -63,8 +63,8 @@ struct MatchTests {
 
     @Test("String and Substring expose regex contains")
     func stringNativeContains() async throws {
-        let regex = try await Regex(pattern: #"\d+"#)
-        let missRegex = try await Regex(pattern: #"xyz"#)
+        let regex = try Regex(pattern: #"\d+"#)
+        let missRegex = try Regex(pattern: #"xyz"#)
         let input = "prefix 123 suffix"
         let slice = input[input.index(input.startIndex, offsetBy: 7)...]
 
@@ -76,7 +76,7 @@ struct MatchTests {
 
     @Test("String and Substring expose regex matches and ranges")
     func stringNativeMatchesAndRanges() async throws {
-        let regex = try await Regex(pattern: #"(?<digits>\d+)"#)
+        let regex = try Regex(pattern: #"(?<digits>\d+)"#)
         let input = "aa11bb22cc333"
         let slice = input[input.index(input.startIndex, offsetBy: 2)...]
 
@@ -97,7 +97,7 @@ struct MatchTests {
 
     @Test("String exposes regex replacing")
     func stringReplacing() async throws {
-        let regex = try await Regex(pattern: #"\d+"#)
+        let regex = try Regex(pattern: #"\d+"#)
 
         #expect(try "aa11bb22cc333".replacing(regex, with: "#") == "aa#bb#cc#")
         #expect(try "prefix".replacing(regex, with: "#") == "prefix")
@@ -106,7 +106,7 @@ struct MatchTests {
 
     @Test("String exposes mutating regex replace")
     func stringReplace() async throws {
-        let regex = try await Regex(pattern: #"\d+"#)
+        let regex = try Regex(pattern: #"\d+"#)
         var input = "aa11bb22cc333"
         try input.replace(regex, with: "#")
         #expect(input == "aa#bb#cc#")
@@ -118,7 +118,7 @@ struct MatchTests {
 
     @Test("String and Substring expose trimmingPrefix")
     func stringTrimmingPrefix() async throws {
-        let regex = try await Regex(pattern: #"\d+"#)
+        let regex = try Regex(pattern: #"\d+"#)
 
         #expect(try "123abc".trimmingPrefix(regex) == "abc")
         #expect(try "abc123".trimmingPrefix(regex) == "abc123")
@@ -130,8 +130,8 @@ struct MatchTests {
 
     @Test("String and Substring expose regex split")
     func stringSplit() async throws {
-        let comma = try await Regex(pattern: ",")
-        let digits = try await Regex(pattern: #"\d+"#)
+        let comma = try Regex(pattern: ",")
+        let digits = try Regex(pattern: #"\d+"#)
 
         #expect(try "a,,b,".split(separator: comma) == ["a", "b"])
         #expect(try ",,".split(separator: comma) == [])
@@ -144,7 +144,7 @@ struct MatchTests {
 
     @Test("Regex.Match maps UTF-16 regex results back to String indices")
     func utf16BackedMatch() async throws {
-        let regex = try await Regex(patternBytes: Self.utf16LittleEndianBytes("(你好)(世界)"),
+        let regex = try Regex(patternBytes: Self.utf16LittleEndianBytes("(你好)(世界)"),
                                     encoding: .utf16LittleEndian)
         let input = "prefix 你好世界 suffix"
 

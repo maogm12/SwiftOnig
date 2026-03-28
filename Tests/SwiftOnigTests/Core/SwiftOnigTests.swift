@@ -48,8 +48,8 @@ struct SwiftOnigTests {
         await setWarningHandler { standardMessages.append($0) }
         await setVerboseWarningHandler { verboseMessages.append($0) }
 
-        _ = try await Regex(pattern: "[a-b-c]")
-        _ = try await Regex(pattern: "(?:a*)+")
+        _ = try Regex(pattern: "[a-b-c]")
+        _ = try Regex(pattern: "(?:a*)+")
 
         #expect(standardMessages.values.contains { $0.localizedCaseInsensitiveContains("character class") || $0.localizedCaseInsensitiveContains("escaped") })
         #expect(verboseMessages.values.contains { $0.localizedCaseInsensitiveContains("nested repeat") })
@@ -68,7 +68,7 @@ struct SwiftOnigTests {
             ]
         )
 
-        let regex = try await Regex(pattern: #"\A\p{SwiftOnigKana}{2}\z"#)
+        let regex = try Regex(pattern: #"\A\p{SwiftOnigKana}{2}\z"#)
         #expect(try regex.matches("あい"))
         #expect(try !regex.matches("あう"))
     }
@@ -110,7 +110,7 @@ struct SwiftOnigTests {
             return .continue
         }
 
-        let regex = try await Regex(pattern: #"\A(*swiftTestCallout)abc\z"#)
+        let regex = try Regex(pattern: #"\A(*swiftTestCallout)abc\z"#)
         #expect(try regex.matches("abc"))
         #expect(phases.values.contains { $0.contains("swiftTestCallout") })
     }
@@ -121,7 +121,7 @@ struct SwiftOnigTests {
             named: "SwiftOnigResetKana",
             ranges: [OnigurumaUnicodePropertyRange(0x3042, 0x3042)]
         )
-        let before = try await Regex(pattern: #"\A\p{SwiftOnigResetKana}\z"#)
+        let before = try Regex(pattern: #"\A\p{SwiftOnigResetKana}\z"#)
         #expect(try before.matches("あ"))
 
         let firstPhases = MessageBox()
@@ -129,23 +129,23 @@ struct SwiftOnigTests {
             firstPhases.append("before:\(context.name ?? "")")
             return .continue
         }
-        let beforeCalloutRegex = try await Regex(pattern: #"\A(*swiftResetCallout)ok\z"#)
+        let beforeCalloutRegex = try Regex(pattern: #"\A(*swiftResetCallout)ok\z"#)
         #expect(try beforeCalloutRegex.matches("ok"))
         #expect(firstPhases.values == ["before:swiftResetCallout"])
 
         await uninitialize()
 
-        let after = try await Regex(pattern: #"\A\p{SwiftOnigResetKana}\z"#)
+        let after = try Regex(pattern: #"\A\p{SwiftOnigResetKana}\z"#)
         #expect(try !after.matches("あ"))
-        await #expect(throws: OnigError.self) {
-            _ = try await Regex(pattern: #"\A(*swiftResetCallout)ok\z"#)
+        #expect(throws: OnigError.self) {
+            _ = try Regex(pattern: #"\A(*swiftResetCallout)ok\z"#)
         }
 
         try await defineUserUnicodeProperty(
             named: "SwiftOnigResetKana",
             ranges: [OnigurumaUnicodePropertyRange(0x3044, 0x3044)]
         )
-        let redefined = try await Regex(pattern: #"\A\p{SwiftOnigResetKana}\z"#)
+        let redefined = try Regex(pattern: #"\A\p{SwiftOnigResetKana}\z"#)
         #expect(try !redefined.matches("あ"))
         #expect(try redefined.matches("い"))
 
@@ -154,7 +154,7 @@ struct SwiftOnigTests {
             secondPhases.append("after:\(context.name ?? "")")
             return .continue
         }
-        let afterCalloutRegex = try await Regex(pattern: #"\A(*swiftResetCallout)ok\z"#)
+        let afterCalloutRegex = try Regex(pattern: #"\A(*swiftResetCallout)ok\z"#)
         #expect(try afterCalloutRegex.matches("ok"))
         #expect(secondPhases.values == ["after:swiftResetCallout"])
     }
@@ -167,16 +167,16 @@ struct SwiftOnigTests {
         await setWarningHandler { firstStandard.append("first:\($0)") }
         await setVerboseWarningHandler { firstVerbose.append("first:\($0)") }
 
-        _ = try await Regex(pattern: "[a-b-c]")
-        _ = try await Regex(pattern: "(?:a*)+")
+        _ = try Regex(pattern: "[a-b-c]")
+        _ = try Regex(pattern: "(?:a*)+")
 
         #expect(!firstStandard.values.isEmpty)
         #expect(!firstVerbose.values.isEmpty)
 
         await uninitialize()
 
-        _ = try await Regex(pattern: "[a-b-c]")
-        _ = try await Regex(pattern: "(?:a*)+")
+        _ = try Regex(pattern: "[a-b-c]")
+        _ = try Regex(pattern: "(?:a*)+")
 
         #expect(firstStandard.values.allSatisfy { $0.hasPrefix("first:") })
         #expect(firstVerbose.values.allSatisfy { $0.hasPrefix("first:") })
@@ -186,8 +186,8 @@ struct SwiftOnigTests {
         await setWarningHandler { secondStandard.append("second:\($0)") }
         await setVerboseWarningHandler { secondVerbose.append("second:\($0)") }
 
-        _ = try await Regex(pattern: "[a-b-c]")
-        _ = try await Regex(pattern: "(?:a*)+")
+        _ = try Regex(pattern: "[a-b-c]")
+        _ = try Regex(pattern: "(?:a*)+")
 
         #expect(!secondStandard.values.isEmpty)
         #expect(!secondVerbose.values.isEmpty)
@@ -275,7 +275,7 @@ struct SwiftOnigTests {
             return .continue
         }
 
-        let regex = try await Regex(pattern: #"\Aa(?{swift-content}X)b\z"#)
+        let regex = try Regex(pattern: #"\Aa(?{swift-content}X)b\z"#)
         #expect(try "ab".firstMatch(of: regex, matchParam: matchParam) != nil)
         #expect(box.payloads.contains("payload"))
     }

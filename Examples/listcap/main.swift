@@ -13,7 +13,7 @@ func execute(str: String, pattern: String, syntax: Syntax, options: Regex.Option
     print("Pattern: /\(pattern)/")
     print("String : \"\(str)\"")
 
-    let regex = try await Regex(pattern: pattern, options: options, syntax: syntax)
+    let regex = try Regex(pattern: pattern, options: options, syntax: syntax)
     guard let match = try str.firstMatch(of: regex) else {
         print("No match")
         return

@@ -28,7 +28,7 @@ This is a layered design, not a unified-result design.
 `Regex` continues to own compilation:
 
 ```swift
-let regex = try await Regex(pattern: #"\d+"#)
+let regex = try Regex(pattern: #"\d+"#)
 ```
 
 Primary search entry points live on `String` and `Substring`:

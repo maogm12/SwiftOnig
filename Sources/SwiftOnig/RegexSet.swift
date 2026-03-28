@@ -106,7 +106,7 @@ public struct RegexSet: Sendable {
     ) async throws where S: Sequence, S.Element == P, P: StringProtocol {
         var compiledRegexes = [Regex]()
         for pattern in patterns {
-            compiledRegexes.append(try await Regex(pattern: pattern, options: options, syntax: syntax))
+            compiledRegexes.append(try Regex(pattern: pattern, options: options, syntax: syntax))
         }
         try Self.validateRegexes(compiledRegexes)
         self.storage = try Storage(regexes: compiledRegexes)
@@ -123,7 +123,7 @@ public struct RegexSet: Sendable {
     ) async throws where S: Sequence, S.Element == P, P: Sequence, P.Element == UInt8 {
         var compiledRegexes = [Regex]()
         for patternBytes in patternsBytes {
-            compiledRegexes.append(try await Regex(patternBytes: patternBytes, encoding: encoding, options: options, syntax: syntax))
+            compiledRegexes.append(try Regex(patternBytes: patternBytes, encoding: encoding, options: options, syntax: syntax))
         }
         try Self.validateRegexes(compiledRegexes)
         self.storage = try Storage(regexes: compiledRegexes)

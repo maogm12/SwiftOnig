@@ -13,7 +13,7 @@ import Testing
 struct RegexSetTests {
     @Test("Initialization")
     func initialization() async throws {
-        var regSet = try await RegexSet(regexes: [try await Regex(pattern: "a+"), try await Regex(pattern: "b+")])
+        var regSet = try await RegexSet(regexes: [try Regex(pattern: "a+"), try Regex(pattern: "b+")])
         #expect(regSet.count == 2)
         
         regSet = try await RegexSet(patterns: ["a+", "b+", "c+"])
@@ -26,8 +26,8 @@ struct RegexSetTests {
 
     @Test("Reject mixed regex encodings")
     func rejectsMixedEncodings() async throws {
-        let utf8Regex = try await Regex(pattern: "a+")
-        let gb18030Regex = try await Regex(patternBytes: [196, 227, 186, 195], encoding: .gb18030)
+        let utf8Regex = try Regex(pattern: "a+")
+        let gb18030Regex = try Regex(patternBytes: [196, 227, 186, 195], encoding: .gb18030)
 
         await #expect(throws: OnigError.invalidArgument) {
             _ = try await RegexSet(regexes: [utf8Regex, gb18030Regex])
@@ -36,7 +36,7 @@ struct RegexSetTests {
     
     @Test("Property Access")
     func getter() async throws {
-        let regSet = try await RegexSet(regexes: [try await Regex(pattern: "a+"), try await Regex(pattern: "b+")])
+        let regSet = try await RegexSet(regexes: [try Regex(pattern: "a+"), try Regex(pattern: "b+")])
         let regex1 = regSet[0]
         #expect(try regex1.matches("aaaa"))
         #expect(try !regex1.matches("bbbb"))
@@ -44,7 +44,7 @@ struct RegexSetTests {
 
     @Test("Search")
     func search() async throws {
-        let regSet = try await RegexSet(regexes: [try await Regex(pattern: "a+"), try await Regex(pattern: "b+"), try await Regex(pattern: "c+")])
+        let regSet = try await RegexSet(regexes: [try Regex(pattern: "a+"), try Regex(pattern: "b+"), try Regex(pattern: "c+")])
 
         var result = try regSet.firstSetMatch(in: "cccaaabbb", lead: .positionLead)!
         #expect(result.regexIndex == 2)
@@ -74,12 +74,12 @@ struct RegexSetTests {
 
     @Test("Mutable operations")
     func mutations() async throws {
-        var regSet = try await RegexSet(regexes: [try await Regex(pattern: "a+"), try await Regex(pattern: "b+")])
-        try regSet.append(try await Regex(pattern: "c+"))
+        var regSet = try await RegexSet(regexes: [try Regex(pattern: "a+"), try Regex(pattern: "b+")])
+        try regSet.append(try Regex(pattern: "c+"))
         #expect(regSet.count == 3)
         #expect(try regSet[2].matches("ccc"))
 
-        try regSet.replace(at: 1, with: try await Regex(pattern: "bb"))
+        try regSet.replace(at: 1, with: try Regex(pattern: "bb"))
         #expect(try regSet[1].matches("bb"))
         #expect(try "bbb".wholeMatch(of: regSet[1]) == nil)
 
@@ -90,9 +90,9 @@ struct RegexSetTests {
 
     @Test("Mutable operations preserve value semantics across copies")
     func copyOnWriteMutations() async throws {
-        let regexA = try await Regex(pattern: "a+")
-        let regexB = try await Regex(pattern: "b+")
-        let regexC = try await Regex(pattern: "c+")
+        let regexA = try Regex(pattern: "a+")
+        let regexB = try Regex(pattern: "b+")
+        let regexC = try Regex(pattern: "c+")
 
         var original = try await RegexSet(regexes: [regexA, regexB])
         let copy = original
@@ -103,7 +103,7 @@ struct RegexSetTests {
         #expect(try original.firstSetMatch(in: "ccc")?.regexIndex == 2)
         #expect(try copy.firstSetMatch(in: "ccc") == nil)
 
-        try original.replace(at: 0, with: try await Regex(pattern: "aa"))
+        try original.replace(at: 0, with: try Regex(pattern: "aa"))
         #expect(try "aa".wholeMatch(of: original[0]) != nil)
         #expect(try "a".wholeMatch(of: copy[0]) != nil)
         #expect(try "a".wholeMatch(of: original[0]) == nil)
@@ -116,9 +116,9 @@ struct RegexSetTests {
 
     @Test("Reject invalid mutable operations")
     func mutationValidation() async throws {
-        var regSet = try await RegexSet(regexes: [try await Regex(pattern: "a+")])
-        let gb18030Regex = try await Regex(patternBytes: [196, 227, 186, 195], encoding: .gb18030)
-        let longestRegex = try await Regex(pattern: "b+", options: .findLongest)
+        var regSet = try await RegexSet(regexes: [try Regex(pattern: "a+")])
+        let gb18030Regex = try Regex(patternBytes: [196, 227, 186, 195], encoding: .gb18030)
+        let longestRegex = try Regex(pattern: "b+", options: .findLongest)
 
         #expect(throws: OnigError.invalidArgument) {
             try regSet.append(gb18030Regex)

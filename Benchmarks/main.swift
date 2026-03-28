@@ -165,12 +165,12 @@ func runBenchmarks() async throws {
                  name: "Compile email pattern",
                  iterations: 10_000) {
             for _ in 0..<10_000 {
-                _ = try await SwiftOnig.Regex(pattern: emailPattern)
+                _ = try SwiftOnig.Regex(pattern: emailPattern)
             }
         },
         swiftOnig: {
             for _ in 0..<10_000 {
-                _ = try await SwiftOnig.Regex(pattern: emailPattern)
+                _ = try SwiftOnig.Regex(pattern: emailPattern)
             }
         },
         nsRegularExpression: {
@@ -185,7 +185,7 @@ func runBenchmarks() async throws {
         }
     )
 
-    let onigEmail = try await SwiftOnig.Regex(pattern: emailPattern)
+    let onigEmail = try SwiftOnig.Regex(pattern: emailPattern)
     let nsEmail = try NSRegularExpression(pattern: emailPattern)
     let swiftEmail = try _StringProcessing.Regex(emailPattern)
 
@@ -241,7 +241,7 @@ func runBenchmarks() async throws {
         }
     )
 
-    let onigUnicode = try await SwiftOnig.Regex(pattern: unicodePattern)
+    let onigUnicode = try SwiftOnig.Regex(pattern: unicodePattern)
     let nsUnicode = try NSRegularExpression(pattern: unicodePattern)
     let swiftUnicode = try _StringProcessing.Regex(unicodePattern)
 
@@ -272,7 +272,7 @@ func runBenchmarks() async throws {
     )
 
     let utf16PatternBytes = Array("你好".utf16).withUnsafeBufferPointer { Data(buffer: $0) }
-    let utf16Regex = try await SwiftOnig.Regex(patternBytes: utf16PatternBytes, encoding: .utf16LittleEndian)
+    let utf16Regex = try SwiftOnig.Regex(patternBytes: utf16PatternBytes, encoding: .utf16LittleEndian)
     let utf16AnchoredInput = "你好! " + String(repeating: "World", count: 1000)
     let utf16Input = "Hello, 你好! " + String(repeating: "World", count: 1000)
     let utf16PreparedInput = utf16Input.utf16.withContiguousStorageIfAvailable { Data(buffer: UnsafeBufferPointer(start: $0.baseAddress, count: $0.count)) }

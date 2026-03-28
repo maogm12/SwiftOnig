@@ -17,7 +17,7 @@ struct SyntaxTests {
         #expect(syntax.operators.contains(.escCapitalGBeginAnchor))
 
         let ruby = Syntax.ruby
-        let reg = try await Regex(pattern: "a?bbb", syntax: ruby)
+        let reg = try Regex(pattern: "a?bbb", syntax: ruby)
         #expect(try reg.matches("abbb"))
         #expect(try reg.matches("bbb"))
     }
@@ -60,7 +60,7 @@ struct SyntaxTests {
         let python = Syntax.python
         #expect(python.operators.contains(.escCapitalGBeginAnchor))
 
-        let regex = try await Regex(pattern: #"(?P<word>\w+)(?P=word)"#, syntax: python)
+        let regex = try Regex(pattern: #"(?P<word>\w+)(?P=word)"#, syntax: python)
         #expect(try regex.matches("hellohello"))
         #expect(try !regex.matches("helloworld"))
 

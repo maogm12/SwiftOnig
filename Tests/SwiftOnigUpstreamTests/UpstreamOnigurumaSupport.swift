@@ -54,7 +54,7 @@ enum UpstreamOnigurumaSupport {
     static func verifyRegexSuite(_ cases: [RegexCase]) async {
         for (index, testCase) in cases.enumerated() {
             do {
-                let regex = try await Regex(patternBytes: testCase.pattern,
+                let regex = try Regex(patternBytes: testCase.pattern,
                                             encoding: testCase.encoding,
                                             options: testCase.compileOptions,
                                             syntax: testCase.syntax)
@@ -125,7 +125,7 @@ enum UpstreamOnigurumaSupport {
                 var regexes = [Regex]()
                 regexes.reserveCapacity(testCase.patterns.count)
                 for pattern in testCase.patterns {
-                    regexes.append(try await Regex(patternBytes: pattern, encoding: .utf8))
+                    regexes.append(try Regex(patternBytes: pattern, encoding: .utf8))
                 }
                 let regset = try await RegexSet(regexes: regexes)
                 let result = try regset.firstSetMatch(in: inputBytes, lead: testCase.lead)

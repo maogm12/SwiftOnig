@@ -66,7 +66,7 @@ private func onigurumaVerboseWarningCallback(_ message: UnsafePointer<CChar>?) {
     OnigurumaWarningBridge.verbose(String(cString: message))
 }
 
-private enum OnigurumaBootstrap {
+enum OnigurumaBootstrap {
     private final class State: @unchecked Sendable {
         let lock = NSLock()
         var isLibraryInitialized = false

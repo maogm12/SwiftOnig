@@ -121,7 +121,7 @@ struct OnigOfficialTests {
             switch expectation {
             case .match(let pattern, let input, let expectedRange, let group, let syntax, let options):
                 do {
-                    let reg = try await Regex(pattern: pattern, options: options, syntax: syntax)
+                    let reg = try Regex(pattern: pattern, options: options, syntax: syntax)
                     guard let region = try reg.firstMatch(in: Array(input.utf8)) else {
                         Issue.record("Pattern /\(pattern)/ failed to match '\(input)'")
                         continue
@@ -133,7 +133,7 @@ struct OnigOfficialTests {
                 
             case .noMatch(let pattern, let input, let syntax, let options):
                 do {
-                    let reg = try await Regex(pattern: pattern, options: options, syntax: syntax)
+                    let reg = try Regex(pattern: pattern, options: options, syntax: syntax)
                     let region = try reg.firstMatch(in: Array(input.utf8))
                     #expect(region == nil, "Pattern /\(pattern)/ unexpectedly matched '\(input)'")
                 } catch {
@@ -142,7 +142,7 @@ struct OnigOfficialTests {
                 
             case .error(let pattern, let expectedError, let syntax, let options):
                 do {
-                    _ = try await Regex(pattern: pattern, options: options, syntax: syntax)
+                    _ = try Regex(pattern: pattern, options: options, syntax: syntax)
                     Issue.record("Pattern /\(pattern)/ unexpectedly succeeded")
                 } catch let error as OnigError {
                     #expect(error == expectedError, "Pattern /\(pattern)/ threw wrong error")

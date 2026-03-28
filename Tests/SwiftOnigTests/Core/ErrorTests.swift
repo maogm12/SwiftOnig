@@ -12,12 +12,12 @@ import SwiftOnig
 struct OnigErrorTests {
     @Test("Verify regex compilation errors")
     func errorHandling() async throws {
-        await #expect(throws: OnigError.tooBigNumberForRepeatRange) {
-            _ = try await Regex(pattern: "a{3,999999999999999999999999999999999999999999}")
+        #expect(throws: OnigError.tooBigNumberForRepeatRange) {
+            _ = try Regex(pattern: "a{3,999999999999999999999999999999999999999999}")
         }
         
         do {
-            _ = try await Regex(pattern: #"(?<$$$>\d+)"#)
+            _ = try Regex(pattern: #"(?<$$$>\d+)"#)
             Issue.record("Should have thrown invalidCharInGroupName")
         } catch OnigError.invalidCharInGroupName {
             // Success

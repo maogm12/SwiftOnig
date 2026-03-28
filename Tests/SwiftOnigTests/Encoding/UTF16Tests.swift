@@ -16,7 +16,7 @@ struct UTF16Tests {
         // "你好" in UTF-16LE
         let utf16Bytes: [UInt16] = [0x4f60, 0x597d] 
         let patternData = utf16Bytes.withUnsafeBufferPointer { Data(buffer: $0) }
-        let regex = try await Regex(patternBytes: patternData, encoding: .utf16LittleEndian)
+        let regex = try Regex(patternBytes: patternData, encoding: .utf16LittleEndian)
         
         // Target string: "Hello, 你好!" in UTF-16LE
         let target: [UInt16] = [0x0048, 0x0065, 0x006c, 0x006c, 0x006f, 0x002c, 0x0020, 0x4f60, 0x597d, 0x0021]
@@ -35,7 +35,7 @@ struct UTF16Tests {
     func stringUTF16View() async throws {
         let input = "Hello, 你好!"
         let utf16Pattern = Array("你好".utf16).withUnsafeBufferPointer { Data(buffer: $0) }
-        let regex16 = try await Regex(patternBytes: utf16Pattern, encoding: .utf16LittleEndian)
+        let regex16 = try Regex(patternBytes: utf16Pattern, encoding: .utf16LittleEndian)
         
         guard let region = try regex16.firstMatch(in: input.utf16) else {
             Issue.record("Should have matched")
@@ -49,7 +49,7 @@ struct UTF16Tests {
     func explicitContiguousUTF16Input() async throws {
         let input = Array("Hello, 你好!".utf16).withUnsafeBufferPointer { Data(buffer: $0) }
         let utf16Pattern = Array("你好".utf16).withUnsafeBufferPointer { Data(buffer: $0) }
-        let regex16 = try await Regex(patternBytes: utf16Pattern, encoding: .utf16LittleEndian)
+        let regex16 = try Regex(patternBytes: utf16Pattern, encoding: .utf16LittleEndian)
 
         guard let region = try regex16.firstMatch(in: input) else {
             Issue.record("Should have matched")

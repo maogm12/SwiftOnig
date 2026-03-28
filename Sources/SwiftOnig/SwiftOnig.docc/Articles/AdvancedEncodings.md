@@ -22,7 +22,7 @@ Compile the regex with the same encoding as the input bytes:
 
 ```swift
 let gbBytes: [UInt8] = [196, 227, 186, 195] // "你好" in GB18030
-let regex = try await Regex(patternBytes: gbBytes, encoding: .gb18030)
+let regex = try Regex(patternBytes: gbBytes, encoding: .gb18030)
 
 if let region = try regex.firstMatch(in: gbBytes) {
     print(region.range)
@@ -50,7 +50,7 @@ For repeated UTF-16 searches, prefer explicitly prepared raw UTF-16 bytes or `Da
 
 ```swift
 let patternBytes = Array("你好".utf16).withUnsafeBufferPointer { Data(buffer: $0) }
-let regex = try await Regex(patternBytes: patternBytes, encoding: .utf16LittleEndian)
+let regex = try Regex(patternBytes: patternBytes, encoding: .utf16LittleEndian)
 
 let inputBytes = Array("Hello, 你好!".utf16).withUnsafeBufferPointer { Data(buffer: $0) }
 let region = try regex.firstMatch(in: inputBytes)

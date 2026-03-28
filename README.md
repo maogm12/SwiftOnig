@@ -40,7 +40,7 @@ Everything else, including manual runtime lifecycle, non-UTF encodings, and expl
 import SwiftOnig
 
 // Regex creation is asynchronous and thread-safe
-let regex = try await Regex(pattern: #"\d+"#)
+let regex = try Regex(pattern: #"\d+"#)
 
 let input = "The answer is 42."
 
@@ -66,7 +66,7 @@ SwiftOnig integrates with Apple's `RegexBuilder` through `CustomConsumingRegexCo
 import RegexBuilder
 import SwiftOnig
 
-let onigRegex = try await SwiftOnig.Regex(pattern: #"\d+"#)
+let onigRegex = try SwiftOnig.Regex(pattern: #"\d+"#)
 
 let combinedRegex = Regex {
     "ID-"
@@ -84,7 +84,7 @@ if let match = "Item ID-12345! is ready.".firstMatch(of: combinedRegex) {
 You can also turn a compiled `SwiftOnig.Regex` into a standard-library regex value and use it with APIs like `firstMatch(of:)`.
 
 ```swift
-let onigRegex = try await SwiftOnig.Regex(pattern: #"\d+"#)
+let onigRegex = try SwiftOnig.Regex(pattern: #"\d+"#)
 let swiftRegex = onigRegex.swiftRegex
 
 if let match = "The item ID-12345! is ready.".firstMatch(of: swiftRegex) {
@@ -95,7 +95,7 @@ if let match = "The item ID-12345! is ready.".firstMatch(of: swiftRegex) {
 ### Capture Groups
 
 ```swift
-let regex = try await Regex(pattern: #"(\w+):\s+(\d+)"#)
+let regex = try Regex(pattern: #"(\w+):\s+(\d+)"#)
 if let match = try "Age: 25".firstMatch(of: regex) {
     print("Field: \(match[1]!.substring)") // "Age"
     print("Value: \(match[2]!.substring)") // "25"
@@ -112,7 +112,7 @@ Most applications do not need this section. Use it when your input is already st
 
 ```swift
 let gbBytes: [UInt8] = [196, 227, 186, 195] // "你好" in GB18030
-let regex = try await Regex(patternBytes: gbBytes, encoding: .gb18030)
+let regex = try Regex(patternBytes: gbBytes, encoding: .gb18030)
 
 let input: [UInt8] = ... // GB18030 encoded data
 if let region = try regex.firstMatch(in: input) {
@@ -128,7 +128,7 @@ For repeated searches against the same UTF-16 data, prepare raw UTF-16 bytes onc
 
 ```swift
 let utf16Pattern = Array("你好".utf16).withUnsafeBufferPointer { Data(buffer: $0) }
-let regex = try await Regex(patternBytes: utf16Pattern, encoding: .utf16LittleEndian)
+let regex = try Regex(patternBytes: utf16Pattern, encoding: .utf16LittleEndian)
 
 let preparedInput = Array("Hello, 你好!".utf16).withUnsafeBufferPointer { Data(buffer: $0) }
 

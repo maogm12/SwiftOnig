@@ -18,7 +18,7 @@ struct RegexBuilderTests {
             return
         }
         
-        let onigRegex = try await SwiftOnig.Regex(pattern: #"\d+"#)
+        let onigRegex = try SwiftOnig.Regex(pattern: #"\d+"#)
         let input = "The item ID-12345! is ready."
         #expect(try input.firstMatch(of: onigRegex)?.substring == "12345")
     }
@@ -29,7 +29,7 @@ struct RegexBuilderTests {
             return
         }
 
-        let onigRegex = try await SwiftOnig.Regex(pattern: #"\d+"#)
+        let onigRegex = try SwiftOnig.Regex(pattern: #"\d+"#)
         let input = "The item ID-12345! is ready."
 
         let match = input.firstMatch(of: onigRegex.swiftRegex)

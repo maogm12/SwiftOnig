@@ -18,7 +18,7 @@ Task {
         let regex: Regex
         let match: Regex.Match?
         
-        regex = try await Regex(patternBytes: pattern.utf8,
+        regex = try Regex(patternBytes: pattern.utf8,
                           encoding: .ascii)
         match = try str.firstMatch(of: regex)
 
