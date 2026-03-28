@@ -115,6 +115,55 @@ struct SwiftOnigTests {
         #expect(phases.values.contains { $0.contains("swiftTestCallout") })
     }
 
+    @Test("Repeated initialize calls are idempotent")
+    func repeatedInitializeIsIdempotent() async throws {
+        try await initialize(encodings: [Encoding.utf8, .utf8, .gb18030])
+        try await initialize(encodings: [Encoding.gb18030, .utf8])
+        try await initialize(encodings: [Encoding]())
+
+        let utf8Regex = try Regex(pattern: #"\A\d+\z"#)
+        #expect(try utf8Regex.matches("123"))
+
+        let gb18030Pattern: [UInt8] = [196, 227, 186, 195]
+        let gb18030Regex = try Regex(patternBytes: gb18030Pattern, encoding: .gb18030)
+        let input: [UInt8] = [196, 227, 186, 195, 163, 172]
+        #expect(try gb18030Regex.firstMatch(in: input) != nil)
+    }
+
+    @Test("Explicit initialize remains valid after sync regex bootstrap")
+    func explicitInitializeAfterAutoBootstrap() async throws {
+        let autoBootstrapped = try Regex(pattern: #"\Aabc\z"#)
+        #expect(try autoBootstrapped.matches("abc"))
+
+        try await initialize(encodings: [Encoding.utf8, .utf16LittleEndian, .gb18030])
+
+        let utf16Pattern = Array("你好".utf16).withUnsafeBufferPointer { Data(buffer: $0) }
+        let utf16Regex = try Regex(patternBytes: utf16Pattern, encoding: .utf16LittleEndian)
+        let utf16Input = Array("prefix 你好 suffix".utf16).withUnsafeBufferPointer { Data(buffer: $0) }
+        #expect(try utf16Regex.firstMatch(in: utf16Input) != nil)
+
+        let gb18030Pattern: [UInt8] = [196, 227, 186, 195]
+        let gb18030Regex = try Regex(patternBytes: gb18030Pattern, encoding: .gb18030)
+        let gb18030Input: [UInt8] = [196, 227, 186, 195, 163, 172]
+        #expect(try gb18030Regex.firstMatch(in: gb18030Input) != nil)
+    }
+
+    @Test("Explicit initialize works after uninitialize")
+    func explicitInitializeAfterReset() async throws {
+        _ = try Regex(pattern: #"\Afoo\z"#)
+        await uninitialize()
+
+        try await initialize(encodings: [Encoding.utf8, .utf16LittleEndian])
+
+        let utf8Regex = try Regex(pattern: #"\Abar\z"#)
+        #expect(try utf8Regex.matches("bar"))
+
+        let utf16Pattern = Array("世界".utf16).withUnsafeBufferPointer { Data(buffer: $0) }
+        let utf16Regex = try Regex(patternBytes: utf16Pattern, encoding: .utf16LittleEndian)
+        let utf16Input = Array("你好世界".utf16).withUnsafeBufferPointer { Data(buffer: $0) }
+        #expect(try utf16Regex.firstMatch(in: utf16Input) != nil)
+    }
+
     @Test("Uninitialize resets runtime state for reuse")
     func uninitializeResetsRuntimeState() async throws {
         try await defineUserUnicodeProperty(
