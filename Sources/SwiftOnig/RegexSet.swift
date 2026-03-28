@@ -13,6 +13,12 @@ import OnigurumaC
 public struct RegexSet: Sendable {
     internal typealias OnigRegSet = OpaquePointer
 
+    public struct Match: Sendable {
+        public let regexIndex: Int
+        public let regex: Regex
+        public let region: Region
+    }
+
     internal final class Storage: @unchecked Sendable {
         let rawValue: OnigRegSet
         var regexes: [Regex]
@@ -202,11 +208,11 @@ public struct RegexSet: Sendable {
     /**
      Search string and return the first matching regex/region pair from the set.
      */
-    public func firstSetMatch<S>(in str: S,
-                                 lead: Lead = .positionLead,
-                                 options: Regex.SearchOptions = .none,
-                                 matchConfigurations: [Regex.MatchConfiguration]? = nil
-    ) throws -> (regexIndex: Int, region: Region)? {
+    public func firstMatch<S>(in str: S,
+                              lead: Lead = .positionLead,
+                              options: Regex.SearchOptions = .none,
+                              matchConfigurations: [Regex.MatchConfiguration]? = nil
+    ) throws -> Match? {
         guard let firstRegex = regexes.first else {
             return nil
         }
@@ -223,12 +229,12 @@ public struct RegexSet: Sendable {
     /**
      Search a range of string and return the first matching regex/region pair from the set.
      */
-    public func firstSetMatch<S, R>(in str: S,
-                                    of range: R,
-                                    lead: Lead = .positionLead,
-                                    options: Regex.SearchOptions = .none,
-                                    matchConfigurations: [Regex.MatchConfiguration]? = nil
-    ) throws -> (regexIndex: Int, region: Region)? where R: RangeExpression, R.Bound == Int {
+    public func firstMatch<S, R>(in str: S,
+                                 of range: R,
+                                 lead: Lead = .positionLead,
+                                 options: Regex.SearchOptions = .none,
+                                 matchConfigurations: [Regex.MatchConfiguration]? = nil
+    ) throws -> Match? where R: RangeExpression, R.Bound == Int {
         guard let firstRegex = regexes.first else {
             return nil
         }
@@ -243,7 +249,7 @@ public struct RegexSet: Sendable {
                                    lead: Lead = .positionLead,
                                    options: Regex.SearchOptions = .none,
                                    matchConfigurations: [Regex.MatchConfiguration]? = nil
-    ) throws -> (regexIndex: Int, region: Region)? where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
+    ) throws -> Match? where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
         guard let firstRegex = regexes.first else {
             return nil
         }
@@ -288,10 +294,13 @@ public struct RegexSet: Sendable {
             }
         } else {
             let onigRegion = onig_regset_get_region(rawValue, result)
-            return (regexIndex: Int(result),
-                    region: try Region(copying: onigRegion,
-                                       regex: regexes[Int(result)],
-                                       str: str))
+            let regexIndex = Int(result)
+            let regex = regexes[regexIndex]
+            return Match(regexIndex: regexIndex,
+                         regex: regex,
+                         region: try Region(copying: onigRegion,
+                                            regex: regex,
+                                            str: str))
         }
     }
 

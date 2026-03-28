@@ -48,17 +48,17 @@ struct RegexSetTests {
     func search() async throws {
         let regSet = try RegexSet(regexes: [try Regex(pattern: "a+"), try Regex(pattern: "b+"), try Regex(pattern: "c+")])
 
-        var result = try regSet.firstSetMatch(in: "cccaaabbb", lead: .positionLead)!
+        var result = try regSet.firstMatch(in: "cccaaabbb", lead: .positionLead)!
         #expect(result.regexIndex == 2)
         #expect(result.region.range == 0..<3)
         #expect(result.region.decodedString() == "ccc")
 
-        result = try regSet.firstSetMatch(in: "cccaaabbb", lead: .regexLead)!
+        result = try regSet.firstMatch(in: "cccaaabbb", lead: .regexLead)!
         #expect(result.regexIndex == 2)
         #expect(result.region.range == 0..<3)
         #expect(result.region.decodedString() == "ccc")
 
-        result = try regSet.firstSetMatch(in: "cccaaabbb", lead: .priorityToRegexOrder)!
+        result = try regSet.firstMatch(in: "cccaaabbb", lead: .priorityToRegexOrder)!
         #expect(result.regexIndex == 0)
         #expect(result.region.range == 3..<6)
         #expect(result.region.decodedString() == "aaa")
@@ -68,7 +68,7 @@ struct RegexSetTests {
         let regSetGb18030 = try RegexSet(patternsBytes: [gb18030Bytes1, gb18030Bytes2],
                                           encoding: .gb18030)
         let target: [UInt8] = [196, 227, 186, 195, 163, 172, 208, 194, 202, 192, 189, 231, 163, 161] // 你好，新世界！
-        result = try regSetGb18030.firstSetMatch(in: target)!
+        result = try regSetGb18030.firstMatch(in: target)!
         #expect(result.regexIndex == 1)
         #expect(result.region.range == 0..<4)
         #expect(result.region.decodedString() == "你好")
@@ -77,13 +77,13 @@ struct RegexSetTests {
     @Test("RegexSet empty and matchConfiguration search paths")
     func emptyAndMatchConfigurationSearch() async throws {
         let empty = try RegexSet(regexes: [Regex]())
-        #expect(try empty.firstSetMatch(in: "abc") == nil)
+        #expect(try empty.firstMatch(in: "abc") == nil)
 
         let regSet = try RegexSet(regexes: [try Regex(pattern: "a+"), try Regex(pattern: "b+")])
         let matchConfiguration = Regex.MatchConfiguration(retryLimitInSearch: 1_000)
         let configurations = [matchConfiguration, matchConfiguration]
 
-        let result = try regSet.firstSetMatch(in: "xxbbb", of: 2..<5, lead: .regexLead, matchConfigurations: configurations)
+        let result = try regSet.firstMatch(in: "xxbbb", of: 2..<5, lead: .regexLead, matchConfigurations: configurations)
         #expect(result?.regexIndex == 1)
         #expect(result?.region.decodedString() == "bbb")
     }
@@ -112,7 +112,7 @@ struct RegexSetTests {
 
         try regSet.remove(at: 0)
         #expect(regSet.count == 2)
-        #expect(try regSet.firstSetMatch(in: "bbcc")?.regexIndex == 0)
+        #expect(try regSet.firstMatch(in: "bbcc")?.regexIndex == 0)
     }
 
     @Test("Mutable operations preserve value semantics across copies")
@@ -127,8 +127,8 @@ struct RegexSetTests {
         try original.append(regexC)
         #expect(original.count == 3)
         #expect(copy.count == 2)
-        #expect(try original.firstSetMatch(in: "ccc")?.regexIndex == 2)
-        #expect(try copy.firstSetMatch(in: "ccc") == nil)
+        #expect(try original.firstMatch(in: "ccc")?.regexIndex == 2)
+        #expect(try copy.firstMatch(in: "ccc") == nil)
 
         try original.replace(at: 0, with: try Regex(pattern: "aa"))
         #expect(try "aa".wholeMatch(of: original[0]) != nil)
@@ -138,7 +138,7 @@ struct RegexSetTests {
         try original.remove(at: 1)
         #expect(original.count == 2)
         #expect(copy.count == 2)
-        #expect(try copy.firstSetMatch(in: "bbb")?.regexIndex == 1)
+        #expect(try copy.firstMatch(in: "bbb")?.regexIndex == 1)
     }
 
     @Test("Reject invalid mutable operations")
