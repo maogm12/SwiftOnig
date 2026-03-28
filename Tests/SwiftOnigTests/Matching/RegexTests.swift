@@ -35,6 +35,8 @@ struct RegexTests {
         #expect(try reg.matchedByteCount(in: "foo bar") == 3)
         #expect(try reg.matchedByteCount(in: "afoo bar", of: 1...) == 3)
         #expect(try reg.matchedByteCount(in: "bar") == nil)
+        #expect(try reg.matches("afoo", in: 1...) == true)
+        #expect(try reg.matches("bar", in: 0..<3) == false)
     }
     
     @Test("Search")
@@ -129,6 +131,42 @@ struct RegexTests {
         #expect(full?.substring == "foo")
         #expect(try "foo bar".wholeMatch(of: regex) == nil)
         #expect(try "bar foo".wholeMatch(of: regex) == nil)
+    }
+
+    @Test("Region-returning string overloads still behave correctly")
+    func deprecatedStringRegionOverloads() async throws {
+        let regex = try Regex(pattern: #"\d+"#)
+        var matchParam = MatchParam()
+        matchParam.setRetryLimitInSearch(to: 1_000)
+        let input = "aa11bb22"
+        let slice = input[input.index(input.startIndex, offsetBy: 2)...]
+
+        #expect(try regex.firstMatch(in: input)?.decodedString() == "11")
+        #expect(try regex.firstMatch(in: input, matchParam: matchParam)?.decodedString() == "11")
+        #expect(try regex.firstMatch(in: slice)?.decodedString() == "11")
+        #expect(try regex.firstMatch(in: slice, matchParam: matchParam)?.decodedString() == "11")
+
+        #expect(try regex.wholeMatch(in: "11")?.decodedString() == "11")
+        #expect(try regex.wholeMatch(in: "11", matchParam: matchParam)?.decodedString() == "11")
+        #expect(try regex.wholeMatch(in: slice) == nil)
+        #expect(try regex.wholeMatch(in: slice, matchParam: matchParam) == nil)
+    }
+
+    @Test("Generic byte-oriented overloads support ranges and match params")
+    func genericRawOverloads() async throws {
+        let regex = try Regex(pattern: #"\d+"#)
+        var matchParam = MatchParam()
+        matchParam.setRetryLimitInSearch(to: 1_000)
+        let bytes = Array("zz11yy22".utf8)
+
+        #expect(try regex.firstMatch(in: bytes, of: 2..<6)?.decodedString() == "11")
+        #expect(try regex.firstMatch(in: bytes, options: .none, matchParam: matchParam)?.decodedString() == "11")
+        #expect(try regex.firstMatch(in: bytes, of: 2..<6, options: .none, matchParam: matchParam)?.decodedString() == "11")
+
+        #expect(try regex.matchedByteCount(in: bytes, options: .none, matchParam: matchParam) == nil)
+        #expect(try regex.matchedByteCount(in: bytes, of: 6..<8, options: .none, matchParam: matchParam) == 2)
+        #expect(try regex.matches(bytes, options: .none, matchParam: matchParam) == false)
+        #expect(try regex.matches(bytes, in: 0..<2, options: .none, matchParam: matchParam) == false)
     }
     
     @Test("Enumerate Matches")
