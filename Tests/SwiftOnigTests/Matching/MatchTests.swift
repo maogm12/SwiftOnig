@@ -34,6 +34,8 @@ struct MatchTests {
         let match = try #require(try regex.firstStringMatch(in: slice))
         #expect(match.substring == "11")
         #expect(match.range.lowerBound == slice.startIndex)
+        #expect(match.startIndex == 0)
+        #expect(match.endIndex == 1)
     }
 
     @Test("Prefix and whole string match helpers")
@@ -139,32 +141,48 @@ struct MatchTests {
         var untouched = "prefix"
         try untouched.replace(regex, with: "#")
         #expect(untouched == "prefix")
+
+        var withParams = "11aa22"
+        var matchParam = MatchParam()
+        matchParam.setRetryLimitInSearch(to: 1_000)
+        try withParams.replace(regex, with: "#", matchParam: matchParam)
+        #expect(withParams == "#aa#")
     }
 
     @Test("String and Substring expose trimmingPrefix")
     func stringTrimmingPrefix() async throws {
         let regex = try Regex(pattern: #"\d+"#)
+        var matchParam = MatchParam()
+        matchParam.setRetryLimitInSearch(to: 1_000)
 
         #expect(try "123abc".trimmingPrefix(regex) == "abc")
         #expect(try "abc123".trimmingPrefix(regex) == "abc123")
+        #expect(try "123abc".trimmingPrefix(regex, matchParam: matchParam) == "abc")
+        #expect(try "abc123".trimmingPrefix(regex, matchParam: matchParam) == "abc123")
 
         let input = "0012-item"
         let slice = input[input.startIndex...]
         #expect(try slice.trimmingPrefix(regex) == "-item")
+        #expect(try slice.trimmingPrefix(regex, matchParam: matchParam) == "-item")
+        #expect(try "item"[...].trimmingPrefix(regex, matchParam: matchParam) == "item")
     }
 
     @Test("String and Substring expose regex split")
     func stringSplit() async throws {
         let comma = try Regex(pattern: ",")
         let digits = try Regex(pattern: #"\d+"#)
+        var matchParam = MatchParam()
+        matchParam.setRetryLimitInSearch(to: 1_000)
 
         #expect(try "a,,b,".split(separator: comma) == ["a", "b"])
         #expect(try ",,".split(separator: comma) == [])
         #expect(try "a1b22c".split(separator: digits) == ["a", "b", "c"])
+        #expect(try ",,"[...].split(separator: comma, matchParam: matchParam) == [])
 
         let input = "1a22b"
         let slice = input[input.index(after: input.startIndex)...]
         #expect(try slice.split(separator: digits) == ["a", "b"])
+        #expect(try slice.split(separator: digits, matchParam: matchParam) == ["a", "b"])
     }
 
     @Test("String-native APIs handle empty and missing matches consistently")
@@ -196,6 +214,9 @@ struct MatchTests {
         #expect(try regex.prefixStringMatch(in: slice, matchParam: matchParam)?.substring == "11")
         #expect(try regex.wholeStringMatch(in: "11", matchParam: matchParam)?.substring == "11")
         #expect(try regex.wholeStringMatch(in: slice, matchParam: matchParam) == nil)
+        #expect(try regex.firstStringMatch(in: "abc", matchParam: matchParam) == nil)
+        #expect(try regex.firstStringMatch(in: "abc"[...], matchParam: matchParam) == nil)
+        #expect(try regex.wholeStringMatch(in: "abc"[...]) == nil)
     }
 
     @Test("Regex.Match maps UTF-16 regex results back to String indices")

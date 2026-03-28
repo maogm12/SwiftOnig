@@ -122,7 +122,7 @@ struct InternalCoverageTests {
 
         let dataCount = emptyData.withOnigurumaString(requestedEncoding: .utf8) { _, count in count }
         let arrayCount = emptyArray.withOnigurumaString(requestedEncoding: .utf8) { _, count in count }
-        let nilBufferCount = try OnigurumaInputAdapters.withRawBytes(UnsafeRawBufferPointer(start: nil, count: 0)) { _, count in
+        let nilBufferCount = OnigurumaInputAdapters.withRawBytes(UnsafeRawBufferPointer(start: nil, count: 0)) { _, count in
             count
         }
 
@@ -151,11 +151,67 @@ struct InternalCoverageTests {
     @Test("UTF-16 helpers handle contiguous buffers and bridged strings")
     func utf16HelperFastPaths() throws {
         let units = ContiguousArray<UInt16>([0x4F60, 0x597D])
-        let directCount = try OnigurumaInputAdapters.withUTF16CodeUnits(units) { _, count in count }
+        let directCount = OnigurumaInputAdapters.withUTF16CodeUnits(units) { _, count in count }
         #expect(directCount == units.count * 2)
 
         let bridged = String(NSString(string: "你好"))
         let bridgedCount = bridged._withUTF16OnigurumaString { _, count in count }
         #expect(bridgedCount == bridged.utf16.count * 2)
+    }
+
+    @Test("C global accessors expose stable encoding and syntax pointers")
+    func cGlobalAccessors() {
+        let encodings = [
+            OnigCGlobals.ascii,
+            OnigCGlobals.iso8859_1,
+            OnigCGlobals.iso8859_2,
+            OnigCGlobals.iso8859_3,
+            OnigCGlobals.iso8859_4,
+            OnigCGlobals.iso8859_5,
+            OnigCGlobals.iso8859_6,
+            OnigCGlobals.iso8859_7,
+            OnigCGlobals.iso8859_8,
+            OnigCGlobals.iso8859_9,
+            OnigCGlobals.iso8859_10,
+            OnigCGlobals.iso8859_11,
+            OnigCGlobals.iso8859_13,
+            OnigCGlobals.iso8859_14,
+            OnigCGlobals.iso8859_15,
+            OnigCGlobals.iso8859_16,
+            OnigCGlobals.utf8,
+            OnigCGlobals.utf16be,
+            OnigCGlobals.utf16le,
+            OnigCGlobals.utf32be,
+            OnigCGlobals.utf32le,
+            OnigCGlobals.eucjp,
+            OnigCGlobals.euctw,
+            OnigCGlobals.euckr,
+            OnigCGlobals.euccn,
+            OnigCGlobals.sjis,
+            OnigCGlobals.koi8r,
+            OnigCGlobals.cp1251,
+            OnigCGlobals.big5,
+            OnigCGlobals.gb18030,
+        ]
+        #expect(encodings.count == 30)
+        #expect(Set(encodings.map { UInt(bitPattern: $0) }).count > 1)
+
+        let syntaxes = [
+            OnigCGlobals.asis,
+            OnigCGlobals.posixBasic,
+            OnigCGlobals.posixExtended,
+            OnigCGlobals.emacs,
+            OnigCGlobals.grep,
+            OnigCGlobals.gnuRegex,
+            OnigCGlobals.java,
+            OnigCGlobals.perl,
+            OnigCGlobals.perlNg,
+            OnigCGlobals.python,
+            OnigCGlobals.ruby,
+            OnigCGlobals.oniguruma,
+            OnigCGlobals.defaultSyntax,
+        ]
+        #expect(syntaxes.count == 13)
+        #expect(Set(syntaxes.map { UInt(bitPattern: $0) }).count > 1)
     }
 }
