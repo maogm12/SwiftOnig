@@ -95,6 +95,15 @@ struct MatchTests {
         #expect(sliceRanges.map { slice[$0] } == ["11", "22", "333"])
     }
 
+    @Test("String exposes regex replacing")
+    func stringReplacing() async throws {
+        let regex = try await Regex(pattern: #"\d+"#)
+
+        #expect(try "aa11bb22cc333".replacing(regex, with: "#") == "aa#bb#cc#")
+        #expect(try "prefix".replacing(regex, with: "#") == "prefix")
+        #expect(try "你好123世界45".replacing(regex, with: "-") == "你好-世界-")
+    }
+
     @Test("Regex.Match maps UTF-16 regex results back to String indices")
     func utf16BackedMatch() async throws {
         let regex = try await Regex(patternBytes: Self.utf16LittleEndianBytes("(你好)(世界)"),

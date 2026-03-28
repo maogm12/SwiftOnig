@@ -25,6 +25,29 @@ extension String {
         try matches(of: regex, options: options, matchParam: matchParam).map(\.range)
     }
 
+    public func replacing(_ regex: Regex, with replacement: String, options: Regex.SearchOptions = .none) throws -> String {
+        try replacing(regex, with: replacement, options: options, matchParam: MatchParam())
+    }
+
+    public func replacing(_ regex: Regex, with replacement: String, options: Regex.SearchOptions = .none, matchParam: MatchParam) throws -> String {
+        let matches = try matches(of: regex, options: options, matchParam: matchParam)
+        guard !matches.isEmpty else {
+            return self
+        }
+
+        var result = String()
+        var currentIndex = startIndex
+
+        for match in matches {
+            result.append(contentsOf: self[currentIndex..<match.range.lowerBound])
+            result.append(replacement)
+            currentIndex = match.range.upperBound
+        }
+
+        result.append(contentsOf: self[currentIndex...])
+        return result
+    }
+
     public func firstMatch(of regex: Regex, options: Regex.SearchOptions = .none) throws -> Regex.Match? {
         try regex.firstStringMatch(in: self, options: options)
     }
