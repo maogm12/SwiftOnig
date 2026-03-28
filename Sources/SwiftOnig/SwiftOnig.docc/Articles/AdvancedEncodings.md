@@ -46,4 +46,14 @@ These are expert APIs. Use them when you need to align arbitrary byte offsets to
 
 UTF-16 has an extra performance consideration: searching `String` or `String.UTF16View` with a UTF-16 regex may materialize temporary contiguous UTF-16 storage for that call.
 
-For repeated UTF-16 searches, prefer `UTF16CodeUnitBuffer` so that materialization is explicit and reusable.
+For repeated UTF-16 searches, prefer explicitly prepared raw UTF-16 bytes or `Data` so the raw-input model stays consistent with other encodings:
+
+```swift
+let patternBytes = Array("你好".utf16).withUnsafeBufferPointer { Data(buffer: $0) }
+let regex = try await Regex(patternBytes: patternBytes, encoding: .utf16LittleEndian)
+
+let inputBytes = Array("Hello, 你好!".utf16).withUnsafeBufferPointer { Data(buffer: $0) }
+let region = try regex.firstMatch(in: inputBytes)
+```
+
+`UTF16CodeUnitBuffer` may remain available as a narrow advanced helper, but it is not the preferred public direction for raw encoded inputs.

@@ -137,3 +137,9 @@ This section tracks the packaging refactor from a system-installed Oniguruma dep
 - [x] Move the string-native API migration design document under `Docs/`.
 - [x] Record the raw-input design principle that raw encoded workflows should stay modeled as byte containers plus explicit `Encoding`, not one high-level wrapper type per encoding.
 - [x] Implement the string-native `Regex.Match` migration described in [`Docs/string-match-migration-plan.md`](Docs/string-match-migration-plan.md).
+
+## 14. UTF-16 API Consolidation
+
+- [x] Record that UTF-16 remains supported, but the preferred raw-input model is still byte containers plus explicit `Encoding`, not a dedicated family of encoding-specific wrapper types.
+- [x] Migrate docs and benchmarks to prefer raw UTF-16 bytes over `UTF16CodeUnitBuffer` as the public advanced-path recommendation.
+- [ ] Decide whether `UTF16CodeUnitBuffer` should remain a narrow advanced helper or move toward deprecation in a future major release.

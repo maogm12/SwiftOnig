@@ -67,12 +67,12 @@ let region = try regex.firstMatch(in: gbBytes)
 
 When using a UTF-16 encoded regex, `String`, `Substring`, `String.UTF16View`, and `Substring.UTF16View` may require temporary UTF-16 materialization for each call.
 
-If repeated UTF-16 searches are performance-sensitive, prepare the input explicitly once:
+If repeated UTF-16 searches are performance-sensitive, prepare raw UTF-16 bytes once:
 
 ```swift
 let patternData = Array("你好".utf16).withUnsafeBufferPointer { Data(buffer: $0) }
 let regex = try await Regex(patternBytes: patternData, encoding: .utf16LittleEndian)
 
-let preparedInput = UTF16CodeUnitBuffer("Hello, 你好!".utf16)
+let preparedInput = Array("Hello, 你好!".utf16).withUnsafeBufferPointer { Data(buffer: $0) }
 let region = try regex.firstMatch(in: preparedInput)
 ```

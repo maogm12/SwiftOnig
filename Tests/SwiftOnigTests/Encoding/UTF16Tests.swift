@@ -45,9 +45,9 @@ struct UTF16Tests {
         #expect(region.range == 14..<18)
     }
 
-    @Test("Explicit contiguous UTF-16 input avoids implicit view adaptation")
+    @Test("Explicit raw UTF-16 bytes avoid implicit view adaptation")
     func explicitContiguousUTF16Input() async throws {
-        let input = UTF16CodeUnitBuffer("Hello, 你好!".utf16)
+        let input = Array("Hello, 你好!".utf16).withUnsafeBufferPointer { Data(buffer: $0) }
         let utf16Pattern = Array("你好".utf16).withUnsafeBufferPointer { Data(buffer: $0) }
         let regex16 = try await Regex(patternBytes: utf16Pattern, encoding: .utf16LittleEndian)
 

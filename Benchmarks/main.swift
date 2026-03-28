@@ -275,7 +275,8 @@ func runBenchmarks() async throws {
     let utf16Regex = try await SwiftOnig.Regex(patternBytes: utf16PatternBytes, encoding: .utf16LittleEndian)
     let utf16AnchoredInput = "你好! " + String(repeating: "World", count: 1000)
     let utf16Input = "Hello, 你好! " + String(repeating: "World", count: 1000)
-    let utf16PreparedInput = UTF16CodeUnitBuffer(utf16Input.utf16)
+    let utf16PreparedInput = utf16Input.utf16.withContiguousStorageIfAvailable { Data(buffer: UnsafeBufferPointer(start: $0.baseAddress, count: $0.count)) }
+        ?? Array(utf16Input.utf16).withUnsafeBufferPointer { Data(buffer: $0) }
     let utf16MissInput = String(repeating: "World", count: 1002)
     let utf16Native = try _StringProcessing.Regex("你好")
     let utf16NS = try NSRegularExpression(pattern: "你好")
@@ -334,7 +335,7 @@ func runBenchmarks() async throws {
 
     try await runSwiftOnigOnly(
         makeCase(group: "utf16",
-                 name: "SwiftOnig UTF-16 explicit contiguous match from UTF16CodeUnitBuffer",
+                 name: "SwiftOnig UTF-16 explicit contiguous match from raw UTF-16 bytes",
                  iterations: 100_000) {
             for _ in 0..<100_000 {
                 _ = try utf16Regex.firstMatch(in: utf16PreparedInput)

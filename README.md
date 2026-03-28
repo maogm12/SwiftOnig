@@ -117,20 +117,20 @@ if let region = try regex.firstMatch(in: input) {
 
 When a regex is compiled with a UTF-16 encoding, passing `String`, `Substring`, `String.UTF16View`, or `Substring.UTF16View` may require SwiftOnig to materialize a temporary contiguous UTF-16 buffer for that call.
 
-For repeated searches against the same UTF-16 data, make that buffer explicit once and reuse it:
+For repeated searches against the same UTF-16 data, prepare raw UTF-16 bytes once and reuse them:
 
 ```swift
 let utf16Pattern = Array("你好".utf16).withUnsafeBufferPointer { Data(buffer: $0) }
 let regex = try await Regex(patternBytes: utf16Pattern, encoding: .utf16LittleEndian)
 
-let preparedInput = UTF16CodeUnitBuffer("Hello, 你好!".utf16)
+let preparedInput = Array("Hello, 你好!".utf16).withUnsafeBufferPointer { Data(buffer: $0) }
 
 if let region = try regex.firstMatch(in: preparedInput) {
     print(region.range) // 14..<18
 }
 ```
 
-This makes the UTF-16 materialization behavior explicit and avoids repeating that preparation work in application code. For string-backed workflows, prefer `input.firstMatch(of: regex)` and `Regex.Match`.
+This keeps the raw-input model consistent across encodings: bytes plus explicit `Encoding`. For string-backed workflows, prefer `input.firstMatch(of: regex)` and `Regex.Match`.
 
 ### Runtime Lifecycle APIs
 
