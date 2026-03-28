@@ -77,6 +77,81 @@ This file captures repo-specific working rules for agents collaborating in this 
 - Add new implementation tasks to `plan.md` before or as part of the work when they are meant to be tracked.
 - Whenever a tracked task is completed, update `plan.md` and check it off in the same step.
 
+## Design Review Guidance
+
+Use the rules below when reviewing any design doc in this repository.
+
+### Review Goal
+
+Decide exactly one:
+
+- `continue_design`
+- `ready_for_build`
+- `blocked`
+
+Do not keep design discussion going without a concrete reason.
+
+### Required Steps
+
+Before reviewing:
+
+1. Read the whole file.
+2. Find `Status`.
+3. Check `Open Questions`.
+4. Check `Design Exit Criteria`.
+5. Check `Stop Rule`.
+6. Read the latest `Discussion Log`.
+
+If a section is missing, say so. Do not guess missing context.
+
+### Review Rules
+
+- If status is `exploring`, review options and tradeoffs.
+- If status is `narrowing`, focus only on unresolved decisions.
+- If status is `decided`, do not reopen design unless there is a contradiction, missing constraint, or serious risk.
+- If status is `ready_for_build`, stop design review and check only implementation readiness.
+- If status is `blocked`, state exactly what input is missing.
+
+Treat the task as `ready_for_build` when:
+
+- a main approach is chosen
+- no top-level alternative is still open
+- interfaces are clear enough to implement
+- remaining questions are implementation details
+- major risks are already recorded
+
+### Review Output Format
+
+```md
+Status Decision: continue_design | ready_for_build | blocked
+
+Summary:
+<1-2 sentence conclusion>
+
+Findings:
+- <key issue or confirmation>
+- <key issue or confirmation>
+
+Open Questions:
+- <question>
+- <question>
+
+Next Action:
+- <one concrete next step>
+```
+
+### Review Priorities
+
+Review in this order:
+
+1. contradictions
+2. missing constraints
+3. unclear interfaces
+4. untracked risks
+5. implementation readiness
+
+Only suggest new alternatives if the current design is materially flawed.
+
 ## Practical Checks
 
 - If `swift test` fails unexpectedly, first confirm the Oniguruma submodule is initialized and the vendored source tree is present.
