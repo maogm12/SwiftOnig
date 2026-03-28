@@ -53,6 +53,9 @@ if let match = try input.firstMatch(of: regex) {
 let hasDigits = try input.contains(regex)
 let allDigitMatches = try input.matches(of: regex)
 let digitRanges = try input.ranges(of: regex)
+let normalized = try input.replacing(regex, with: "#")
+let pieces = try input.split(separator: regex)
+let trimmed = try input.trimmingPrefix(regex)
 ```
 
 ### Using RegexBuilder

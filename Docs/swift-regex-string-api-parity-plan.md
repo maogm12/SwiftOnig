@@ -115,13 +115,13 @@ These are lower priority but still part of the standard string-processing feel.
 
 - `String.split(separator: Regex) throws -> [Substring]`
 - `Substring.split(separator: Regex) throws -> [Substring]`
-- `String.trimmingPrefix(_ regex: Regex) throws -> Substring?`
-- `Substring.trimmingPrefix(_ regex: Regex) throws -> Substring?`
+- `String.trimmingPrefix(_ regex: Regex) throws -> Substring`
+- `Substring.trimmingPrefix(_ regex: Regex) throws -> Substring`
 
 Notes:
 
 - `split(separator:)` must define whether empty segments are preserved.
-- `trimmingPrefix(_:)` should only trim when the regex matches at the beginning.
+- `trimmingPrefix(_:)` should only trim when the regex matches at the beginning; otherwise it should return the original substring unchanged.
 - There is no verified `trimmingSuffix(_ regex:)` counterpart in the current toolchain, so SwiftOnig should not invent it just to make the list look symmetric.
 - `split(separator:)` should omit empty subsequences, matching the current stdlib-observed behavior for repeated and trailing separators.
 
@@ -232,7 +232,7 @@ Phase 3 parity tests should cover:
 
 - `split(separator:)` omitting empty subsequences for repeated and trailing separators
 - `trimmingPrefix(_:)` only trimming when the regex matches at the beginning
-- `trimmingPrefix(_:)` mismatch cases returning `nil`
+- `trimmingPrefix(_:)` mismatch cases returning the original substring unchanged
 
 ## Recommended Defaults
 

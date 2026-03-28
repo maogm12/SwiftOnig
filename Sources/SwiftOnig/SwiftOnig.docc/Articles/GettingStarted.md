@@ -37,6 +37,9 @@ if let match = try input.firstMatch(of: regex) {
 let hasMatch = try input.contains(regex)
 let matches = try input.matches(of: regex)
 let ranges = try input.ranges(of: regex)
+let replaced = try input.replacing(regex, with: "#")
+let parts = try input.split(separator: regex)
+let trimmed = try input.trimmingPrefix(regex)
 ```
 
 ## Advanced Paths
