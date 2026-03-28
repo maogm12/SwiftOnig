@@ -185,3 +185,12 @@ This section tracks the packaging refactor from a system-installed Oniguruma dep
 - [x] Keep `onig_new_without_alloc` and `onig_free_body` unwrapped; they are C memory-management hooks, not Swift-first public API.
 - [x] Keep regset low-level introspection APIs (`onig_regset_number_of_regex`, `onig_regset_get_regex`) unwrapped as standalone surface; `RegexSet.count`, collection conformance, and subscripting already cover their useful behavior.
 - [x] Keep callback-each-match as a higher-level Swift API (`scan`, `enumerateMatches`) rather than exposing the raw `ONIG_OPTION_CALLBACK_EACH_MATCH` callback contract directly.
+
+## 20. Swifty API Cleanup Pass
+
+- [x] Record the remaining non-Swifty public APIs and the leftover unnecessary async surface in [`Docs/swifty-api-cleanup-plan.md`](Docs/swifty-api-cleanup-plan.md).
+- [ ] Remove the final unnecessary public async accessor from `Regex`.
+- [ ] Rework `MatchParam` toward property-style configuration.
+- [ ] Introduce a dedicated `RegexSet` result type instead of returning an anonymous tuple from `firstSetMatch`.
+- [ ] Make callout raw-offset naming explicit and continue treating callouts as advanced raw APIs.
+- [ ] Revisit Unicode-property public modeling around `Unicode.Scalar` and de-emphasize `OnigCodePoint` in the public surface.
