@@ -104,7 +104,7 @@ struct RegionTests {
         let patternBytes = Self.utf16LittleEndianBytes("(你好)(世界)")
         let input = "prefix 你好世界 suffix"
         let regex = try await Regex(patternBytes: patternBytes, encoding: .utf16LittleEndian)
-        let region = try regex.firstMatch(in: UTF16CodeUnitBuffer(input.utf16))!
+        let region = try regex.firstMatch(in: Self.utf16LittleEndianBytes(input))!
 
         #expect(region.substring(in: input) == "你好世界")
         #expect(region[1]?.substring(in: input) == "你好")

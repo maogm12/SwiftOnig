@@ -70,7 +70,7 @@ Current large-sample configuration:
 - First match on large input: `20000` iterations
 - UTF-16 smart match from `String`: `100000` iterations
 - UTF-16 oriented match from `UTF16View`: `100000` iterations
-- SwiftOnig UTF-16 explicit contiguous match from `UTF16CodeUnitBuffer`: `100000` iterations
+- SwiftOnig UTF-16 explicit contiguous match from raw UTF-16 bytes: `100000` iterations
 - SwiftOnig UTF-16 `matchedByteCount` from `UTF16View`: `100000` iterations
 - SwiftOnig UTF-16 anchored `firstMatch` from `UTF16View`: `100000` iterations
 - SwiftOnig UTF-16 anchored `matchedByteCount` from `UTF16View`: `100000` iterations
@@ -87,7 +87,7 @@ Important note:
 - That means `matchedByteCount` is not a like-for-like replacement for `firstMatch(in:)` on inputs where the match does not begin at the start of the searched range.
 - Use the anchored UTF-16 cases when estimating `Region` materialization cost relative to search cost.
 - `String`, `Substring`, `String.UTF16View`, and `Substring.UTF16View` may materialize a temporary contiguous UTF-16 buffer when used with a UTF-16 encoded regex.
-- To make that materialization explicit and reusable for repeated searches, prebuild a `UTF16CodeUnitBuffer` and pass that into the match APIs.
+- To make that materialization explicit and reusable for repeated searches, prebuild raw UTF-16 bytes or `Data` and pass that into the match APIs.
 
 ## Latest Results
 
