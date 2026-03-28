@@ -76,29 +76,30 @@ struct MatchTests {
         #expect(try !"prefix".contains(regex))
     }
 
-    @Test("String-native regex APIs support MatchParam overloads")
-    func stringNativeMatchParamOverloads() async throws {
+    @Test("String-native regex APIs support MatchConfiguration overloads")
+    func stringNativeMatchConfigurationOverloads() async throws {
         let regex = try Regex(pattern: #"\d+"#)
-        var matchParam = MatchParam()
-        matchParam.setRetryLimitInSearch(to: 1_000)
-        matchParam.setRetryLimitInMatch(to: 1_000)
-        matchParam.setMatchStackLimitSize(to: 1_000)
+        let matchConfiguration = Regex.MatchConfiguration(
+            matchStackLimitSize: 1_000,
+            retryLimitInMatch: 1_000,
+            retryLimitInSearch: 1_000
+        )
         let input = "aa11bb22"
         let slice = input[input.index(input.startIndex, offsetBy: 2)...]
 
-        #expect(try input.contains(regex, matchParam: matchParam))
-        #expect(try input.firstMatch(of: regex, matchParam: matchParam)?.substring == "11")
-        #expect(try input.prefixMatch(of: regex, matchParam: matchParam) == nil)
-        #expect(try "11".wholeMatch(of: regex, matchParam: matchParam)?.substring == "11")
-        #expect(try input.matches(of: regex, matchParam: matchParam).map(\.substring) == ["11", "22"])
-        #expect(try input.ranges(of: regex, matchParam: matchParam).map { input[$0] } == ["11", "22"])
+        #expect(try input.contains(regex, matchConfiguration: matchConfiguration))
+        #expect(try input.firstMatch(of: regex, matchConfiguration: matchConfiguration)?.substring == "11")
+        #expect(try input.prefixMatch(of: regex, matchConfiguration: matchConfiguration) == nil)
+        #expect(try "11".wholeMatch(of: regex, matchConfiguration: matchConfiguration)?.substring == "11")
+        #expect(try input.matches(of: regex, matchConfiguration: matchConfiguration).map(\.substring) == ["11", "22"])
+        #expect(try input.ranges(of: regex, matchConfiguration: matchConfiguration).map { input[$0] } == ["11", "22"])
 
-        #expect(try slice.contains(regex, matchParam: matchParam))
-        #expect(try slice.firstMatch(of: regex, matchParam: matchParam)?.substring == "11")
-        #expect(try slice.prefixMatch(of: regex, matchParam: matchParam)?.substring == "11")
-        #expect(try slice.wholeMatch(of: regex, matchParam: matchParam) == nil)
-        #expect(try slice.matches(of: regex, matchParam: matchParam).map(\.substring) == ["11", "22"])
-        #expect(try slice.ranges(of: regex, matchParam: matchParam).map { slice[$0] } == ["11", "22"])
+        #expect(try slice.contains(regex, matchConfiguration: matchConfiguration))
+        #expect(try slice.firstMatch(of: regex, matchConfiguration: matchConfiguration)?.substring == "11")
+        #expect(try slice.prefixMatch(of: regex, matchConfiguration: matchConfiguration)?.substring == "11")
+        #expect(try slice.wholeMatch(of: regex, matchConfiguration: matchConfiguration) == nil)
+        #expect(try slice.matches(of: regex, matchConfiguration: matchConfiguration).map(\.substring) == ["11", "22"])
+        #expect(try slice.ranges(of: regex, matchConfiguration: matchConfiguration).map { slice[$0] } == ["11", "22"])
     }
 
     @Test("String and Substring expose regex matches and ranges")
@@ -143,46 +144,43 @@ struct MatchTests {
         #expect(untouched == "prefix")
 
         var withParams = "11aa22"
-        var matchParam = MatchParam()
-        matchParam.setRetryLimitInSearch(to: 1_000)
-        try withParams.replace(regex, with: "#", matchParam: matchParam)
+        let matchConfiguration = Regex.MatchConfiguration(retryLimitInSearch: 1_000)
+        try withParams.replace(regex, with: "#", matchConfiguration: matchConfiguration)
         #expect(withParams == "#aa#")
     }
 
     @Test("String and Substring expose trimmingPrefix")
     func stringTrimmingPrefix() async throws {
         let regex = try Regex(pattern: #"\d+"#)
-        var matchParam = MatchParam()
-        matchParam.setRetryLimitInSearch(to: 1_000)
+        let matchConfiguration = Regex.MatchConfiguration(retryLimitInSearch: 1_000)
 
         #expect(try "123abc".trimmingPrefix(regex) == "abc")
         #expect(try "abc123".trimmingPrefix(regex) == "abc123")
-        #expect(try "123abc".trimmingPrefix(regex, matchParam: matchParam) == "abc")
-        #expect(try "abc123".trimmingPrefix(regex, matchParam: matchParam) == "abc123")
+        #expect(try "123abc".trimmingPrefix(regex, matchConfiguration: matchConfiguration) == "abc")
+        #expect(try "abc123".trimmingPrefix(regex, matchConfiguration: matchConfiguration) == "abc123")
 
         let input = "0012-item"
         let slice = input[input.startIndex...]
         #expect(try slice.trimmingPrefix(regex) == "-item")
-        #expect(try slice.trimmingPrefix(regex, matchParam: matchParam) == "-item")
-        #expect(try "item"[...].trimmingPrefix(regex, matchParam: matchParam) == "item")
+        #expect(try slice.trimmingPrefix(regex, matchConfiguration: matchConfiguration) == "-item")
+        #expect(try "item"[...].trimmingPrefix(regex, matchConfiguration: matchConfiguration) == "item")
     }
 
     @Test("String and Substring expose regex split")
     func stringSplit() async throws {
         let comma = try Regex(pattern: ",")
         let digits = try Regex(pattern: #"\d+"#)
-        var matchParam = MatchParam()
-        matchParam.setRetryLimitInSearch(to: 1_000)
+        let matchConfiguration = Regex.MatchConfiguration(retryLimitInSearch: 1_000)
 
         #expect(try "a,,b,".split(separator: comma) == ["a", "b"])
         #expect(try ",,".split(separator: comma) == [])
         #expect(try "a1b22c".split(separator: digits) == ["a", "b", "c"])
-        #expect(try ",,"[...].split(separator: comma, matchParam: matchParam) == [])
+        #expect(try ",,"[...].split(separator: comma, matchConfiguration: matchConfiguration) == [])
 
         let input = "1a22b"
         let slice = input[input.index(after: input.startIndex)...]
         #expect(try slice.split(separator: digits) == ["a", "b"])
-        #expect(try slice.split(separator: digits, matchParam: matchParam) == ["a", "b"])
+        #expect(try slice.split(separator: digits, matchConfiguration: matchConfiguration) == ["a", "b"])
     }
 
     @Test("String-native APIs handle empty and missing matches consistently")
@@ -200,22 +198,21 @@ struct MatchTests {
         #expect(match.captures(named: "missing").isEmpty)
     }
 
-    @Test("Regex string-native helpers support MatchParam overloads")
-    func regexStringHelpersWithMatchParam() async throws {
+    @Test("Regex string-native helpers support MatchConfiguration overloads")
+    func regexStringHelpersWithMatchConfiguration() async throws {
         let regex = try Regex(pattern: #"\d+"#)
-        var matchParam = MatchParam()
-        matchParam.setRetryLimitInSearch(to: 1_000)
+        let matchConfiguration = Regex.MatchConfiguration(retryLimitInSearch: 1_000)
         let input = "aa11bb"
         let slice = input[input.index(input.startIndex, offsetBy: 2)...]
 
-        #expect(try regex.firstStringMatch(in: input, matchParam: matchParam)?.substring == "11")
-        #expect(try regex.firstStringMatch(in: slice, matchParam: matchParam)?.substring == "11")
-        #expect(try regex.prefixStringMatch(in: input, matchParam: matchParam) == nil)
-        #expect(try regex.prefixStringMatch(in: slice, matchParam: matchParam)?.substring == "11")
-        #expect(try regex.wholeStringMatch(in: "11", matchParam: matchParam)?.substring == "11")
-        #expect(try regex.wholeStringMatch(in: slice, matchParam: matchParam) == nil)
-        #expect(try regex.firstStringMatch(in: "abc", matchParam: matchParam) == nil)
-        #expect(try regex.firstStringMatch(in: "abc"[...], matchParam: matchParam) == nil)
+        #expect(try regex.firstStringMatch(in: input, matchConfiguration: matchConfiguration)?.substring == "11")
+        #expect(try regex.firstStringMatch(in: slice, matchConfiguration: matchConfiguration)?.substring == "11")
+        #expect(try regex.prefixStringMatch(in: input, matchConfiguration: matchConfiguration) == nil)
+        #expect(try regex.prefixStringMatch(in: slice, matchConfiguration: matchConfiguration)?.substring == "11")
+        #expect(try regex.wholeStringMatch(in: "11", matchConfiguration: matchConfiguration)?.substring == "11")
+        #expect(try regex.wholeStringMatch(in: slice, matchConfiguration: matchConfiguration) == nil)
+        #expect(try regex.firstStringMatch(in: "abc", matchConfiguration: matchConfiguration) == nil)
+        #expect(try regex.firstStringMatch(in: "abc"[...], matchConfiguration: matchConfiguration) == nil)
         #expect(try regex.wholeStringMatch(in: "abc"[...]) == nil)
     }
 

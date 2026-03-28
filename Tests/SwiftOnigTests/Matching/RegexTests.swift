@@ -64,13 +64,14 @@ struct RegexTests {
         #expect(region2[0]?.decodedString() == "你好")
     }
 
-    @Test("MatchParam support on core search and match APIs")
-    func matchParamSupport() async throws {
+    @Test("MatchConfiguration support on core search and match APIs")
+    func matchConfigurationSupport() async throws {
         let regex = try Regex(pattern: "(a|aa)+b")
         let target = String(repeating: "a", count: 24)
-        var matchParam = MatchParam()
-        matchParam.setRetryLimitInMatch(to: 1)
-        matchParam.setRetryLimitInSearch(to: 1)
+        let matchConfiguration = Regex.MatchConfiguration(
+            retryLimitInMatch: 1,
+            retryLimitInSearch: 1
+        )
 
         func expectRetryLimitError(_ body: () async throws -> Void) async {
             do {
@@ -84,15 +85,15 @@ struct RegexTests {
         }
 
         await expectRetryLimitError {
-            _ = try regex.matchedByteCount(in: target, matchParam: matchParam)
+            _ = try regex.matchedByteCount(in: target, matchConfiguration: matchConfiguration)
         }
 
         await expectRetryLimitError {
-            _ = try regex.matches(target, matchParam: matchParam)
+            _ = try regex.matches(target, matchConfiguration: matchConfiguration)
         }
 
         await expectRetryLimitError {
-            _ = try target.firstMatch(of: regex, matchParam: matchParam)
+            _ = try target.firstMatch(of: regex, matchConfiguration: matchConfiguration)
         }
     }
 
@@ -124,10 +125,9 @@ struct RegexTests {
     @Test("Whole match convenience")
     func wholeMatch() async throws {
         let regex = try Regex(pattern: #"foo"#)
-        var matchParam = MatchParam()
-        matchParam.setRetryLimitInSearch(to: 1_000)
+        let matchConfiguration = Regex.MatchConfiguration(retryLimitInSearch: 1_000)
 
-        let full = try "foo".wholeMatch(of: regex, matchParam: matchParam)
+        let full = try "foo".wholeMatch(of: regex, matchConfiguration: matchConfiguration)
         #expect(full?.substring == "foo")
         #expect(try "foo bar".wholeMatch(of: regex) == nil)
         #expect(try "bar foo".wholeMatch(of: regex) == nil)
@@ -136,37 +136,35 @@ struct RegexTests {
     @Test("Region-returning string overloads still behave correctly")
     func deprecatedStringRegionOverloads() async throws {
         let regex = try Regex(pattern: #"\d+"#)
-        var matchParam = MatchParam()
-        matchParam.setRetryLimitInSearch(to: 1_000)
+        let matchConfiguration = Regex.MatchConfiguration(retryLimitInSearch: 1_000)
         let input = "aa11bb22"
         let slice = input[input.index(input.startIndex, offsetBy: 2)...]
 
         #expect(try regex.firstMatch(in: input)?.decodedString() == "11")
-        #expect(try regex.firstMatch(in: input, matchParam: matchParam)?.decodedString() == "11")
+        #expect(try regex.firstMatch(in: input, matchConfiguration: matchConfiguration)?.decodedString() == "11")
         #expect(try regex.firstMatch(in: slice)?.decodedString() == "11")
-        #expect(try regex.firstMatch(in: slice, matchParam: matchParam)?.decodedString() == "11")
+        #expect(try regex.firstMatch(in: slice, matchConfiguration: matchConfiguration)?.decodedString() == "11")
 
         #expect(try regex.wholeMatch(in: "11")?.decodedString() == "11")
-        #expect(try regex.wholeMatch(in: "11", matchParam: matchParam)?.decodedString() == "11")
+        #expect(try regex.wholeMatch(in: "11", matchConfiguration: matchConfiguration)?.decodedString() == "11")
         #expect(try regex.wholeMatch(in: slice) == nil)
-        #expect(try regex.wholeMatch(in: slice, matchParam: matchParam) == nil)
+        #expect(try regex.wholeMatch(in: slice, matchConfiguration: matchConfiguration) == nil)
     }
 
     @Test("Generic byte-oriented overloads support ranges and match params")
     func genericRawOverloads() async throws {
         let regex = try Regex(pattern: #"\d+"#)
-        var matchParam = MatchParam()
-        matchParam.setRetryLimitInSearch(to: 1_000)
+        let matchConfiguration = Regex.MatchConfiguration(retryLimitInSearch: 1_000)
         let bytes = Array("zz11yy22".utf8)
 
         #expect(try regex.firstMatch(in: bytes, of: 2..<6)?.decodedString() == "11")
-        #expect(try regex.firstMatch(in: bytes, options: .none, matchParam: matchParam)?.decodedString() == "11")
-        #expect(try regex.firstMatch(in: bytes, of: 2..<6, options: .none, matchParam: matchParam)?.decodedString() == "11")
+        #expect(try regex.firstMatch(in: bytes, options: .none, matchConfiguration: matchConfiguration)?.decodedString() == "11")
+        #expect(try regex.firstMatch(in: bytes, of: 2..<6, options: .none, matchConfiguration: matchConfiguration)?.decodedString() == "11")
 
-        #expect(try regex.matchedByteCount(in: bytes, options: .none, matchParam: matchParam) == nil)
-        #expect(try regex.matchedByteCount(in: bytes, of: 6..<8, options: .none, matchParam: matchParam) == 2)
-        #expect(try regex.matches(bytes, options: .none, matchParam: matchParam) == false)
-        #expect(try regex.matches(bytes, in: 0..<2, options: .none, matchParam: matchParam) == false)
+        #expect(try regex.matchedByteCount(in: bytes, options: .none, matchConfiguration: matchConfiguration) == nil)
+        #expect(try regex.matchedByteCount(in: bytes, of: 6..<8, options: .none, matchConfiguration: matchConfiguration) == 2)
+        #expect(try regex.matches(bytes, options: .none, matchConfiguration: matchConfiguration) == false)
+        #expect(try regex.matches(bytes, in: 0..<2, options: .none, matchConfiguration: matchConfiguration) == false)
     }
     
     @Test("Enumerate Matches")

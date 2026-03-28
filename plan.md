@@ -190,7 +190,7 @@ This section tracks the packaging refactor from a system-installed Oniguruma dep
 
 - [x] Record the remaining non-Swifty public APIs and the leftover unnecessary async surface in [`Docs/swifty-api-cleanup-plan.md`](Docs/swifty-api-cleanup-plan.md).
 - [x] Remove the final unnecessary public async accessor from `Regex`.
-- [ ] Rework `MatchParam` toward property-style configuration.
+- [x] Replace `MatchParam` with immutable `Regex.MatchConfiguration`.
 - [ ] Introduce a dedicated `RegexSet` result type instead of returning an anonymous tuple from `firstSetMatch`.
 - [ ] Make callout raw-offset naming explicit and continue treating callouts as advanced raw APIs.
 - [ ] Revisit Unicode-property public modeling around `Unicode.Scalar` and de-emphasize `OnigCodePoint` in the public surface.

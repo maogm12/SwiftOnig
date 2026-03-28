@@ -86,13 +86,13 @@ extension Regex {
         var error: Error?
     }
 
-    internal func stringMatches(in input: String, options: SearchOptions = .none, matchParam: MatchParam = MatchParam()) throws -> [Match] {
+    internal func stringMatches(in input: String, options: SearchOptions = .none, matchConfiguration: MatchConfiguration = MatchConfiguration()) throws -> [Match] {
         let state = MatchCollectionState()
         try withSupportedOnigurumaInput(input, requestedEncoding: self.encoding) { supported in
             _ = try _enumerateMatches(in: supported,
                                       of: Self.fullByteRange,
                                       options: options,
-                                      matchParam: matchParam) { _, _, region in
+                                      matchConfiguration: matchConfiguration) { _, _, region in
                 do {
                     state.matches.append(try Match(region: region, input: input[...]))
                     return true
@@ -110,13 +110,13 @@ extension Regex {
         return state.matches
     }
 
-    internal func stringMatches(in input: Substring, options: SearchOptions = .none, matchParam: MatchParam = MatchParam()) throws -> [Match] {
+    internal func stringMatches(in input: Substring, options: SearchOptions = .none, matchConfiguration: MatchConfiguration = MatchConfiguration()) throws -> [Match] {
         let state = MatchCollectionState()
         try withSupportedOnigurumaInput(input, requestedEncoding: self.encoding) { supported in
             _ = try _enumerateMatches(in: supported,
                                       of: Self.fullByteRange,
                                       options: options,
-                                      matchParam: matchParam) { _, _, region in
+                                      matchConfiguration: matchConfiguration) { _, _, region in
                 do {
                     state.matches.append(try Match(region: region, input: input))
                     return true
@@ -136,7 +136,7 @@ extension Regex {
 
     public func firstStringMatch(in input: String, options: SearchOptions = .none) throws -> Match? {
         try withSupportedOnigurumaInput(input, requestedEncoding: self.encoding) { supported in
-            guard let region = try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchParam: nil) else {
+            guard let region = try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchConfiguration: nil) else {
                 return nil
             }
 
@@ -144,9 +144,9 @@ extension Regex {
         }
     }
 
-    public func firstStringMatch(in input: String, options: SearchOptions = .none, matchParam: MatchParam) throws -> Match? {
+    public func firstStringMatch(in input: String, options: SearchOptions = .none, matchConfiguration: MatchConfiguration) throws -> Match? {
         try withSupportedOnigurumaInput(input, requestedEncoding: self.encoding) { supported in
-            guard let region = try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchParam: matchParam) else {
+            guard let region = try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchConfiguration: matchConfiguration) else {
                 return nil
             }
 
@@ -156,7 +156,7 @@ extension Regex {
 
     public func firstStringMatch(in input: Substring, options: SearchOptions = .none) throws -> Match? {
         try withSupportedOnigurumaInput(input, requestedEncoding: self.encoding) { supported in
-            guard let region = try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchParam: nil) else {
+            guard let region = try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchConfiguration: nil) else {
                 return nil
             }
 
@@ -164,9 +164,9 @@ extension Regex {
         }
     }
 
-    public func firstStringMatch(in input: Substring, options: SearchOptions = .none, matchParam: MatchParam) throws -> Match? {
+    public func firstStringMatch(in input: Substring, options: SearchOptions = .none, matchConfiguration: MatchConfiguration) throws -> Match? {
         try withSupportedOnigurumaInput(input, requestedEncoding: self.encoding) { supported in
-            guard let region = try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchParam: matchParam) else {
+            guard let region = try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchConfiguration: matchConfiguration) else {
                 return nil
             }
 
@@ -176,7 +176,7 @@ extension Regex {
 
     public func prefixStringMatch(in input: String, options: SearchOptions = .none) throws -> Match? {
         try withSupportedOnigurumaInput(input, requestedEncoding: self.encoding) { supported in
-            guard let region = try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchParam: nil),
+            guard let region = try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchConfiguration: nil),
                   region.range.lowerBound == 0 else {
                 return nil
             }
@@ -185,9 +185,9 @@ extension Regex {
         }
     }
 
-    public func prefixStringMatch(in input: String, options: SearchOptions = .none, matchParam: MatchParam) throws -> Match? {
+    public func prefixStringMatch(in input: String, options: SearchOptions = .none, matchConfiguration: MatchConfiguration) throws -> Match? {
         try withSupportedOnigurumaInput(input, requestedEncoding: self.encoding) { supported in
-            guard let region = try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchParam: matchParam),
+            guard let region = try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchConfiguration: matchConfiguration),
                   region.range.lowerBound == 0 else {
                 return nil
             }
@@ -198,7 +198,7 @@ extension Regex {
 
     public func prefixStringMatch(in input: Substring, options: SearchOptions = .none) throws -> Match? {
         try withSupportedOnigurumaInput(input, requestedEncoding: self.encoding) { supported in
-            guard let region = try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchParam: nil),
+            guard let region = try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchConfiguration: nil),
                   region.range.lowerBound == 0 else {
                 return nil
             }
@@ -207,9 +207,9 @@ extension Regex {
         }
     }
 
-    public func prefixStringMatch(in input: Substring, options: SearchOptions = .none, matchParam: MatchParam) throws -> Match? {
+    public func prefixStringMatch(in input: Substring, options: SearchOptions = .none, matchConfiguration: MatchConfiguration) throws -> Match? {
         try withSupportedOnigurumaInput(input, requestedEncoding: self.encoding) { supported in
-            guard let region = try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchParam: matchParam),
+            guard let region = try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchConfiguration: matchConfiguration),
                   region.range.lowerBound == 0 else {
                 return nil
             }
@@ -220,7 +220,7 @@ extension Regex {
 
     public func wholeStringMatch(in input: String, options: SearchOptions = .none) throws -> Match? {
         try withSupportedOnigurumaInput(input, requestedEncoding: self.encoding) { supported in
-            guard let region = try _wholeMatch(in: supported, options: options, matchParam: nil) else {
+            guard let region = try _wholeMatch(in: supported, options: options, matchConfiguration: nil) else {
                 return nil
             }
 
@@ -228,9 +228,9 @@ extension Regex {
         }
     }
 
-    public func wholeStringMatch(in input: String, options: SearchOptions = .none, matchParam: MatchParam) throws -> Match? {
+    public func wholeStringMatch(in input: String, options: SearchOptions = .none, matchConfiguration: MatchConfiguration) throws -> Match? {
         try withSupportedOnigurumaInput(input, requestedEncoding: self.encoding) { supported in
-            guard let region = try _wholeMatch(in: supported, options: options, matchParam: matchParam) else {
+            guard let region = try _wholeMatch(in: supported, options: options, matchConfiguration: matchConfiguration) else {
                 return nil
             }
 
@@ -240,7 +240,7 @@ extension Regex {
 
     public func wholeStringMatch(in input: Substring, options: SearchOptions = .none) throws -> Match? {
         try withSupportedOnigurumaInput(input, requestedEncoding: self.encoding) { supported in
-            guard let region = try _wholeMatch(in: supported, options: options, matchParam: nil) else {
+            guard let region = try _wholeMatch(in: supported, options: options, matchConfiguration: nil) else {
                 return nil
             }
 
@@ -248,9 +248,9 @@ extension Regex {
         }
     }
 
-    public func wholeStringMatch(in input: Substring, options: SearchOptions = .none, matchParam: MatchParam) throws -> Match? {
+    public func wholeStringMatch(in input: Substring, options: SearchOptions = .none, matchConfiguration: MatchConfiguration) throws -> Match? {
         try withSupportedOnigurumaInput(input, requestedEncoding: self.encoding) { supported in
-            guard let region = try _wholeMatch(in: supported, options: options, matchParam: matchParam) else {
+            guard let region = try _wholeMatch(in: supported, options: options, matchConfiguration: matchConfiguration) else {
                 return nil
             }
 

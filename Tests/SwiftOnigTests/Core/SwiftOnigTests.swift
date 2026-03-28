@@ -358,7 +358,7 @@ struct SwiftOnigTests {
         #expect(weakSecondToken == nil)
     }
 
-    @Test("Per-match content callouts and user data")
+    @Test("Per-match content callouts")
     func contentCallout() async throws {
         final class CalloutBox: @unchecked Sendable {
             private let lock = NSLock()
@@ -374,17 +374,14 @@ struct SwiftOnigTests {
         }
 
         let box = CalloutBox()
-        var matchParam = MatchParam()
-        matchParam.setCalloutUserData("payload")
-        matchParam.setProgressCallout { context in
-            if let userData = context.userData as? String {
-                box.append(userData, context: context)
-            }
+        let payload = "payload"
+        let matchConfiguration = Regex.MatchConfiguration(progressHandler: { context in
+            box.append(payload, context: context)
             return .continue
-        }
+        })
 
         let regex = try Regex(pattern: #"\Aa(?{X}X)b\z"#)
-        #expect(try "ab".firstMatch(of: regex, matchParam: matchParam) != nil)
+        #expect(try "ab".firstMatch(of: regex, matchConfiguration: matchConfiguration) != nil)
         #expect(box.payloads.contains("payload"))
         #expect(box.contexts.count == 1)
         #expect(box.contexts[0].phase == .progress)
@@ -415,34 +412,36 @@ struct SwiftOnigTests {
         ]
         #expect(arguments.count == 5)
 
-        var matchParam = MatchParam()
-        matchParam.setMatchStackLimitSize(to: 64)
-        matchParam.setRetryLimitInMatch(to: 65)
-        matchParam.setRetryLimitInSearch(to: 66)
-        matchParam.setCalloutUserData("payload")
-        matchParam.setProgressCallout { _ in .fail }
-        matchParam.setRetractionCallout { _ in .continue }
-        matchParam.reset()
+        let matchConfiguration = Regex.MatchConfiguration()
+            .settingMatchStackLimitSize(64)
+            .settingRetryLimitInMatch(65)
+            .settingRetryLimitInSearch(66)
+            .settingProgressHandler { _ in .fail }
+            .settingRetractionHandler { _ in .continue }
 
         let regex = try Regex(pattern: #"\Aa(?{Y}X)b\z"#)
-        #expect(try "ab".firstMatch(of: regex, matchParam: matchParam) != nil)
+        #expect(try "ab".firstMatch(of: regex, matchConfiguration: .init()) != nil)
+        #expect(matchConfiguration.matchStackLimitSize == 64)
+        #expect(matchConfiguration.retryLimitInMatch == 65)
+        #expect(matchConfiguration.retryLimitInSearch == 66)
     }
 
     @Test("Retraction callouts fire on backtracking")
     func retractionCallout() async throws {
         let phases = MessageBox()
-        var matchParam = MatchParam()
-        matchParam.setProgressCallout { context in
-            phases.append("progress:\(context.contents ?? "")")
-            return .continue
-        }
-        matchParam.setRetractionCallout { context in
-            phases.append("retraction:\(context.contents ?? "")")
-            return .continue
-        }
+        let matchConfiguration = Regex.MatchConfiguration(
+            progressHandler: { context in
+                phases.append("progress:\(context.contents ?? "")")
+                return .continue
+            },
+            retractionHandler: { context in
+                phases.append("retraction:\(context.contents ?? "")")
+                return .continue
+            }
+        )
 
         let regex = try Regex(pattern: #"\A(?:(?{R}X)a)?a\z"#)
-        #expect(try "a".firstMatch(of: regex, matchParam: matchParam) != nil)
+        #expect(try "a".firstMatch(of: regex, matchConfiguration: matchConfiguration) != nil)
         #expect(phases.values.contains("progress:R"))
         #expect(phases.values.contains("retraction:R"))
     }

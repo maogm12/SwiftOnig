@@ -5,32 +5,32 @@ extension String {
         try regex.firstStringMatch(in: self, options: options) != nil
     }
 
-    public func contains(_ regex: Regex, options: Regex.SearchOptions = .none, matchParam: MatchParam) throws -> Bool {
-        try regex.firstStringMatch(in: self, options: options, matchParam: matchParam) != nil
+    public func contains(_ regex: Regex, options: Regex.SearchOptions = .none, matchConfiguration: Regex.MatchConfiguration) throws -> Bool {
+        try regex.firstStringMatch(in: self, options: options, matchConfiguration: matchConfiguration) != nil
     }
 
     public func matches(of regex: Regex, options: Regex.SearchOptions = .none) throws -> [Regex.Match] {
         try regex.stringMatches(in: self, options: options)
     }
 
-    public func matches(of regex: Regex, options: Regex.SearchOptions = .none, matchParam: MatchParam) throws -> [Regex.Match] {
-        try regex.stringMatches(in: self, options: options, matchParam: matchParam)
+    public func matches(of regex: Regex, options: Regex.SearchOptions = .none, matchConfiguration: Regex.MatchConfiguration) throws -> [Regex.Match] {
+        try regex.stringMatches(in: self, options: options, matchConfiguration: matchConfiguration)
     }
 
     public func ranges(of regex: Regex, options: Regex.SearchOptions = .none) throws -> [Range<String.Index>] {
         try matches(of: regex, options: options).map(\.range)
     }
 
-    public func ranges(of regex: Regex, options: Regex.SearchOptions = .none, matchParam: MatchParam) throws -> [Range<String.Index>] {
-        try matches(of: regex, options: options, matchParam: matchParam).map(\.range)
+    public func ranges(of regex: Regex, options: Regex.SearchOptions = .none, matchConfiguration: Regex.MatchConfiguration) throws -> [Range<String.Index>] {
+        try matches(of: regex, options: options, matchConfiguration: matchConfiguration).map(\.range)
     }
 
     public func replacing(_ regex: Regex, with replacement: String, options: Regex.SearchOptions = .none) throws -> String {
-        try replacing(regex, with: replacement, options: options, matchParam: MatchParam())
+        try replacing(regex, with: replacement, options: options, matchConfiguration: Regex.MatchConfiguration())
     }
 
-    public func replacing(_ regex: Regex, with replacement: String, options: Regex.SearchOptions = .none, matchParam: MatchParam) throws -> String {
-        let matches = try matches(of: regex, options: options, matchParam: matchParam)
+    public func replacing(_ regex: Regex, with replacement: String, options: Regex.SearchOptions = .none, matchConfiguration: Regex.MatchConfiguration) throws -> String {
+        let matches = try matches(of: regex, options: options, matchConfiguration: matchConfiguration)
         guard !matches.isEmpty else {
             return self
         }
@@ -52,8 +52,8 @@ extension String {
         self = try replacing(regex, with: replacement, options: options)
     }
 
-    public mutating func replace(_ regex: Regex, with replacement: String, options: Regex.SearchOptions = .none, matchParam: MatchParam) throws {
-        self = try replacing(regex, with: replacement, options: options, matchParam: matchParam)
+    public mutating func replace(_ regex: Regex, with replacement: String, options: Regex.SearchOptions = .none, matchConfiguration: Regex.MatchConfiguration) throws {
+        self = try replacing(regex, with: replacement, options: options, matchConfiguration: matchConfiguration)
     }
 
     public func trimmingPrefix(_ regex: Regex, options: Regex.SearchOptions = .none) throws -> Substring {
@@ -64,8 +64,8 @@ extension String {
         return self[...]
     }
 
-    public func trimmingPrefix(_ regex: Regex, options: Regex.SearchOptions = .none, matchParam: MatchParam) throws -> Substring {
-        if let match = try prefixMatch(of: regex, options: options, matchParam: matchParam) {
+    public func trimmingPrefix(_ regex: Regex, options: Regex.SearchOptions = .none, matchConfiguration: Regex.MatchConfiguration) throws -> Substring {
+        if let match = try prefixMatch(of: regex, options: options, matchConfiguration: matchConfiguration) {
             return self[match.range.upperBound...]
         }
 
@@ -73,11 +73,11 @@ extension String {
     }
 
     public func split(separator regex: Regex, options: Regex.SearchOptions = .none) throws -> [Substring] {
-        try split(separator: regex, options: options, matchParam: MatchParam())
+        try split(separator: regex, options: options, matchConfiguration: Regex.MatchConfiguration())
     }
 
-    public func split(separator regex: Regex, options: Regex.SearchOptions = .none, matchParam: MatchParam) throws -> [Substring] {
-        let separatorRanges = try ranges(of: regex, options: options, matchParam: matchParam)
+    public func split(separator regex: Regex, options: Regex.SearchOptions = .none, matchConfiguration: Regex.MatchConfiguration) throws -> [Substring] {
+        let separatorRanges = try ranges(of: regex, options: options, matchConfiguration: matchConfiguration)
         guard !separatorRanges.isEmpty else {
             return [self[...]]
         }
@@ -105,24 +105,24 @@ extension String {
         try regex.firstStringMatch(in: self, options: options)
     }
 
-    public func firstMatch(of regex: Regex, options: Regex.SearchOptions = .none, matchParam: MatchParam) throws -> Regex.Match? {
-        try regex.firstStringMatch(in: self, options: options, matchParam: matchParam)
+    public func firstMatch(of regex: Regex, options: Regex.SearchOptions = .none, matchConfiguration: Regex.MatchConfiguration) throws -> Regex.Match? {
+        try regex.firstStringMatch(in: self, options: options, matchConfiguration: matchConfiguration)
     }
 
     public func prefixMatch(of regex: Regex, options: Regex.SearchOptions = .none) throws -> Regex.Match? {
         try regex.prefixStringMatch(in: self, options: options)
     }
 
-    public func prefixMatch(of regex: Regex, options: Regex.SearchOptions = .none, matchParam: MatchParam) throws -> Regex.Match? {
-        try regex.prefixStringMatch(in: self, options: options, matchParam: matchParam)
+    public func prefixMatch(of regex: Regex, options: Regex.SearchOptions = .none, matchConfiguration: Regex.MatchConfiguration) throws -> Regex.Match? {
+        try regex.prefixStringMatch(in: self, options: options, matchConfiguration: matchConfiguration)
     }
 
     public func wholeMatch(of regex: Regex, options: Regex.SearchOptions = .none) throws -> Regex.Match? {
         try regex.wholeStringMatch(in: self, options: options)
     }
 
-    public func wholeMatch(of regex: Regex, options: Regex.SearchOptions = .none, matchParam: MatchParam) throws -> Regex.Match? {
-        try regex.wholeStringMatch(in: self, options: options, matchParam: matchParam)
+    public func wholeMatch(of regex: Regex, options: Regex.SearchOptions = .none, matchConfiguration: Regex.MatchConfiguration) throws -> Regex.Match? {
+        try regex.wholeStringMatch(in: self, options: options, matchConfiguration: matchConfiguration)
     }
 }
 
@@ -131,24 +131,24 @@ extension Substring {
         try regex.firstStringMatch(in: self, options: options) != nil
     }
 
-    public func contains(_ regex: Regex, options: Regex.SearchOptions = .none, matchParam: MatchParam) throws -> Bool {
-        try regex.firstStringMatch(in: self, options: options, matchParam: matchParam) != nil
+    public func contains(_ regex: Regex, options: Regex.SearchOptions = .none, matchConfiguration: Regex.MatchConfiguration) throws -> Bool {
+        try regex.firstStringMatch(in: self, options: options, matchConfiguration: matchConfiguration) != nil
     }
 
     public func matches(of regex: Regex, options: Regex.SearchOptions = .none) throws -> [Regex.Match] {
         try regex.stringMatches(in: self, options: options)
     }
 
-    public func matches(of regex: Regex, options: Regex.SearchOptions = .none, matchParam: MatchParam) throws -> [Regex.Match] {
-        try regex.stringMatches(in: self, options: options, matchParam: matchParam)
+    public func matches(of regex: Regex, options: Regex.SearchOptions = .none, matchConfiguration: Regex.MatchConfiguration) throws -> [Regex.Match] {
+        try regex.stringMatches(in: self, options: options, matchConfiguration: matchConfiguration)
     }
 
     public func ranges(of regex: Regex, options: Regex.SearchOptions = .none) throws -> [Range<String.Index>] {
         try matches(of: regex, options: options).map(\.range)
     }
 
-    public func ranges(of regex: Regex, options: Regex.SearchOptions = .none, matchParam: MatchParam) throws -> [Range<String.Index>] {
-        try matches(of: regex, options: options, matchParam: matchParam).map(\.range)
+    public func ranges(of regex: Regex, options: Regex.SearchOptions = .none, matchConfiguration: Regex.MatchConfiguration) throws -> [Range<String.Index>] {
+        try matches(of: regex, options: options, matchConfiguration: matchConfiguration).map(\.range)
     }
 
     public func trimmingPrefix(_ regex: Regex, options: Regex.SearchOptions = .none) throws -> Substring {
@@ -159,8 +159,8 @@ extension Substring {
         return self[...]
     }
 
-    public func trimmingPrefix(_ regex: Regex, options: Regex.SearchOptions = .none, matchParam: MatchParam) throws -> Substring {
-        if let match = try prefixMatch(of: regex, options: options, matchParam: matchParam) {
+    public func trimmingPrefix(_ regex: Regex, options: Regex.SearchOptions = .none, matchConfiguration: Regex.MatchConfiguration) throws -> Substring {
+        if let match = try prefixMatch(of: regex, options: options, matchConfiguration: matchConfiguration) {
             return self[match.range.upperBound...]
         }
 
@@ -168,11 +168,11 @@ extension Substring {
     }
 
     public func split(separator regex: Regex, options: Regex.SearchOptions = .none) throws -> [Substring] {
-        try split(separator: regex, options: options, matchParam: MatchParam())
+        try split(separator: regex, options: options, matchConfiguration: Regex.MatchConfiguration())
     }
 
-    public func split(separator regex: Regex, options: Regex.SearchOptions = .none, matchParam: MatchParam) throws -> [Substring] {
-        let separatorRanges = try ranges(of: regex, options: options, matchParam: matchParam)
+    public func split(separator regex: Regex, options: Regex.SearchOptions = .none, matchConfiguration: Regex.MatchConfiguration) throws -> [Substring] {
+        let separatorRanges = try ranges(of: regex, options: options, matchConfiguration: matchConfiguration)
         guard !separatorRanges.isEmpty else {
             return [self[...]]
         }
@@ -200,23 +200,23 @@ extension Substring {
         try regex.firstStringMatch(in: self, options: options)
     }
 
-    public func firstMatch(of regex: Regex, options: Regex.SearchOptions = .none, matchParam: MatchParam) throws -> Regex.Match? {
-        try regex.firstStringMatch(in: self, options: options, matchParam: matchParam)
+    public func firstMatch(of regex: Regex, options: Regex.SearchOptions = .none, matchConfiguration: Regex.MatchConfiguration) throws -> Regex.Match? {
+        try regex.firstStringMatch(in: self, options: options, matchConfiguration: matchConfiguration)
     }
 
     public func prefixMatch(of regex: Regex, options: Regex.SearchOptions = .none) throws -> Regex.Match? {
         try regex.prefixStringMatch(in: self, options: options)
     }
 
-    public func prefixMatch(of regex: Regex, options: Regex.SearchOptions = .none, matchParam: MatchParam) throws -> Regex.Match? {
-        try regex.prefixStringMatch(in: self, options: options, matchParam: matchParam)
+    public func prefixMatch(of regex: Regex, options: Regex.SearchOptions = .none, matchConfiguration: Regex.MatchConfiguration) throws -> Regex.Match? {
+        try regex.prefixStringMatch(in: self, options: options, matchConfiguration: matchConfiguration)
     }
 
     public func wholeMatch(of regex: Regex, options: Regex.SearchOptions = .none) throws -> Regex.Match? {
         try regex.wholeStringMatch(in: self, options: options)
     }
 
-    public func wholeMatch(of regex: Regex, options: Regex.SearchOptions = .none, matchParam: MatchParam) throws -> Regex.Match? {
-        try regex.wholeStringMatch(in: self, options: options, matchParam: matchParam)
+    public func wholeMatch(of regex: Regex, options: Regex.SearchOptions = .none, matchConfiguration: Regex.MatchConfiguration) throws -> Regex.Match? {
+        try regex.wholeStringMatch(in: self, options: options, matchConfiguration: matchConfiguration)
     }
 }

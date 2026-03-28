@@ -74,17 +74,16 @@ struct RegexSetTests {
         #expect(result.region.decodedString() == "你好")
     }
 
-    @Test("RegexSet empty and matchParam search paths")
-    func emptyAndMatchParamSearch() async throws {
+    @Test("RegexSet empty and matchConfiguration search paths")
+    func emptyAndMatchConfigurationSearch() async throws {
         let empty = try RegexSet(regexes: [Regex]())
         #expect(try empty.firstSetMatch(in: "abc") == nil)
 
         let regSet = try RegexSet(regexes: [try Regex(pattern: "a+"), try Regex(pattern: "b+")])
-        var matchParam = MatchParam()
-        matchParam.setRetryLimitInSearch(to: 1_000)
-        let params = [matchParam, matchParam]
+        let matchConfiguration = Regex.MatchConfiguration(retryLimitInSearch: 1_000)
+        let configurations = [matchConfiguration, matchConfiguration]
 
-        let result = try regSet.firstSetMatch(in: "xxbbb", of: 2..<5, lead: .regexLead, matchParams: params)
+        let result = try regSet.firstSetMatch(in: "xxbbb", of: 2..<5, lead: .regexLead, matchConfigurations: configurations)
         #expect(result?.regexIndex == 1)
         #expect(result?.region.decodedString() == "bbb")
     }

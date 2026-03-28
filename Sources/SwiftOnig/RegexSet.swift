@@ -205,7 +205,7 @@ public struct RegexSet: Sendable {
     public func firstSetMatch<S>(in str: S,
                                  lead: Lead = .positionLead,
                                  options: Regex.SearchOptions = .none,
-                                 matchParams: [MatchParam]? = nil
+                                 matchConfigurations: [Regex.MatchConfiguration]? = nil
     ) throws -> (regexIndex: Int, region: Region)? {
         guard let firstRegex = regexes.first else {
             return nil
@@ -216,7 +216,7 @@ public struct RegexSet: Sendable {
                             of: Self.fullByteRange,
                             lead: lead,
                             options: options,
-                            matchParams: matchParams)
+                            matchConfigurations: matchConfigurations)
         }
     }
 
@@ -227,14 +227,14 @@ public struct RegexSet: Sendable {
                                     of range: R,
                                     lead: Lead = .positionLead,
                                     options: Regex.SearchOptions = .none,
-                                    matchParams: [MatchParam]? = nil
+                                    matchConfigurations: [Regex.MatchConfiguration]? = nil
     ) throws -> (regexIndex: Int, region: Region)? where R: RangeExpression, R.Bound == Int {
         guard let firstRegex = regexes.first else {
             return nil
         }
 
         return try withSupportedOnigurumaInput(str, requestedEncoding: firstRegex.encoding) { supported in
-            try _firstMatch(in: supported, of: range, lead: lead, options: options, matchParams: matchParams)
+            try _firstMatch(in: supported, of: range, lead: lead, options: options, matchConfigurations: matchConfigurations)
         }
     }
 
@@ -242,22 +242,22 @@ public struct RegexSet: Sendable {
                                    of range: R,
                                    lead: Lead = .positionLead,
                                    options: Regex.SearchOptions = .none,
-                                   matchParams: [MatchParam]? = nil
+                                   matchConfigurations: [Regex.MatchConfiguration]? = nil
     ) throws -> (regexIndex: Int, region: Region)? where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
         guard let firstRegex = regexes.first else {
             return nil
         }
 
-        if let matchParams {
-            precondition(matchParams.count == regexes.count, "Match params count must equal regex count")
+        if let matchConfigurations {
+            precondition(matchConfigurations.count == regexes.count, "Match configurations count must equal regex count")
         }
 
         let result = try str.withOnigurumaString(requestedEncoding: firstRegex.encoding) { start, count throws -> OnigInt in
             var bytesIndex: OnigInt = 0
             let range = range.relative(to: 0..<count).clamped(to: 0..<count)
 
-            if let matchParams {
-                return try Self.withRawMatchParams(matchParams) { rawParams in
+            if let matchConfigurations {
+                return try Self.withRawMatchConfigurations(matchConfigurations) { rawParams in
                     onig_regset_search_with_param(rawValue,
                                                   start,
                                                   start.advanced(by: count),
@@ -295,19 +295,19 @@ public struct RegexSet: Sendable {
         }
     }
 
-    private static func withRawMatchParams<Result>(_ matchParams: [MatchParam],
-                                                   _ body: (UnsafeMutableBufferPointer<OpaquePointer?>) throws -> Result) throws -> Result {
+    private static func withRawMatchConfigurations<Result>(_ matchConfigurations: [Regex.MatchConfiguration],
+                                                           _ body: (UnsafeMutableBufferPointer<OpaquePointer?>) throws -> Result) throws -> Result {
         var rawParams = Array<OpaquePointer?>()
-        rawParams.reserveCapacity(matchParams.count)
+        rawParams.reserveCapacity(matchConfigurations.count)
 
         func run(_ index: Int) throws -> Result {
-            if index == matchParams.count {
+            if index == matchConfigurations.count {
                 return try rawParams.withUnsafeMutableBufferPointer { buffer in
                     try body(buffer)
                 }
             }
 
-            return try matchParams[index].withRawValue { rawValue in
+            return try matchConfigurations[index].withRawValue { rawValue in
                 rawParams.append(rawValue)
                 defer { rawParams.removeLast() }
                 return try run(index + 1)

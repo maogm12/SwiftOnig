@@ -41,16 +41,9 @@ public struct OnigurumaCalloutContext: Sendable {
     public let retryCount: UInt
     public let captureRanges: [Range<Int>?]
     public let arguments: [OnigurumaCalloutArgument]
-    public let userData: (any Sendable)?
 }
 
 public typealias OnigurumaCalloutHandler = @Sendable (OnigurumaCalloutContext) -> OnigurumaCalloutAction
-
-internal final class MatchParamCalloutState: @unchecked Sendable {
-    var progressHandler: OnigurumaCalloutHandler?
-    var retractionHandler: OnigurumaCalloutHandler?
-    var userData: (any Sendable)?
-}
 
 internal enum OnigurumaCalloutRegistry {
     private final class State: @unchecked Sendable {
@@ -130,7 +123,7 @@ private func buildCalloutArguments(_ args: OpaquePointer) -> [OnigurumaCalloutAr
     }
 }
 
-private func buildCalloutContext(args: OpaquePointer, userData: UnsafeMutableRawPointer?) -> OnigurumaCalloutContext {
+private func buildCalloutContext(args: OpaquePointer) -> OnigurumaCalloutContext {
     let regex = onig_get_regex_by_callout_args(args)
     let encoding = Encoding(rawValue: onig_get_encoding(regex))
     let stringStart = onig_get_string_by_callout_args(args)!
@@ -158,8 +151,6 @@ private func buildCalloutContext(args: OpaquePointer, userData: UnsafeMutableRaw
     }
 
     let phase: OnigurumaCalloutPhase = onig_get_callout_in_by_callout_args(args) == ONIG_CALLOUT_IN_RETRACTION ? .retraction : .progress
-    let state = userData.map { Unmanaged<MatchParamCalloutState>.fromOpaque($0).takeUnretainedValue() }
-
     return OnigurumaCalloutContext(
         phase: phase,
         name: calloutName,
@@ -169,12 +160,11 @@ private func buildCalloutContext(args: OpaquePointer, userData: UnsafeMutableRaw
         searchRangeUpperBound: stringStart.distance(to: rightRange),
         retryCount: UInt(onig_get_retry_counter_by_callout_args(args)),
         captureRanges: captures,
-        arguments: buildCalloutArguments(args),
-        userData: state?.userData
+        arguments: buildCalloutArguments(args)
     )
 }
 
-private func resolveCalloutHandler(for context: OnigurumaCalloutContext, state: MatchParamCalloutState?) -> OnigurumaCalloutHandler? {
+private func resolveCalloutHandler(for context: OnigurumaCalloutContext, state: MatchConfigurationCalloutState?) -> OnigurumaCalloutHandler? {
     if let name = context.name, let handler = OnigurumaCalloutRegistry.handler(named: name) {
         return handler
     }
@@ -192,8 +182,8 @@ internal func onigurumaCalloutCallback(_ args: OpaquePointer?, _ userData: Unsaf
         return OnigurumaCalloutAction.fail.rawValue
     }
 
-    let state = userData.map { Unmanaged<MatchParamCalloutState>.fromOpaque($0).takeUnretainedValue() }
-    let context = buildCalloutContext(args: args, userData: userData)
+    let state = userData.map { Unmanaged<MatchConfigurationCalloutState>.fromOpaque($0).takeUnretainedValue() }
+    let context = buildCalloutContext(args: args)
     let action = resolveCalloutHandler(for: context, state: state)?(context) ?? .continue
     return action.rawValue
 }

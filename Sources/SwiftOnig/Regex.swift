@@ -118,7 +118,7 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
         let startOffset = input.distance(from: input.startIndex, to: index)
         let endOffset = input.distance(from: input.startIndex, to: bounds.upperBound)
         
-        guard let region = try self._firstMatch(in: input, of: startOffset..<endOffset, options: .none, matchParam: nil) else {
+        guard let region = try self._firstMatch(in: input, of: startOffset..<endOffset, options: .none, matchConfiguration: nil) else {
             return nil
         }
         
@@ -221,7 +221,7 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
     /// - Throws: `OnigError` if the search fails.
     public func firstMatch<S, R>(in str: S, of range: R, options: SearchOptions = .none) throws -> Region? where R: RangeExpression, R.Bound == Int {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _firstMatch(in: supported, of: range, options: options, matchParam: nil)
+            try _firstMatch(in: supported, of: range, options: options, matchConfiguration: nil)
         }
     }
 
@@ -231,12 +231,12 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
         count: Int,
         range: Range<Int>,
         options: SearchOptions,
-        matchParam: MatchParam?
+        matchConfiguration: MatchConfiguration?
     ) throws -> Region? where S: OnigurumaString {
         let region = try Region(regex: self, str: str)
         let result = try callOnigFunction {
-            if let matchParam {
-                return try matchParam.withRawValue { rawMatchParam in
+            if let matchConfiguration {
+                return try matchConfiguration.withRawValue { rawMatchParam in
                     onig_search_with_param(self.rawValue,
                                            start,
                                            start.advanced(by: count),
@@ -264,7 +264,7 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
         return region
     }
 
-    internal func _firstMatch<S, R>(in str: S, of range: R, options: SearchOptions = .none, matchParam: MatchParam?) throws -> Region? where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
+    internal func _firstMatch<S, R>(in str: S, of range: R, options: SearchOptions = .none, matchConfiguration: MatchConfiguration?) throws -> Region? where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
         return try str.withOnigurumaString(requestedEncoding: self.encoding) { (start, count) throws -> Region? in
             let range = range.relative(to: 0..<count).clamped(to: 0..<count)
             return try _firstMatchResolved(in: str,
@@ -272,7 +272,7 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
                                            count: count,
                                            range: range,
                                            options: options,
-                                           matchParam: matchParam)
+                                           matchConfiguration: matchConfiguration)
         }
     }
     
@@ -288,53 +288,53 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
      */
     public func firstMatch<S>(in str: S, options: SearchOptions = .none) throws -> Region? {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchParam: nil)
+            try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchConfiguration: nil)
         }
     }
 
     @available(*, deprecated, message: "Use input.firstMatch(of:) or regex.firstStringMatch(in:) for String and Substring inputs.")
     public func firstMatch(in str: String, options: SearchOptions = .none) throws -> Region? {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchParam: nil)
+            try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchConfiguration: nil)
         }
     }
 
     @available(*, deprecated, message: "Use input.firstMatch(of:) or regex.firstStringMatch(in:) for String and Substring inputs.")
     public func firstMatch(in str: Substring, options: SearchOptions = .none) throws -> Region? {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchParam: nil)
+            try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchConfiguration: nil)
         }
     }
 
     /**
      Search the string and find the first matching region using the supplied match parameters.
      */
-    public func firstMatch<S, R>(in str: S, of range: R, options: SearchOptions = .none, matchParam: MatchParam) throws -> Region? where R: RangeExpression, R.Bound == Int {
+    public func firstMatch<S, R>(in str: S, of range: R, options: SearchOptions = .none, matchConfiguration: MatchConfiguration) throws -> Region? where R: RangeExpression, R.Bound == Int {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _firstMatch(in: supported, of: range, options: options, matchParam: matchParam)
+            try _firstMatch(in: supported, of: range, options: options, matchConfiguration: matchConfiguration)
         }
     }
 
     /**
      Search the string and find the first matching region using the supplied match parameters.
      */
-    public func firstMatch<S>(in str: S, options: SearchOptions = .none, matchParam: MatchParam) throws -> Region? {
+    public func firstMatch<S>(in str: S, options: SearchOptions = .none, matchConfiguration: MatchConfiguration) throws -> Region? {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchParam: matchParam)
+            try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchConfiguration: matchConfiguration)
         }
     }
 
-    @available(*, deprecated, message: "Use input.firstMatch(of:matchParam:) or regex.firstStringMatch(in:matchParam:) for String and Substring inputs.")
-    public func firstMatch(in str: String, options: SearchOptions = .none, matchParam: MatchParam) throws -> Region? {
+    @available(*, deprecated, message: "Use input.firstMatch(of:matchConfiguration:) or regex.firstStringMatch(in:matchConfiguration:) for String and Substring inputs.")
+    public func firstMatch(in str: String, options: SearchOptions = .none, matchConfiguration: MatchConfiguration) throws -> Region? {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchParam: matchParam)
+            try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchConfiguration: matchConfiguration)
         }
     }
 
-    @available(*, deprecated, message: "Use input.firstMatch(of:matchParam:) or regex.firstStringMatch(in:matchParam:) for String and Substring inputs.")
-    public func firstMatch(in str: Substring, options: SearchOptions = .none, matchParam: MatchParam) throws -> Region? {
+    @available(*, deprecated, message: "Use input.firstMatch(of:matchConfiguration:) or regex.firstStringMatch(in:matchConfiguration:) for String and Substring inputs.")
+    public func firstMatch(in str: Substring, options: SearchOptions = .none, matchConfiguration: MatchConfiguration) throws -> Region? {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchParam: matchParam)
+            try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchConfiguration: matchConfiguration)
         }
     }
 
@@ -343,55 +343,55 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
      */
     public func wholeMatch<S>(in str: S, options: SearchOptions = .none) throws -> Region? {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _wholeMatch(in: supported, options: options, matchParam: nil)
+            try _wholeMatch(in: supported, options: options, matchConfiguration: nil)
         }
     }
 
     @available(*, deprecated, message: "Use input.wholeMatch(of:) or regex.wholeStringMatch(in:) for String and Substring inputs.")
     public func wholeMatch(in str: String, options: SearchOptions = .none) throws -> Region? {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _wholeMatch(in: supported, options: options, matchParam: nil)
+            try _wholeMatch(in: supported, options: options, matchConfiguration: nil)
         }
     }
 
     @available(*, deprecated, message: "Use input.wholeMatch(of:) or regex.wholeStringMatch(in:) for String and Substring inputs.")
     public func wholeMatch(in str: Substring, options: SearchOptions = .none) throws -> Region? {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _wholeMatch(in: supported, options: options, matchParam: nil)
+            try _wholeMatch(in: supported, options: options, matchConfiguration: nil)
         }
     }
 
     /**
      Search the full input and return a region only when the entire string matches.
      */
-    public func wholeMatch<S>(in str: S, options: SearchOptions = .none, matchParam: MatchParam) throws -> Region? {
+    public func wholeMatch<S>(in str: S, options: SearchOptions = .none, matchConfiguration: MatchConfiguration) throws -> Region? {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _wholeMatch(in: supported, options: options, matchParam: matchParam)
+            try _wholeMatch(in: supported, options: options, matchConfiguration: matchConfiguration)
         }
     }
 
-    @available(*, deprecated, message: "Use input.wholeMatch(of:matchParam:) or regex.wholeStringMatch(in:matchParam:) for String and Substring inputs.")
-    public func wholeMatch(in str: String, options: SearchOptions = .none, matchParam: MatchParam) throws -> Region? {
+    @available(*, deprecated, message: "Use input.wholeMatch(of:matchConfiguration:) or regex.wholeStringMatch(in:matchConfiguration:) for String and Substring inputs.")
+    public func wholeMatch(in str: String, options: SearchOptions = .none, matchConfiguration: MatchConfiguration) throws -> Region? {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _wholeMatch(in: supported, options: options, matchParam: matchParam)
+            try _wholeMatch(in: supported, options: options, matchConfiguration: matchConfiguration)
         }
     }
 
-    @available(*, deprecated, message: "Use input.wholeMatch(of:matchParam:) or regex.wholeStringMatch(in:matchParam:) for String and Substring inputs.")
-    public func wholeMatch(in str: Substring, options: SearchOptions = .none, matchParam: MatchParam) throws -> Region? {
+    @available(*, deprecated, message: "Use input.wholeMatch(of:matchConfiguration:) or regex.wholeStringMatch(in:matchConfiguration:) for String and Substring inputs.")
+    public func wholeMatch(in str: Substring, options: SearchOptions = .none, matchConfiguration: MatchConfiguration) throws -> Region? {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _wholeMatch(in: supported, options: options, matchParam: matchParam)
+            try _wholeMatch(in: supported, options: options, matchConfiguration: matchConfiguration)
         }
     }
 
-    internal func _wholeMatch<S>(in str: S, options: SearchOptions = .none, matchParam: MatchParam?) throws -> Region? where S: OnigurumaString {
+    internal func _wholeMatch<S>(in str: S, options: SearchOptions = .none, matchConfiguration: MatchConfiguration?) throws -> Region? where S: OnigurumaString {
         try str.withOnigurumaString(requestedEncoding: self.encoding) { (start, count) throws -> Region? in
             guard let region = try _firstMatchResolved(in: str,
                                                        start: start,
                                                        count: count,
                                                        range: 0..<count,
                                                        options: options.union(.matchWholeString),
-                                                       matchParam: matchParam),
+                                                       matchConfiguration: matchConfiguration),
                   region.range == 0..<count else {
                 return nil
             }
@@ -413,16 +413,16 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
      */
     public func matchedByteCount<S, R>(in str: S, of range: R, options: SearchOptions = .none) throws -> Int? where R: RangeExpression, R.Bound == Int {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _matchCount(in: supported, of: range, options: options, matchParam: nil)
+            try _matchCount(in: supported, of: range, options: options, matchConfiguration: nil)
         }
     }
 
-    private func _matchCount<S, R>(in str: S, of range: R, options: SearchOptions = .none, matchParam: MatchParam?) throws -> Int? where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
+    private func _matchCount<S, R>(in str: S, of range: R, options: SearchOptions = .none, matchConfiguration: MatchConfiguration?) throws -> Int? where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
         return try str.withOnigurumaString(requestedEncoding: self.encoding) { (start, count) throws -> Int? in
             let range = range.relative(to: 0..<count).clamped(to: 0..<count)
             let result = try callOnigFunction {
-                if let matchParam {
-                    return try matchParam.withRawValue { rawMatchParam in
+                if let matchConfiguration {
+                    return try matchConfiguration.withRawValue { rawMatchParam in
                         onig_match_with_param(self.rawValue,
                                               start,
                                               start.advanced(by: count),
@@ -454,30 +454,30 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
      */
     public func matchedByteCount<S>(in str: S, options: SearchOptions = .none) throws -> Int? {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _matchCount(in: supported, of: Self.fullByteRange, options: options, matchParam: nil)
+            try _matchCount(in: supported, of: Self.fullByteRange, options: options, matchConfiguration: nil)
         }
     }
 
     /**
      Search the string and return the matched byte count using the supplied match parameters.
      */
-    public func matchedByteCount<S, R>(in str: S, of range: R, options: SearchOptions = .none, matchParam: MatchParam) throws -> Int? where R: RangeExpression, R.Bound == Int {
+    public func matchedByteCount<S, R>(in str: S, of range: R, options: SearchOptions = .none, matchConfiguration: MatchConfiguration) throws -> Int? where R: RangeExpression, R.Bound == Int {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _matchCount(in: supported, of: range, options: options, matchParam: matchParam)
+            try _matchCount(in: supported, of: range, options: options, matchConfiguration: matchConfiguration)
         }
     }
 
     /**
      Search the string and return the matched byte count using the supplied match parameters.
      */
-    public func matchedByteCount<S>(in str: S, options: SearchOptions = .none, matchParam: MatchParam) throws -> Int? {
+    public func matchedByteCount<S>(in str: S, options: SearchOptions = .none, matchConfiguration: MatchConfiguration) throws -> Int? {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _matchCount(in: supported, of: Self.fullByteRange, options: options, matchParam: matchParam)
+            try _matchCount(in: supported, of: Self.fullByteRange, options: options, matchConfiguration: matchConfiguration)
         }
     }
 
-    private func _matches<S, R>(_ str: S, in range: R, options: SearchOptions = .none, matchParam: MatchParam?) throws -> Bool where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
-        try _matchCount(in: str, of: range, options: options, matchParam: matchParam) != nil
+    private func _matches<S, R>(_ str: S, in range: R, options: SearchOptions = .none, matchConfiguration: MatchConfiguration?) throws -> Bool where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
+        try _matchCount(in: str, of: range, options: options, matchConfiguration: matchConfiguration) != nil
     }
     
     /**
@@ -493,7 +493,7 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
      */
     public func matches<S, R>(_ str: S, in range: R, options: SearchOptions = .none) throws -> Bool where R: RangeExpression, R.Bound == Int {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _matches(supported, in: range, options: options, matchParam: nil)
+            try _matches(supported, in: range, options: options, matchConfiguration: nil)
         }
     }
     
@@ -509,38 +509,38 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
      */
     public func matches<S>(_ str: S, options: SearchOptions = .none) throws -> Bool {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _matches(supported, in: Self.fullByteRange, options: options, matchParam: nil)
+            try _matches(supported, in: Self.fullByteRange, options: options, matchConfiguration: nil)
         }
     }
 
     /**
      Is the string matched by the regular expression using the supplied match parameters?
      */
-    public func matches<S, R>(_ str: S, in range: R, options: SearchOptions = .none, matchParam: MatchParam) throws -> Bool where R: RangeExpression, R.Bound == Int {
+    public func matches<S, R>(_ str: S, in range: R, options: SearchOptions = .none, matchConfiguration: MatchConfiguration) throws -> Bool where R: RangeExpression, R.Bound == Int {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _matches(supported, in: range, options: options, matchParam: matchParam)
+            try _matches(supported, in: range, options: options, matchConfiguration: matchConfiguration)
         }
     }
 
     /**
      Is the string matched by the regular expression using the supplied match parameters?
      */
-    public func matches<S>(_ str: S, options: SearchOptions = .none, matchParam: MatchParam) throws -> Bool {
+    public func matches<S>(_ str: S, options: SearchOptions = .none, matchConfiguration: MatchConfiguration) throws -> Bool {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _matches(supported, in: Self.fullByteRange, options: options, matchParam: matchParam)
+            try _matches(supported, in: Self.fullByteRange, options: options, matchConfiguration: matchConfiguration)
         }
     }
 
     @discardableResult public func enumerateMatches<S>(in str: S,
                                                        options: SearchOptions = .none,
-                                                       matchParam: MatchParam = MatchParam(),
+                                                       matchConfiguration: MatchConfiguration = MatchConfiguration(),
                                                        body: @escaping @Sendable (_ order: Int, _ matchedIndex: Int, _ region: Region) -> Bool
     ) throws -> Int {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
             try _enumerateMatches(in: supported,
                                   of: Self.fullByteRange,
                                   options: options,
-                                  matchParam: matchParam,
+                                  matchConfiguration: matchConfiguration,
                                   body: body)
         }
     }
@@ -562,29 +562,29 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
          - str: Target string to search against.
          - range: The range of bytes to search against. It will be clamped to the range of the whole string first.
          - option: The regular expression search options.
-         - matchParam: Match parameter values (`matchStackLimit`, `retryLimitInMatch`, `retryLimitInSearch`)
+         - matchConfiguration: Match configuration values (`matchStackLimit`, `retryLimitInMatch`, `retryLimitInSearch`)
          - body: The closure to call on each match.
          - order: The order of this match.
          - matchedIndex: The matched index of byte.
          - region: The matching region.
-     - Returns: Number of matches. If only the number of matches is needed, `numberOfMatches(in:of:options:matchParams:body:)` is slightly faster.
+     - Returns: Number of matches.
      - Throws: `OnigError`
      */
     @discardableResult public func enumerateMatches<S, R>(in str: S,
                                                           of range: R,
                                                           options: SearchOptions = .none,
-                                                          matchParam: MatchParam = MatchParam(),
+                                                          matchConfiguration: MatchConfiguration = MatchConfiguration(),
                                                           body: @escaping @Sendable (_ order: Int, _ matchedIndex: Int, _ region: Region) -> Bool
     ) throws -> Int where R: RangeExpression, R.Bound == Int {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _enumerateMatches(in: supported, of: range, options: options, matchParam: matchParam, body: body)
+            try _enumerateMatches(in: supported, of: range, options: options, matchConfiguration: matchConfiguration, body: body)
         }
     }
 
     func _enumerateMatches<S, R>(in str: S,
                                  of range: R,
                                  options: SearchOptions = .none,
-                                 matchParam: MatchParam = MatchParam(),
+                                 matchConfiguration: MatchConfiguration = MatchConfiguration(),
                                  body: @escaping @Sendable (_ order: Int, _ matchedIndex: Int, _ region: Region) -> Bool
     ) throws -> Int where S: OnigurumaString, R: RangeExpression, R.Bound == Int {
         let result = try str.withOnigurumaString(requestedEncoding: self.encoding) { (start, count) throws -> OnigInt in
