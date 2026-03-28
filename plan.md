@@ -150,3 +150,11 @@ This section tracks the packaging refactor from a system-installed Oniguruma dep
 - [x] Implement Phase 1 parity APIs: `contains(_:)`, `matches(of:)`, and `ranges(of:)` for `String` and `Substring`.
 - [x] Implement Phase 2 parity APIs: `replacing(_:with:)` and mutating `replace(_:with:)`.
 - [x] Implement Phase 3 convenience APIs: `split(separator:)` and `trimmingPrefix(_:)`.
+
+## 16. Regex Initialization Sync Migration
+
+- [x] Record the design for removing `async` from public `Regex` initializers in [`Docs/regex-init-sync-migration-plan.md`](Docs/regex-init-sync-migration-plan.md).
+- [x] Introduce a synchronous internal runtime initialization path for regex compilation.
+- [x] Make public `Regex` initializers synchronous and migrate affected call sites.
+- [x] Re-evaluate `RegexSet` and related APIs that may only be async because of regex compilation.
+- [x] Update README, DocC, examples, and tests to remove `await` from regex compilation where no longer needed.
