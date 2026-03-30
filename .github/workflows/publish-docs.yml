@@ -52,17 +52,36 @@ jobs:
 
       - name: Convert archive for static hosting
         run: |
-          rm -rf .build/docc-static
+          rm -rf .build/docc-static .build/gh-pages
           xcrun docc process-archive transform-for-static-hosting \
             "${{ steps.archive.outputs.path }}" \
             --output-path .build/docc-static \
-            --hosting-base-path SwiftOnig
-          touch .build/docc-static/.nojekyll
+            --hosting-base-path swiftonig
+
+          mkdir -p .build/gh-pages/swiftonig
+          cp -R .build/docc-static/. .build/gh-pages/swiftonig/
+
+          cat > .build/gh-pages/swiftonig/index.html <<'EOF'
+          <!doctype html>
+          <html lang="en">
+            <head>
+              <meta charset="utf-8">
+              <meta http-equiv="refresh" content="0; url=/swiftonig/documentation/swiftonig/">
+              <meta name="viewport" content="width=device-width, initial-scale=1">
+              <title>SwiftOnig Documentation</title>
+            </head>
+            <body>
+              <p>Redirecting to <a href="/swiftonig/documentation/swiftonig/">SwiftOnig documentation</a>...</p>
+            </body>
+          </html>
+          EOF
+
+          touch .build/gh-pages/.nojekyll
 
       - name: Publish to gh-pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: .build/docc-static
+          publish_dir: .build/gh-pages
           publish_branch: gh-pages
           force_orphan: true

@@ -208,3 +208,4 @@ This section tracks the packaging refactor from a system-installed Oniguruma dep
 
 - [x] Add DocC comments to the core string-native and runtime APIs so generated symbol docs are not empty.
 - [x] Add a GitHub Actions workflow that builds DocC output on macOS and publishes the static site to the `gh-pages` branch.
+- [x] Adjust the published DocC site layout so a custom domain can serve SwiftOnig docs directly from `/swiftonig`, with `/swiftonig/` redirecting to `/swiftonig/documentation/swiftonig/`.
