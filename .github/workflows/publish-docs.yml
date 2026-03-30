@@ -56,22 +56,22 @@ jobs:
           xcrun docc process-archive transform-for-static-hosting \
             "${{ steps.archive.outputs.path }}" \
             --output-path .build/docc-static \
-            --hosting-base-path swiftonig
+            --hosting-base-path SwiftOnig
 
-          mkdir -p .build/gh-pages/swiftonig
-          cp -R .build/docc-static/. .build/gh-pages/swiftonig/
+          mkdir -p .build/gh-pages
+          cp -R .build/docc-static/. .build/gh-pages/
 
-          cat > .build/gh-pages/swiftonig/index.html <<'EOF'
+          cat > .build/gh-pages/index.html <<'EOF'
           <!doctype html>
           <html lang="en">
             <head>
               <meta charset="utf-8">
-              <meta http-equiv="refresh" content="0; url=/swiftonig/documentation/swiftonig/">
+              <meta http-equiv="refresh" content="0; url=/SwiftOnig/documentation/swiftonig/">
               <meta name="viewport" content="width=device-width, initial-scale=1">
               <title>SwiftOnig Documentation</title>
             </head>
             <body>
-              <p>Redirecting to <a href="/swiftonig/documentation/swiftonig/">SwiftOnig documentation</a>...</p>
+              <p>Redirecting to <a href="/SwiftOnig/documentation/swiftonig/">SwiftOnig documentation</a>...</p>
             </body>
           </html>
           EOF
