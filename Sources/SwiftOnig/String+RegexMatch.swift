@@ -2,10 +2,13 @@ import Foundation
 
 extension String {
     /// Returns whether the string contains at least one match of the regex.
+    ///
+    /// This is the string-native equivalent of `Regex.matches(_:)`.
     public func contains(_ regex: Regex, options: Regex.SearchOptions = .none) throws -> Bool {
         try regex.firstStringMatch(in: self, options: options) != nil
     }
 
+    /// Returns whether the string contains at least one match of the regex using custom match configuration.
     public func contains(_ regex: Regex, options: Regex.SearchOptions = .none, matchConfiguration: Regex.MatchConfiguration) throws -> Bool {
         try regex.firstStringMatch(in: self, options: options, matchConfiguration: matchConfiguration) != nil
     }
@@ -15,6 +18,7 @@ extension String {
         try regex.stringMatches(in: self, options: options)
     }
 
+    /// Returns all non-overlapping matches using custom match configuration.
     public func matches(of regex: Regex, options: Regex.SearchOptions = .none, matchConfiguration: Regex.MatchConfiguration) throws -> [Regex.Match] {
         try regex.stringMatches(in: self, options: options, matchConfiguration: matchConfiguration)
     }
@@ -24,15 +28,19 @@ extension String {
         try matches(of: regex, options: options).map(\.range)
     }
 
+    /// Returns the string ranges for all non-overlapping matches using custom match configuration.
     public func ranges(of regex: Regex, options: Regex.SearchOptions = .none, matchConfiguration: Regex.MatchConfiguration) throws -> [Range<String.Index>] {
         try matches(of: regex, options: options, matchConfiguration: matchConfiguration).map(\.range)
     }
 
     /// Returns a copy of the string with every regex match replaced by the provided text.
+    ///
+    /// Matches are replaced in forward order and do not overlap.
     public func replacing(_ regex: Regex, with replacement: String, options: Regex.SearchOptions = .none) throws -> String {
         try replacing(regex, with: replacement, options: options, matchConfiguration: Regex.MatchConfiguration())
     }
 
+    /// Returns a copy of the string with every regex match replaced, using custom match configuration.
     public func replacing(_ regex: Regex, with replacement: String, options: Regex.SearchOptions = .none, matchConfiguration: Regex.MatchConfiguration) throws -> String {
         let matches = try matches(of: regex, options: options, matchConfiguration: matchConfiguration)
         guard !matches.isEmpty else {
@@ -52,15 +60,19 @@ extension String {
         return result
     }
 
+    /// Replaces every regex match in the string with the provided text.
     public mutating func replace(_ regex: Regex, with replacement: String, options: Regex.SearchOptions = .none) throws {
         self = try replacing(regex, with: replacement, options: options)
     }
 
+    /// Replaces every regex match in the string with the provided text, using custom match configuration.
     public mutating func replace(_ regex: Regex, with replacement: String, options: Regex.SearchOptions = .none, matchConfiguration: Regex.MatchConfiguration) throws {
         self = try replacing(regex, with: replacement, options: options, matchConfiguration: matchConfiguration)
     }
 
     /// Trims a single prefix match from the start of the string.
+    ///
+    /// If the regex does not match at the start of the string, the original string slice is returned.
     public func trimmingPrefix(_ regex: Regex, options: Regex.SearchOptions = .none) throws -> Substring {
         if let match = try prefixMatch(of: regex, options: options) {
             return self[match.range.upperBound...]
@@ -69,6 +81,7 @@ extension String {
         return self[...]
     }
 
+    /// Trims a single prefix match from the start of the string using custom match configuration.
     public func trimmingPrefix(_ regex: Regex, options: Regex.SearchOptions = .none, matchConfiguration: Regex.MatchConfiguration) throws -> Substring {
         if let match = try prefixMatch(of: regex, options: options, matchConfiguration: matchConfiguration) {
             return self[match.range.upperBound...]
@@ -82,6 +95,7 @@ extension String {
         try split(separator: regex, options: options, matchConfiguration: Regex.MatchConfiguration())
     }
 
+    /// Splits the string on regex matches, omitting empty subsequences, using custom match configuration.
     public func split(separator regex: Regex, options: Regex.SearchOptions = .none, matchConfiguration: Regex.MatchConfiguration) throws -> [Substring] {
         let separatorRanges = try ranges(of: regex, options: options, matchConfiguration: matchConfiguration)
         guard !separatorRanges.isEmpty else {
@@ -112,6 +126,7 @@ extension String {
         try regex.firstStringMatch(in: self, options: options)
     }
 
+    /// Returns the first string-native regex match using custom match configuration.
     public func firstMatch(of regex: Regex, options: Regex.SearchOptions = .none, matchConfiguration: Regex.MatchConfiguration) throws -> Regex.Match? {
         try regex.firstStringMatch(in: self, options: options, matchConfiguration: matchConfiguration)
     }
@@ -121,6 +136,7 @@ extension String {
         try regex.prefixStringMatch(in: self, options: options)
     }
 
+    /// Returns a prefix match using custom match configuration.
     public func prefixMatch(of regex: Regex, options: Regex.SearchOptions = .none, matchConfiguration: Regex.MatchConfiguration) throws -> Regex.Match? {
         try regex.prefixStringMatch(in: self, options: options, matchConfiguration: matchConfiguration)
     }
@@ -130,36 +146,44 @@ extension String {
         try regex.wholeStringMatch(in: self, options: options)
     }
 
+    /// Returns a whole-string match using custom match configuration.
     public func wholeMatch(of regex: Regex, options: Regex.SearchOptions = .none, matchConfiguration: Regex.MatchConfiguration) throws -> Regex.Match? {
         try regex.wholeStringMatch(in: self, options: options, matchConfiguration: matchConfiguration)
     }
 }
 
 extension Substring {
+    /// Returns whether the substring contains at least one match of the regex.
     public func contains(_ regex: Regex, options: Regex.SearchOptions = .none) throws -> Bool {
         try regex.firstStringMatch(in: self, options: options) != nil
     }
 
+    /// Returns whether the substring contains at least one match using custom match configuration.
     public func contains(_ regex: Regex, options: Regex.SearchOptions = .none, matchConfiguration: Regex.MatchConfiguration) throws -> Bool {
         try regex.firstStringMatch(in: self, options: options, matchConfiguration: matchConfiguration) != nil
     }
 
+    /// Returns all non-overlapping matches of the regex in forward order.
     public func matches(of regex: Regex, options: Regex.SearchOptions = .none) throws -> [Regex.Match] {
         try regex.stringMatches(in: self, options: options)
     }
 
+    /// Returns all non-overlapping matches using custom match configuration.
     public func matches(of regex: Regex, options: Regex.SearchOptions = .none, matchConfiguration: Regex.MatchConfiguration) throws -> [Regex.Match] {
         try regex.stringMatches(in: self, options: options, matchConfiguration: matchConfiguration)
     }
 
+    /// Returns the string ranges for all non-overlapping matches of the regex.
     public func ranges(of regex: Regex, options: Regex.SearchOptions = .none) throws -> [Range<String.Index>] {
         try matches(of: regex, options: options).map(\.range)
     }
 
+    /// Returns the string ranges for all non-overlapping matches using custom match configuration.
     public func ranges(of regex: Regex, options: Regex.SearchOptions = .none, matchConfiguration: Regex.MatchConfiguration) throws -> [Range<String.Index>] {
         try matches(of: regex, options: options, matchConfiguration: matchConfiguration).map(\.range)
     }
 
+    /// Trims a single prefix match from the start of the substring.
     public func trimmingPrefix(_ regex: Regex, options: Regex.SearchOptions = .none) throws -> Substring {
         if let match = try prefixMatch(of: regex, options: options) {
             return self[match.range.upperBound...]
@@ -168,6 +192,7 @@ extension Substring {
         return self[...]
     }
 
+    /// Trims a single prefix match using custom match configuration.
     public func trimmingPrefix(_ regex: Regex, options: Regex.SearchOptions = .none, matchConfiguration: Regex.MatchConfiguration) throws -> Substring {
         if let match = try prefixMatch(of: regex, options: options, matchConfiguration: matchConfiguration) {
             return self[match.range.upperBound...]
@@ -176,10 +201,12 @@ extension Substring {
         return self[...]
     }
 
+    /// Splits the substring on regex matches, omitting empty subsequences.
     public func split(separator regex: Regex, options: Regex.SearchOptions = .none) throws -> [Substring] {
         try split(separator: regex, options: options, matchConfiguration: Regex.MatchConfiguration())
     }
 
+    /// Splits the substring on regex matches using custom match configuration.
     public func split(separator regex: Regex, options: Regex.SearchOptions = .none, matchConfiguration: Regex.MatchConfiguration) throws -> [Substring] {
         let separatorRanges = try ranges(of: regex, options: options, matchConfiguration: matchConfiguration)
         guard !separatorRanges.isEmpty else {
@@ -205,26 +232,32 @@ extension Substring {
         return segments
     }
 
+    /// Returns the first string-native regex match in the substring.
     public func firstMatch(of regex: Regex, options: Regex.SearchOptions = .none) throws -> Regex.Match? {
         try regex.firstStringMatch(in: self, options: options)
     }
 
+    /// Returns the first string-native regex match in the substring using custom match configuration.
     public func firstMatch(of regex: Regex, options: Regex.SearchOptions = .none, matchConfiguration: Regex.MatchConfiguration) throws -> Regex.Match? {
         try regex.firstStringMatch(in: self, options: options, matchConfiguration: matchConfiguration)
     }
 
+    /// Returns a prefix match in the substring.
     public func prefixMatch(of regex: Regex, options: Regex.SearchOptions = .none) throws -> Regex.Match? {
         try regex.prefixStringMatch(in: self, options: options)
     }
 
+    /// Returns a prefix match in the substring using custom match configuration.
     public func prefixMatch(of regex: Regex, options: Regex.SearchOptions = .none, matchConfiguration: Regex.MatchConfiguration) throws -> Regex.Match? {
         try regex.prefixStringMatch(in: self, options: options, matchConfiguration: matchConfiguration)
     }
 
+    /// Returns a whole-substring match.
     public func wholeMatch(of regex: Regex, options: Regex.SearchOptions = .none) throws -> Regex.Match? {
         try regex.wholeStringMatch(in: self, options: options)
     }
 
+    /// Returns a whole-substring match using custom match configuration.
     public func wholeMatch(of regex: Regex, options: Regex.SearchOptions = .none, matchConfiguration: Regex.MatchConfiguration) throws -> Regex.Match? {
         try regex.wholeStringMatch(in: self, options: options, matchConfiguration: matchConfiguration)
     }

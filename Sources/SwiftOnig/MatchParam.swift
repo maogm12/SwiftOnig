@@ -19,6 +19,9 @@ internal final class MatchConfigurationCalloutState: @unchecked Sendable {
 
 extension Regex {
     /// Per-search configuration for advanced matching behavior.
+    ///
+    /// Use `MatchConfiguration` to supply per-search retry limits, stack limits, or local
+    /// callout handlers without mutating any global runtime state.
     public struct MatchConfiguration: Sendable {
         /// Optional stack limit used while performing this match.
         public let matchStackLimitSize: UInt?

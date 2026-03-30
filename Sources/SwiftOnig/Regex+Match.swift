@@ -7,12 +7,15 @@ extension Regex {
 
     /// A string-native match result produced from a `String` or `Substring` search.
     ///
-    /// Capture `0` is always the whole match.
+    /// `Regex.Match` wraps a raw `Region` and resolves all participating captures into
+    /// `String.Index` ranges and `Substring` views. Capture `0` is always the whole match.
     public struct Match: Sendable, RandomAccessCollection {
         public typealias Index = Int
         public typealias Element = Capture?
 
         /// A single capture group resolved into Swift string indices.
+        ///
+        /// A `Capture` always refers back to the searched string without copying its contents.
         public struct Capture: Sendable {
             /// The numeric capture group index.
             public let groupNumber: Int
@@ -59,7 +62,7 @@ extension Regex {
             captures.count
         }
 
-        /// The range of the whole match.
+        /// The range of the whole match in the searched string.
         public var range: Range<String.Index> {
             precondition(count > 0, "Empty match")
             guard let capture = captures[0] else {
@@ -78,11 +81,16 @@ extension Regex {
         }
 
         /// Returns a capture by numeric group index.
+        ///
+        /// Capture `0` is the whole match. Optional captures that did not participate
+        /// in the match return `nil`.
         public subscript(position: Int) -> Capture? {
             captures[position]
         }
 
-        /// Returns all captures associated with a named capture group.
+        /// Returns all participating captures associated with a named capture group.
+        ///
+        /// A single Oniguruma capture name may map to multiple numeric groups.
         public func captures(named name: String) -> [Capture] {
             metadata.namedCaptureGroupNumbers[name, default: []].compactMap { groupNumber in
                 guard groupNumber >= 0 && groupNumber < captures.count else {
@@ -149,6 +157,9 @@ extension Regex {
     }
 
     /// Returns the first string-native match found in a `String`.
+    ///
+    /// Use this regex-centric overload when you want a `Regex.Match` but prefer to start
+    /// the call from a compiled `Regex` instead of `String.firstMatch(of:)`.
     public func firstStringMatch(in input: String, options: SearchOptions = .none) throws -> Match? {
         try withSupportedOnigurumaInput(input, requestedEncoding: self.encoding) { supported in
             guard let region = try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchConfiguration: nil) else {
@@ -170,6 +181,7 @@ extension Regex {
         }
     }
 
+    /// Returns the first string-native match found in a `Substring`.
     public func firstStringMatch(in input: Substring, options: SearchOptions = .none) throws -> Match? {
         try withSupportedOnigurumaInput(input, requestedEncoding: self.encoding) { supported in
             guard let region = try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchConfiguration: nil) else {
@@ -180,6 +192,7 @@ extension Regex {
         }
     }
 
+    /// Returns the first string-native match found in a `Substring`, using a match configuration.
     public func firstStringMatch(in input: Substring, options: SearchOptions = .none, matchConfiguration: MatchConfiguration) throws -> Match? {
         try withSupportedOnigurumaInput(input, requestedEncoding: self.encoding) { supported in
             guard let region = try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchConfiguration: matchConfiguration) else {
@@ -202,6 +215,7 @@ extension Regex {
         }
     }
 
+    /// Returns a prefix match for a `String`, using a match configuration.
     public func prefixStringMatch(in input: String, options: SearchOptions = .none, matchConfiguration: MatchConfiguration) throws -> Match? {
         try withSupportedOnigurumaInput(input, requestedEncoding: self.encoding) { supported in
             guard let region = try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchConfiguration: matchConfiguration),
@@ -213,6 +227,7 @@ extension Regex {
         }
     }
 
+    /// Returns a match only when it begins at the start of the searched `Substring`.
     public func prefixStringMatch(in input: Substring, options: SearchOptions = .none) throws -> Match? {
         try withSupportedOnigurumaInput(input, requestedEncoding: self.encoding) { supported in
             guard let region = try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchConfiguration: nil),
@@ -224,6 +239,7 @@ extension Regex {
         }
     }
 
+    /// Returns a prefix match for a `Substring`, using a match configuration.
     public func prefixStringMatch(in input: Substring, options: SearchOptions = .none, matchConfiguration: MatchConfiguration) throws -> Match? {
         try withSupportedOnigurumaInput(input, requestedEncoding: self.encoding) { supported in
             guard let region = try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchConfiguration: matchConfiguration),
@@ -246,6 +262,7 @@ extension Regex {
         }
     }
 
+    /// Returns a whole-string match for a `String`, using a match configuration.
     public func wholeStringMatch(in input: String, options: SearchOptions = .none, matchConfiguration: MatchConfiguration) throws -> Match? {
         try withSupportedOnigurumaInput(input, requestedEncoding: self.encoding) { supported in
             guard let region = try _wholeMatch(in: supported, options: options, matchConfiguration: matchConfiguration) else {
@@ -256,6 +273,7 @@ extension Regex {
         }
     }
 
+    /// Returns a match only when the regex covers the entire searched `Substring`.
     public func wholeStringMatch(in input: Substring, options: SearchOptions = .none) throws -> Match? {
         try withSupportedOnigurumaInput(input, requestedEncoding: self.encoding) { supported in
             guard let region = try _wholeMatch(in: supported, options: options, matchConfiguration: nil) else {
@@ -266,6 +284,7 @@ extension Regex {
         }
     }
 
+    /// Returns a whole-string match for a `Substring`, using a match configuration.
     public func wholeStringMatch(in input: Substring, options: SearchOptions = .none, matchConfiguration: MatchConfiguration) throws -> Match? {
         try withSupportedOnigurumaInput(input, requestedEncoding: self.encoding) { supported in
             guard let region = try _wholeMatch(in: supported, options: options, matchConfiguration: matchConfiguration) else {

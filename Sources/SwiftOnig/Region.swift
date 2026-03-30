@@ -8,11 +8,13 @@
 import OnigurumaC
 import Foundation
 
-/**
- A wrapper of oniguruma `OnigRegion` which represents the results of a single regular expression match.
- 
- In `SwiftOnig`, `Region` is immutable and only used as the result of regular expression matches.
- */
+/// A raw match result returned by Oniguruma.
+///
+/// `Region` stores match results in encoded byte offsets. It is the primary result type for
+/// raw-input APIs on `Regex` and `RegexSet`.
+///
+/// For string-native matching, prefer `Regex.Match`, which resolves the same match into
+/// `String.Index` ranges and `Substring` values.
 public struct Region: Sendable {
     internal typealias OnigRegionPointer = UnsafeMutablePointer<OnigRegion>
 
@@ -102,43 +104,33 @@ public struct Region: Sendable {
         self.storage = try Storage(copying: rawValue, regex: regex, str: str)
     }
 
-    /**
-     Get the number of subregion in the region.
-     
-     A region will have at least one subregion representing the whole matched portion, but may optionally have more, for example for a regular expression with capture groups.
-     */
+    /// The number of capture slots in the region, including slot `0` for the whole match.
     public var count: Int {
         Int(rawValue.pointee.num_regs)
     }
     
 
-    /**
-     Get the range of the region.
-
-     It's a convenient accessor of the range of the first `Subregion`.
-     */
+    /// The encoded byte range of the whole match.
+    ///
+    /// This is a convenience accessor for capture slot `0`.
     public var byteRange: Range<Int> {
         precondition(count > 0, "Empty region")
         return _activeRange(of: 0)
     }
 
-    /**
-     Convert the matched byte range into a Swift `String` range for the provided input.
-
-     Pass the same `String` or `Substring` value that produced this match result. Returns `nil`
-     when the regex encoding cannot be mapped back to Swift string indices.
-     */
+    /// Converts the whole match into a Swift string range for the provided input.
+    ///
+    /// Pass the same `String` or `Substring` value that produced this match. The conversion
+    /// returns `nil` when the regex encoding cannot be mapped back to valid `String.Index`
+    /// boundaries for that input.
     public func range<S: StringProtocol>(in input: S) -> Range<S.Index>? {
         precondition(count > 0, "Empty region")
         return _stringRange(in: input, encodedRange: _activeRange(of: 0), encoding: regex.encoding)
     }
 
-    /**
-     Return the matched substring in the provided input.
-
-     Pass the same `String` or `Substring` value that produced this match result. Returns `nil`
-     when the regex encoding cannot be mapped back to Swift string indices.
-     */
+    /// Returns the whole matched substring from the provided input.
+    ///
+    /// Pass the same `String` or `Substring` value that produced this match.
     public func substring<S: StringProtocol>(in input: S) -> S.SubSequence? {
         guard let range = self.range(in: input) else {
             return nil
@@ -147,22 +139,16 @@ public struct Region: Sendable {
         return input[range]
     }
 
-    /**
-     Decode the matched bytes of the region into a `String`.
-     
-     This is a convenient accessor for the whole matched region and may allocate or decode text.
-     */
+    /// Decodes the matched bytes into a `String`.
+    ///
+    /// This convenience is useful for raw-input workflows and may allocate or perform
+    /// character decoding.
     public func decodedString() -> String? {
         precondition(count > 0, "Empty region")
         return _substring(in: _activeRange(of: 0))
     }
     
-    /**
-     Get the backreferenced group number.
-     
-     - Parameters:
-        - name: Group name for backreference (`\k<name>`).
-     */
+    /// Resolves the numeric group used for a named backreference under Oniguruma semantics.
     public func backReferencedGroupNumber<S: StringProtocol>(of name: S) -> Int {
         let result = name.withOnigurumaString(requestedEncoding: regex.encoding) { start, count in
             onig_name_to_backref_number(regex.rawValue,
@@ -176,20 +162,18 @@ public struct Region: Sendable {
 
 // MARK: Subregion
 
-/**
- `Subregion` represents the matching result for a single capture group.
- */
+/// The raw match result for a single capture group.
 public struct Subregion: Sendable {
-    /// The capture group number. `0` means the whole matching portition.
+    /// The capture group number. `0` is the whole match.
     public let groupNumber: Int
 
-    /// Get the range of the this capture group.
+    /// The encoded byte range of this capture group.
     public let byteRange: Range<Int>
 
     internal let regex: Regex
     internal let str: any OnigurumaString
 
-    /// Decode the matched bytes of this capture group into a `String`.
+    /// Decodes the matched bytes of this capture group into a `String`.
     public func decodedString() -> String? {
         str.withOnigurumaString(requestedEncoding: regex.encoding) { start, _ in
             String(bytes: UnsafeBufferPointer(start: start.advanced(by: byteRange.lowerBound),
@@ -198,22 +182,12 @@ public struct Subregion: Sendable {
         }
     }
 
-    /**
-     Convert this capture group's byte range into a Swift `String` range for the provided input.
-
-     Pass the same `String` or `Substring` value that produced this match result. Returns `nil`
-     when the regex encoding cannot be mapped back to Swift string indices.
-     */
+    /// Converts this capture group's byte range into a Swift string range for the provided input.
     public func range<S: StringProtocol>(in input: S) -> Range<S.Index>? {
         _stringRange(in: input, encodedRange: byteRange, encoding: regex.encoding)
     }
 
-    /**
-     Return this capture group's substring in the provided input.
-
-     Pass the same `String` or `Substring` value that produced this match result. Returns `nil`
-     when the regex encoding cannot be mapped back to Swift string indices.
-     */
+    /// Returns this capture group's substring in the provided input.
     public func substring<S: StringProtocol>(in input: S) -> S.SubSequence? {
         guard let range = self.range(in: input) else {
             return nil
@@ -235,9 +209,9 @@ extension Region: RandomAccessCollection {
         count
     }
 
-    /**
-     Get the subregion of n-th capture group. If the gropu doesn participate the match, `nil` will be returned.
-     */
+    /// Returns the subregion for a numeric capture group.
+    ///
+    /// Returns `nil` for optional groups that did not participate in the match.
     public subscript(groupNumber: Int) -> Subregion? {
         precondition(groupNumber >= 0 && groupNumber < count, "Group number \(groupNumber) out of range")
         
@@ -251,9 +225,7 @@ extension Region: RandomAccessCollection {
         }
     }
 
-    /**
-     Get the subregions of named capture groups with the specified name. Only groups participating match will be included in the result.
-     */
+    /// Returns all participating capture groups associated with the provided name.
     public subscript<S: StringProtocol>(name: S) -> [Subregion] {
         let nameStr = String(name)
         return regex.captureGroupNumbers(for: nameStr)

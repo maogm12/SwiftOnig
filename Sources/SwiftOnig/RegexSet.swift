@@ -7,9 +7,10 @@
 
 import OnigurumaC
 
-/**
- A wrapper of oniguruma `OnigRegSet` which represents a set of regular expressions.
- */
+/// A set of compiled regexes searched as a group through Oniguruma's regset support.
+///
+/// `RegexSet` is an advanced API for searching multiple compiled regexes against the same
+/// input while preserving the identity of the regex that matched first.
 public struct RegexSet: Sendable {
     internal typealias OnigRegSet = OpaquePointer
 
@@ -92,13 +93,10 @@ public struct RegexSet: Sendable {
         storage.regexes
     }
 
-    /**
-     Create a `RegexSet` with a sequence of regular expressions.
-     
-     The encoding of each regular expressions should be the same.
-     - Parameter regexes: A sequence of regular expressions.
-     - Throws: `OnigError`
-     */
+    /// Creates a regex set from already-compiled regexes.
+    ///
+    /// All regexes in the set must use the same encoding and must not use unsupported regset
+    /// options such as `.findLongest`.
     public init<S>(regexes: S) throws where S: Sequence, S.Element == Regex {
         let regexes = [Regex](regexes)
         try Self.validateRegexes(regexes)
@@ -106,9 +104,7 @@ public struct RegexSet: Sendable {
         self.storage = try Storage(regexes: regexes)
     }
 
-    /**
-     Create a `RegexSet` with a sequence of string patterns.
-     */
+    /// Creates a regex set from Swift string patterns compiled as UTF-8.
     public init<S, P>(patterns: S,
                       options: Regex.Options = .none,
                       syntax: Syntax? = nil
@@ -121,9 +117,7 @@ public struct RegexSet: Sendable {
         self.storage = try Storage(regexes: compiledRegexes)
     }
 
-    /**
-     Create a `RegexSet` with a sequence of patterns.
-     */
+    /// Creates a regex set from encoded pattern bytes in a specific encoding.
     public init<S, P>(patternsBytes: S,
                       encoding: Encoding,
                       options: Regex.Options = .none,
@@ -172,25 +166,19 @@ public struct RegexSet: Sendable {
         storage = try Storage(regexes: regexes)
     }
 
-    /**
-     The count of regular expressions.
-     */
+    /// The number of regexes currently stored in the set.
     public var count: Int {
         regexes.count
     }
 
-    /**
-     Append a regex to the set.
-     */
+    /// Appends a compiled regex to the set.
     public mutating func append(_ regex: Regex) throws {
         try Self.validateRegexes(regexes + [regex])
         try ensureUniqueStorage()
         try storage.append(regex)
     }
 
-    /**
-     Replace the regex at the provided index.
-     */
+    /// Replaces the regex at the provided index.
     public mutating func replace(at index: Int, with regex: Regex) throws {
         precondition(regexes.indices.contains(index), "Index out of bounds")
         var updated = regexes
@@ -200,19 +188,17 @@ public struct RegexSet: Sendable {
         try storage.replace(at: index, with: regex)
     }
 
-    /**
-     Remove the regex at the provided index.
-     */
+    /// Removes the regex at the provided index.
     public mutating func remove(at index: Int) throws {
         precondition(regexes.indices.contains(index), "Index out of bounds")
         try ensureUniqueStorage()
         try storage.remove(at: index)
     }
 
-    /**
-     Search string and return the first matching regex/region pair from the set.
-     */
     /// Returns the first regex in the set that matches the provided input.
+    ///
+    /// The returned `Match` includes both the matching regex index and the raw `Region`
+    /// produced by that regex.
     public func firstMatch<S>(in str: S,
                               lead: Lead = .positionLead,
                               options: Regex.SearchOptions = .none,
@@ -231,10 +217,10 @@ public struct RegexSet: Sendable {
         }
     }
 
-    /**
-     Search a range of string and return the first matching regex/region pair from the set.
-     */
     /// Returns the first regex in the set that matches within a raw byte range.
+    ///
+    /// The search range is interpreted in encoded byte offsets and clamped to the actual
+    /// encoded input length before searching.
     public func firstMatch<S, R>(in str: S,
                                  of range: R,
                                  lead: Lead = .positionLead,

@@ -10,15 +10,27 @@ import Foundation
 import _StringProcessing
 import RegexBuilder
 
-/**
- Regular Expression
- 
- Use `Regex` to search against given pattern.
- 
- Those APIs are in the TODO list:
- - `onig_get_case_fold_flag`
- - `onig_noname_group_capture_is_active`
- */
+/// A compiled Oniguruma regular expression.
+///
+/// `Regex` is the main entry point for compiling patterns and performing raw-byte searches.
+/// SwiftOnig also provides string-native convenience APIs on `String` and `Substring`
+/// that wrap raw `Region` results into `Regex.Match`.
+///
+/// Use the string initializer when your pattern starts as Swift text:
+///
+/// ```swift
+/// let regex = try Regex(pattern: #"\d+"#)
+/// ```
+///
+/// Use the byte initializer when the pattern already exists in a specific encoding:
+///
+/// ```swift
+/// let regex = try Regex(patternBytes: patternBytes, encoding: .gb18030)
+/// ```
+///
+/// - Important: Raw search APIs on `Regex` operate in encoded byte offsets, not
+///   `String.Index` values. For string-native matching, prefer `input.firstMatch(of:)`,
+///   `input.matches(of:)`, and related APIs.
 public struct Regex: Sendable, CustomConsumingRegexComponent {
     public typealias RegexOutput = Substring
     internal static let fullByteRange: PartialRangeFrom<Int> = 0...
@@ -141,16 +153,17 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
     
     // MARK: init & deinit
     
-    /**
-     Create a `Regex` object with given string pattern, options and syntax.
-     
-     As swift string uses UTF-8 as internal storage from swift 5, UTF-8 encoding (`Encoding.utf8`) will be used for swift string pattern.
-     - Parameters:
-         - pattern: Pattern used to create the regular expression.
-         - option: Options used to create the regular expression.
-         - syntax: Syntax used to create the regular expression. If `nil`, `Syntax.default` will be used.
-     - Throws: `OnigError`
-     */
+    /// Compiles a regex from a Swift string pattern.
+    ///
+    /// Swift string patterns are always compiled as UTF-8, matching the standard Swift text path.
+    /// Use this initializer for normal application code where the pattern starts as a `String`
+    /// or `Substring`.
+    ///
+    /// - Parameters:
+    ///   - pattern: The regex pattern text to compile.
+    ///   - options: Oniguruma compilation options that affect how the pattern is parsed.
+    ///   - syntax: The syntax preset to compile under. Defaults to `Syntax.default`.
+    /// - Throws: `OnigError` when compilation fails or runtime initialization cannot complete.
     public init<S>(pattern: S,
                    options: Options = .none,
                    syntax: Syntax? = nil
@@ -158,15 +171,17 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
         try self.init(patternBytes: pattern.utf8, encoding: Encoding.utf8, options: options, syntax: syntax)
     }
 
-    /**
-     Create a `Regex` with given pattern, encoding, options and syntax.
-     - Parameters:
-         - pattern: Pattern used to create the regular expression, represented with a sequence of bytes.
-         - encoding: Encoding used to create the the regular expression.
-         - option: Options used to create the regular expression.
-         - syntax: Syntax used to create the regular expression. If `nil`, `Syntax.default` will be used.
-     - Throws: `OnigError`
-     */
+    /// Compiles a regex from raw pattern bytes in an explicit encoding.
+    ///
+    /// Use this initializer when the pattern is already stored as bytes, or when you need exact
+    /// control over the regex encoding used by Oniguruma.
+    ///
+    /// - Parameters:
+    ///   - patternBytes: The encoded pattern bytes to compile.
+    ///   - encoding: The encoding used to interpret the pattern bytes.
+    ///   - options: Oniguruma compilation options that affect how the pattern is parsed.
+    ///   - syntax: The syntax preset to compile under. Defaults to `Syntax.default`.
+    /// - Throws: `OnigError` when compilation fails or runtime initialization cannot complete.
     public init<S>(patternBytes: S,
                    encoding: Encoding,
                    options: Options = .none,
@@ -182,42 +197,38 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
     
     // MARK: Accessors
     
-    /**
-     The option used to create this regex.
-     */
+    /// The compilation options that were used to build this regex.
     public var options: Options {
         get {
             storage.options
         }
     }
     
-    /**
-     The encoding used to create this regex.
-     */
+    /// The encoding used to compile this regex and interpret raw-input searches.
     public var encoding: Encoding {
         get {
             storage.encoding
         }
     }
     
-    /**
-     The syntax used to create this regex.
-     */
+    /// The syntax snapshot used when this regex was compiled.
     public var syntax: Syntax {
         storage.syntax
     }
     
     // MARK: Match & Search
     
-    /// Searches the string and returns the first matching region.
+    /// Searches the provided input and returns the first raw match region within a byte range.
     ///
-    /// If `str` conforms to `StringProtocol`, the search is performed against the UTF-8 bytes of the string.
+    /// The supplied range is interpreted in encoded byte offsets and is clamped to the actual
+    /// encoded length of the input before searching.
     ///
     /// - Parameters:
-    ///   - str: The target string to search against.
-    ///   - range: The range of bytes to search against.
-    ///   - options: The regular expression search options.
-    /// - Returns: The first matching region if found, otherwise `nil`.
+    ///   - str: The input to search. `String` and `Substring` inputs are first adapted into the
+    ///     regex encoding.
+    ///   - range: The encoded byte range to search within.
+    ///   - options: Search-time options such as `.notBol` or `.matchWholeString`.
+    /// - Returns: The first matching `Region`, or `nil` when no match is found.
     /// - Throws: `OnigError` if the search fails.
     public func firstMatch<S, R>(in str: S, of range: R, options: SearchOptions = .none) throws -> Region? where R: RangeExpression, R.Bound == Int {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
@@ -276,16 +287,16 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
         }
     }
     
-    /**
-     Search the string and find the first matching region.
-     
-     If `str` conforms to `StringProtocol`, will search against the UTF-8 bytes of the string. Do not pass invalid bytes in the regular expression encoding.
-     - Parameters:
-         - str: Target string to search against.
-         - option: The regular expression search options.
-     - Returns: The first matching region if there is any, otherwise `nil`.
-     - Throws: `OnigError`
-     */
+    /// Searches the entire input and returns the first raw match region.
+    ///
+    /// This is the raw-byte counterpart to `String.firstMatch(of:)`. Prefer the string-native API
+    /// when you want `Substring` and `String.Index` results instead of byte offsets.
+    ///
+    /// - Parameters:
+    ///   - str: The input to search.
+    ///   - options: Search-time options such as `.notBol` or `.matchWholeString`.
+    /// - Returns: The first matching `Region`, or `nil` when no match is found.
+    /// - Throws: `OnigError` if the search fails.
     public func firstMatch<S>(in str: S, options: SearchOptions = .none) throws -> Region? {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
             try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchConfiguration: nil)
@@ -306,18 +317,17 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
         }
     }
 
-    /**
-     Search the string and find the first matching region using the supplied match parameters.
-     */
+    /// Searches a byte range and applies per-search match configuration.
+    ///
+    /// Use this overload when you need custom retry limits, stack limits, or per-search
+    /// progress/retraction handlers.
     public func firstMatch<S, R>(in str: S, of range: R, options: SearchOptions = .none, matchConfiguration: MatchConfiguration) throws -> Region? where R: RangeExpression, R.Bound == Int {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
             try _firstMatch(in: supported, of: range, options: options, matchConfiguration: matchConfiguration)
         }
     }
 
-    /**
-     Search the string and find the first matching region using the supplied match parameters.
-     */
+    /// Searches the entire input and applies per-search match configuration.
     public func firstMatch<S>(in str: S, options: SearchOptions = .none, matchConfiguration: MatchConfiguration) throws -> Region? {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
             try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchConfiguration: matchConfiguration)
@@ -338,9 +348,10 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
         }
     }
 
-    /**
-     Search the full input and return a region only when the entire string matches.
-     */
+    /// Searches the full input and returns a region only when the regex covers the entire input.
+    ///
+    /// This performs a raw whole-input match in encoded byte space. For string-native whole matches,
+    /// prefer `String.wholeMatch(of:)`.
     public func wholeMatch<S>(in str: S, options: SearchOptions = .none) throws -> Region? {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
             try _wholeMatch(in: supported, options: options, matchConfiguration: nil)
@@ -361,9 +372,9 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
         }
     }
 
-    /**
-     Search the full input and return a region only when the entire string matches.
-     */
+    /// Searches the full input and returns a region only when the regex covers the entire input.
+    ///
+    /// This overload also applies the supplied per-search match configuration.
     public func wholeMatch<S>(in str: S, options: SearchOptions = .none, matchConfiguration: MatchConfiguration) throws -> Region? {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
             try _wholeMatch(in: supported, options: options, matchConfiguration: matchConfiguration)
@@ -400,17 +411,10 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
         }
     }
     
-    /**
-     Search the string and return the matched byte count.
-     
-     If `str` conforms to `StringProtocol`, will search against the UTF-8 bytes of the string. Do not pass invalid bytes in the regular expression encoding.
-     - Parameters:
-         - str: Target string to search against.
-         - range: The range of bytes to search against. It will be clamped to the range of the whole string first.
-         - option: The regular expression search options.
-     - Returns: The matched byte count if there is a match, otherwise `nil`.
-     - Throws: `OnigError`
-     */
+    /// Returns the encoded byte length of the first match found within a byte range.
+    ///
+    /// This is a low-level convenience around `onig_match`/`onig_match_with_param` for callers
+    /// that need only the matched byte count rather than a full `Region`.
     public func matchedByteCount<S, R>(in str: S, of range: R, options: SearchOptions = .none) throws -> Int? where R: RangeExpression, R.Bound == Int {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
             try _matchCount(in: supported, of: range, options: options, matchConfiguration: nil)
@@ -449,27 +453,21 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
         }
     }
     
-    /**
-     Search the string and return the matched byte count.
-     */
+    /// Returns the encoded byte length of the first match found in the entire input.
     public func matchedByteCount<S>(in str: S, options: SearchOptions = .none) throws -> Int? {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
             try _matchCount(in: supported, of: Self.fullByteRange, options: options, matchConfiguration: nil)
         }
     }
 
-    /**
-     Search the string and return the matched byte count using the supplied match parameters.
-     */
+    /// Returns the encoded byte length of the first match in a byte range using custom match configuration.
     public func matchedByteCount<S, R>(in str: S, of range: R, options: SearchOptions = .none, matchConfiguration: MatchConfiguration) throws -> Int? where R: RangeExpression, R.Bound == Int {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
             try _matchCount(in: supported, of: range, options: options, matchConfiguration: matchConfiguration)
         }
     }
 
-    /**
-     Search the string and return the matched byte count using the supplied match parameters.
-     */
+    /// Returns the encoded byte length of the first match in the entire input using custom match configuration.
     public func matchedByteCount<S>(in str: S, options: SearchOptions = .none, matchConfiguration: MatchConfiguration) throws -> Int? {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
             try _matchCount(in: supported, of: Self.fullByteRange, options: options, matchConfiguration: matchConfiguration)
@@ -480,51 +478,30 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
         try _matchCount(in: str, of: range, options: options, matchConfiguration: matchConfiguration) != nil
     }
     
-    /**
-     Is the string matched by the regular expression?
-     
-     If `str` conforms to `StringProtocol`, will search against the UTF-8 bytes of the string. Do not pass invalid bytes in the regular expression encoding.
-     - Parameters:
-         - str: Target string to search against.
-         - range: The range of bytes to search against. It will be clamped to the range of the whole string first.
-         - option: The regular expression search options.
-     - Returns: `true` if it's matched, otherwise `false`.
-     - Throws: `OnigError`
-     */
+    /// Returns whether the regex matches anywhere within the provided byte range.
+    ///
+    /// This is a raw-byte predicate. Use `String.contains(_:)` for the string-native equivalent.
     public func matches<S, R>(_ str: S, in range: R, options: SearchOptions = .none) throws -> Bool where R: RangeExpression, R.Bound == Int {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
             try _matches(supported, in: range, options: options, matchConfiguration: nil)
         }
     }
     
-    /**
-     Is the string matched by the regular expression?
-     
-     If `str` conforms to `StringProtocol`, will search against the UTF-8 bytes of the string. Do not pass invalid bytes in the regular expression encoding.
-     - Parameters:
-         - str: Target string to search against.
-         - option: The regular expression search options.
-     - Returns: `true` if it's matched, otherwise `false`.
-     - Throws: `OnigError`
-     */
+    /// Returns whether the regex matches anywhere in the provided input.
     public func matches<S>(_ str: S, options: SearchOptions = .none) throws -> Bool {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
             try _matches(supported, in: Self.fullByteRange, options: options, matchConfiguration: nil)
         }
     }
 
-    /**
-     Is the string matched by the regular expression using the supplied match parameters?
-     */
+    /// Returns whether the regex matches within the provided byte range using custom match configuration.
     public func matches<S, R>(_ str: S, in range: R, options: SearchOptions = .none, matchConfiguration: MatchConfiguration) throws -> Bool where R: RangeExpression, R.Bound == Int {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
             try _matches(supported, in: range, options: options, matchConfiguration: matchConfiguration)
         }
     }
 
-    /**
-     Is the string matched by the regular expression using the supplied match parameters?
-     */
+    /// Returns whether the regex matches anywhere in the provided input using custom match configuration.
     public func matches<S>(_ str: S, options: SearchOptions = .none, matchConfiguration: MatchConfiguration) throws -> Bool {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
             try _matches(supported, in: Self.fullByteRange, options: options, matchConfiguration: matchConfiguration)
@@ -554,22 +531,19 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
         }
     }
 
-    /**
-     Scan the string and calling the closure with each matching region.
-
-     If `str` conforms to `StringProtocol`, will search against the UTF-8 bytes of the string. Do not pass invalid bytes in the regular expression encoding.
-     - Parameters:
-         - str: Target string to search against.
-         - range: The range of bytes to search against. It will be clamped to the range of the whole string first.
-         - option: The regular expression search options.
-         - matchConfiguration: Match configuration values (`matchStackLimit`, `retryLimitInMatch`, `retryLimitInSearch`)
-         - body: The closure to call on each match.
-         - order: The order of this match.
-         - matchedIndex: The matched index of byte.
-         - region: The matching region.
-     - Returns: Number of matches.
-     - Throws: `OnigError`
-     */
+    /// Enumerates all non-overlapping raw matches within a byte range.
+    ///
+    /// The callback receives matches in forward search order. Returning `false` stops enumeration
+    /// early and causes `onig_scan` to abort normally.
+    ///
+    /// - Parameters:
+    ///   - str: The input to search.
+    ///   - range: The encoded byte range to scan.
+    ///   - options: Search-time options used during scanning.
+    ///   - matchConfiguration: Per-search limits and callout handlers.
+    ///   - body: Called once per match with the match order, matched byte index, and raw region.
+    /// - Returns: The number of matches that were delivered before completion or abort.
+    /// - Throws: `OnigError` if scanning fails.
     @discardableResult public func enumerateMatches<S, R>(in str: S,
                                                           of range: R,
                                                           options: SearchOptions = .none,
@@ -629,42 +603,31 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
 
     // MARK: Capture groups
     
-    /**
-     Get the count of capture groups of the pattern.
-     */
+    /// The number of numeric capture groups in the compiled pattern.
     public var captureGroupsCount: Int {
         Int(onig_number_of_captures(self.rawValue))
     }
     
-    /**
-     Get the count of named capture groups of the pattern.
-     */
+    /// The number of named capture groups in the compiled pattern.
     public var namedCaptureGroupsCount: Int {
         Int(onig_number_of_names(self.rawValue))
     }
     
-    /**
-     Get the count of capture history entries of the pattern.
-     - Note: You can't use capture history if `.atmarkCaptureHistory` is disabled in the regex syntax.
-     */
+    /// The number of capture-history groups enabled in the compiled pattern.
+    ///
+    /// - Note: Capture history requires syntax support for the relevant operator.
     public var captureHistoryCount: Int {
         Int(onig_number_of_capture_histories(self.rawValue))
     }
 
-    /**
-     Whether unnamed capture groups are active for this regex under its current options and syntax.
-     */
+    /// Whether unnamed capture groups are active under the regex's current syntax and options.
     public var nonameGroupCaptureIsActive: Bool {
         onig_noname_group_capture_is_active(self.rawValue) != 0
     }
     
-    /**
-     Enumerate each named capture group name and calling the closure with each entry.
-     - Parameters:
-         - body: The closure to call on each entry.
-         - name: the group name.
-         - numbers: group numbers of the group name.
-     */
+    /// Enumerates each named capture group and its numeric capture slots.
+    ///
+    /// A single name may map to multiple numeric groups under Oniguruma semantics.
     public func enumerateCaptureGroupNames(_ body: @escaping @Sendable (_ name: String, _ numbers: [Int]) -> Bool) {
         let context = ForeachNameContext(encoding: self.encoding, callback: body)
         withExtendedLifetime(context) {
@@ -673,11 +636,9 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
         }
     }
     
-    /**
-     Get the numbers of named capture groups with a specified name.
-     - Parameter name: The name of named capture groups.
-     - Returns: A array of group numbers. Empty if no named group matches.
-     */
+    /// Returns the numeric capture group slots associated with a named capture.
+    ///
+    /// - Returns: An empty array when the name does not exist in the compiled pattern.
     public func captureGroupNumbers(for name: String) -> [Int] {
         storage.matchMetadata.namedCaptureGroupNumbers[name] ?? []
     }
@@ -687,6 +648,9 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
 
 extension Regex {
     /// Regex parsing and compilation options.
+    ///
+    /// These options affect how the pattern is compiled, not how an already-compiled regex
+    /// searches a particular input.
     public struct Options: OptionSet, Sendable {
         public let rawValue: OnigOptionType
         
@@ -749,6 +713,8 @@ extension Regex {
     }
     
     /// Regex evaluation options.
+    ///
+    /// These options affect a particular search or match operation.
     public struct SearchOptions: OptionSet, Sendable {
         public let rawValue: OnigOptionType
         

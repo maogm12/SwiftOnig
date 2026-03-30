@@ -1,11 +1,13 @@
 import Foundation
 import OnigurumaC
 
+/// The phase during which an Oniguruma callout was invoked.
 public enum OnigurumaCalloutPhase: Sendable {
     case progress
     case retraction
 }
 
+/// A set of callout phases to register for named callouts.
 public struct OnigurumaCalloutPhaseSet: OptionSet, Sendable {
     public let rawValue: Int32
 
@@ -18,6 +20,9 @@ public struct OnigurumaCalloutPhaseSet: OptionSet, Sendable {
     public static let both: OnigurumaCalloutPhaseSet = [.progress, .retraction]
 }
 
+/// A decoded argument passed to an Oniguruma callout.
+///
+/// These values mirror the low-level argument types supplied by Oniguruma.
 public enum OnigurumaCalloutArgument: Sendable, Equatable {
     case long(Int)
     case codePoint(OnigCodePoint)
@@ -26,23 +31,38 @@ public enum OnigurumaCalloutArgument: Sendable, Equatable {
     case tag(Int)
 }
 
+/// The action returned from a callout handler.
 public enum OnigurumaCalloutAction: Int32, Sendable {
     case `continue` = 0
     case fail = 1
 }
 
+/// Context passed to a callout handler while a regex is executing.
+///
+/// All offsets and ranges in this type are raw engine byte positions in the regex encoding,
+/// not `String.Index` values.
 public struct OnigurumaCalloutContext: Sendable {
+    /// Whether the callout fired during forward progress or backtracking.
     public let phase: OnigurumaCalloutPhase
+    /// The named callout identifier, if this callout was registered by name.
     public let name: String?
+    /// The textual callout contents, when present in the pattern.
     public let contents: String?
+    /// The current engine byte offset at the time the callout fired.
     public let currentByteOffset: Int
+    /// The byte offset where the current search started.
     public let startByteOffset: Int
+    /// The upper byte bound of the current search range.
     public let searchByteRangeUpperBound: Int
+    /// The current retry or backtracking counter reported by Oniguruma.
     public let retryCount: UInt
+    /// Raw capture ranges for the current in-flight match state.
     public let captureByteRanges: [Range<Int>?]
+    /// Any explicit callout arguments decoded into Swift values.
     public let arguments: [OnigurumaCalloutArgument]
 }
 
+/// A Swift handler invoked from an Oniguruma callout.
 public typealias OnigurumaCalloutHandler = @Sendable (OnigurumaCalloutContext) -> OnigurumaCalloutAction
 
 internal enum OnigurumaCalloutRegistry {

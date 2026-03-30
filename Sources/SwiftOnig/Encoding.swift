@@ -9,6 +9,11 @@ import OnigurumaC
 import CoreFoundation
 import Foundation
 
+/// A text encoding supported by Oniguruma.
+///
+/// `Encoding` is primarily an advanced API used for raw byte workflows, explicit regex encodings,
+/// and byte-boundary helpers. Most applications working with Swift `String` values can stay on
+/// the default UTF-8 path and never touch this type directly.
 public struct Encoding: Equatable, CustomStringConvertible, Sendable {
     private struct BuiltInEncodingMapping: @unchecked Sendable {
         let onigEncoding: OnigEncoding
@@ -17,14 +22,13 @@ public struct Encoding: Equatable, CustomStringConvertible, Sendable {
 
     internal nonisolated(unsafe) let rawValue: OnigEncoding!
 
-    /// The `String.Encoding` of the corresponding oniguruma encoding.
+    /// The Foundation string encoding associated with this Oniguruma encoding.
     public let stringEncoding: String.Encoding
 
     /**
-     Create a `Encoding` with oniguruma `OnigEncoding` pointer.
+     Creates an `Encoding` from a raw Oniguruma encoding pointer.
      
-     The `stringEncoding` is populated with a internal map, which only support built-in `OnigEncoding`.
-     - Parameter rawValue: The raw oniguruma `OnigEncoding` pointer.
+     The associated `stringEncoding` is resolved from SwiftOnig's built-in encoding table.
      */
     internal init(rawValue: OnigEncoding!) {
         self.rawValue = rawValue
@@ -121,6 +125,7 @@ public struct Encoding: Equatable, CustomStringConvertible, Sendable {
     /// GB 18030
     public static var gb18030: Encoding { Encoding(rawValue: get_onig_gb18030()) }
 
+    /// A textual description derived from the corresponding `String.Encoding`.
     public var description: String {
         self.stringEncoding.description
     }
@@ -170,7 +175,9 @@ public struct Encoding: Equatable, CustomStringConvertible, Sendable {
     }
 
     /**
-     Return the previous character head before the given byte offset, or `nil` if there is no previous character.
+     Returns the previous valid character boundary before the supplied byte offset.
+     
+     Use this when aligning raw byte offsets to character boundaries in encoded byte buffers.
      */
     public func previousCharacterHead<S>(in bytes: S, before index: Int) -> Int? where S: Sequence, S.Element == UInt8 {
         withContiguousBytes(bytes) { start, count in
@@ -182,9 +189,7 @@ public struct Encoding: Equatable, CustomStringConvertible, Sendable {
         }
     }
 
-    /**
-     Return the left-adjusted character head at or before the given byte offset.
-     */
+    /// Returns the nearest valid character boundary at or before the supplied byte offset.
     public func leftAdjustedCharacterHead<S>(in bytes: S, at index: Int) -> Int where S: Sequence, S.Element == UInt8 {
         withContiguousBytes(bytes) { start, count in
             precondition((0...count).contains(index), "Index out of bounds")
@@ -193,9 +198,7 @@ public struct Encoding: Equatable, CustomStringConvertible, Sendable {
         }
     }
 
-    /**
-     Return the right-adjusted character head at or after the given byte offset.
-     */
+    /// Returns the nearest valid character boundary at or after the supplied byte offset.
     public func rightAdjustedCharacterHead<S>(in bytes: S, at index: Int) -> Int where S: Sequence, S.Element == UInt8 {
         withContiguousBytes(bytes) { start, count in
             precondition((0...count).contains(index), "Index out of bounds")
@@ -204,27 +207,21 @@ public struct Encoding: Equatable, CustomStringConvertible, Sendable {
         }
     }
 
-    /**
-     Return the number of encoded characters in the provided byte sequence.
-     */
+    /// Returns the number of encoded characters in the provided byte sequence.
     public func characterCount<S>(in bytes: S) -> Int where S: Sequence, S.Element == UInt8 {
         withContiguousBytes(bytes) { start, count in
             Int(onigenc_strlen(self.rawValue, start, start.advanced(by: count)))
         }
     }
 
-    /**
-     Return the number of encoded characters in the provided bytes, treated as null-terminated.
-     */
+    /// Returns the number of encoded characters in the provided bytes, treated as null-terminated.
     public func nullTerminatedCharacterCount<S>(in bytes: S) -> Int where S: Sequence, S.Element == UInt8 {
         withNullTerminatedBytes(bytes) { start in
             Int(onigenc_strlen_null(self.rawValue, start))
         }
     }
 
-    /**
-     Return the byte length of the provided bytes, treated as null-terminated.
-     */
+    /// Returns the byte length of the provided bytes, treated as null-terminated.
     public func nullTerminatedByteCount<S>(in bytes: S) -> Int where S: Sequence, S.Element == UInt8 {
         withNullTerminatedBytes(bytes) { start in
             Int(onigenc_str_bytelen_null(self.rawValue, start))

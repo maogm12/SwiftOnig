@@ -1,7 +1,7 @@
 import OnigurumaC
 import Foundation
 
-/// A handler that receives Oniguruma runtime warning messages.
+/// A handler that receives global Oniguruma runtime warning messages.
 public typealias OnigurumaWarningHandler = @Sendable (String) -> Void
 
 private struct UserUnicodePropertyRange: Sendable, Equatable {
@@ -268,29 +268,36 @@ internal struct OnigCGlobals {
 }
 
 /// Namespace for global Oniguruma runtime configuration and advanced integration hooks.
+///
+/// Most applications only need `Regex` and the string-native matching APIs. Reach for
+/// `Oniguruma` when you need to prewarm encodings, customize global warning behavior,
+/// register named callouts, or define custom Unicode properties.
 public enum Oniguruma {
     /**
-     Optionally prewarm the shared runtime with specific encodings.
+     Optionally prewarms the shared runtime with specific encodings.
 
-     - Note: Normal library usage does not require this. SwiftOnig initializes itself automatically on first use.
-     - Parameter encodings: Encodings to initialize eagerly, typically during application startup.
+     Normal library usage does not require this. SwiftOnig initializes itself automatically on
+     first use, so this API is primarily for startup prewarming or tests that want deterministic
+     initialization timing.
      */
     public static func initialize<S: Sequence>(encodings: S) throws where S.Element == Encoding {
         try OnigurumaRuntimeCoordinator.initialize(encodings: encodings)
     }
 
     /**
-     Tear down the shared runtime state.
+     Tears down the shared runtime state.
 
-     - Note: Most applications do not need to call this.
-     - Note: Regex objects created before `uninitialize()` must not be used afterwards.
+     Most applications do not need to call this. Any regex objects created before this call must
+     be treated as invalid afterwards.
      */
     public static func uninitialize() {
         OnigurumaRuntimeCoordinator.uninitialize()
     }
 
     /**
-     Register the global standard warning handler used by Oniguruma during regex compilation.
+     The global standard warning handler used by Oniguruma during regex compilation.
+     
+     Set this to `nil` to clear the current handler.
      */
     public static var warningHandler: OnigurumaWarningHandler? {
         get { OnigurumaWarningBridge.standardHandler() }
@@ -301,7 +308,9 @@ public enum Oniguruma {
     }
 
     /**
-     Register the global verbose warning handler used by Oniguruma during regex compilation.
+     The global verbose warning handler used by Oniguruma during regex compilation.
+     
+     Set this to `nil` to clear the current handler.
      */
     public static var verboseWarningHandler: OnigurumaWarningHandler? {
         get { OnigurumaWarningBridge.verboseHandler() }
@@ -312,7 +321,10 @@ public enum Oniguruma {
     }
 
     /**
-     Register a user-defined Unicode property for later use in regex patterns.
+     Registers a user-defined Unicode property for later use in regex patterns.
+     
+     The property name is registered globally with the shared runtime. Ranges are interpreted as
+     Unicode scalar ranges, not grapheme-cluster ranges.
      */
     public static func defineUnicodeProperty(named name: String, scalarRanges: [ClosedRange<Unicode.Scalar>]) throws {
         let ranges = scalarRanges.map {
@@ -323,6 +335,9 @@ public enum Oniguruma {
     }
 
     /// Registers a named callout that can be referenced from regex patterns.
+    ///
+    /// The registration is global for the current process. The handler receives raw engine
+    /// byte offsets through `OnigurumaCalloutContext`.
     public static func registerCallout(
         named name: String,
         encoding: Encoding = .utf8,

@@ -8,6 +8,10 @@
 import OnigurumaC
 import Foundation
 
+/// The Swift error type used by SwiftOnig.
+///
+/// `OnigError` mirrors the upstream Oniguruma error space while presenting it as a Swift
+/// `Error` and `Equatable` value. Most cases correspond directly to an Oniguruma error code.
 public enum OnigError: Error, Equatable, Sendable {
     /* internal error */
     case memory
@@ -193,6 +197,7 @@ extension OnigError {
         }
     }
 
+    /// Creates a Swift error from a raw Oniguruma error code and optional contextual info.
     public init(onigErrorCode: OnigInt, onigErrorInfo: OnigErrorInfo? = nil) {
         if let error = Self.directMappings.first(where: { $0.0 == onigErrorCode })?.1 {
             self = error
@@ -207,6 +212,7 @@ extension OnigError {
         fatalError("Unexpected onig error code: \(onigErrorCode)")
     }
 
+    /// The raw Oniguruma error code associated with this case.
     public var onigErrorCode: OnigInt {
         switch self {
         /* internal error */

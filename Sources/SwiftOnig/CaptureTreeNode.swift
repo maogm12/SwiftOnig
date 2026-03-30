@@ -7,19 +7,19 @@
 
 import OnigurumaC
 
+/// A node in Oniguruma's capture-history tree.
+///
+/// Capture trees are an advanced feature available when capture history is enabled in the
+/// compiled regex syntax.
 public struct CaptureTreeNode: Sendable {
     nonisolated(unsafe) let rawValue: OnigCaptureTreeNode
     
-    /**
-     The capture group number for this capture group.
-     */
+    /// The capture group number associated with this node.
     public var groupNumber: Int {
         Int(self.rawValue.group)
     }
 
-    /**
-     The extent of this capture group.
-     */
+    /// The raw encoded byte range covered by this capture-history node.
     public var range: Range<Int> {
         Int(self.rawValue.beg) ..< Int(self.rawValue.end)
     }
@@ -27,9 +27,7 @@ public struct CaptureTreeNode: Sendable {
 
 // Children
 extension CaptureTreeNode {
-    /**
-     A collection of children `CaptureTreeNode`.
-     */
+    /// A collection of child capture-tree nodes.
     public struct ChildrenCollection: RandomAccessCollection, Sendable {
         public let parent: CaptureTreeNode
 
@@ -53,33 +51,24 @@ extension CaptureTreeNode {
         }
     }
 
-    /**
-     The number of child capture groups this capture group contains.
-     */
+    /// The number of child capture groups contained by this node.
     public var childrenCount: Int {
         Int(self.rawValue.num_childs)
     }
 
-    /**
-     Does the node have any child capture groups?
-     */
+    /// Returns whether the node has any child capture groups.
     public var hasChildren: Bool {
         return self.childrenCount > 0
     }
 
-    /**
-     Get the collection of children nodes of this capture group.
-     */
+    /// The collection of child nodes for this capture-history node.
     public var children: ChildrenCollection {
         ChildrenCollection(parent: self)
     }
 }
 
 extension Region {
-    /**
-     Get Capture Tree
-     - Returns: the capture tree for this region, if there is one, otherwise `nil`.
-     */
+    /// The capture tree for this region, when the regex recorded capture history.
     public var captureTree: CaptureTreeNode? {
         if let tree = onig_get_capture_tree(self.rawValue) {
             return CaptureTreeNode(rawValue: tree.pointee)
@@ -88,12 +77,9 @@ extension Region {
         return nil
     }
 
-    /**
-     Traverse and call callbacks in capture history data tree.
-     - Parameters:
-        - beforeTraversingChildren: the callback will be called before traversing children tree nodes.
-        - afterTraversingChildren: the callback will be called after traversing children tree nodes.
-     */
+    /// Traverses the capture-history tree with callbacks before and after visiting children.
+    ///
+    /// Return `false` from either callback to stop traversal early.
     public func enumerateCaptureTreeNodes(beforeTraversingChildren: @escaping (_ groupNumber: Int, _ bytesRange: Range<Int>, _ level: Int) -> Bool = { _,_,_ in true },
                                           afterTraversingChildren: @escaping (_ groupNumber: Int, _ bytesRange: Range<Int>, _ level: Int) -> Bool = { _,_,_ in true }) {
         typealias CallbackType = (Int, Range<Int>, Int) -> Bool

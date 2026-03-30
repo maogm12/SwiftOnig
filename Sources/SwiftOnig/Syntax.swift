@@ -7,13 +7,10 @@
 
 import OnigurumaC
 
-/**
- A value snapshot of oniguruma `OnigSyntaxType`.
- 
- In `SwiftOnig`, `Syntax` is only used to configure regex compilation.
- 
- For most users, there's no need to create a `Syntax` object, but using the static predefined syntax objects is recommended.
- */
+/// A value snapshot of an Oniguruma regex syntax configuration.
+///
+/// `Syntax` controls how patterns are parsed during compilation. Most applications should use one
+/// of the predefined presets such as `Syntax.default`, `Syntax.ruby`, or `Syntax.python`.
 public struct Syntax: Sendable {
     private var rawSyntax: OnigSyntaxType
 
@@ -21,10 +18,7 @@ public struct Syntax: Sendable {
         self.rawSyntax = rawSyntax
     }
 
-    /**
-     Create a new syntax object by copying from an existing syntax.
-     - Parameter other: The syntax to copy from.
-     */
+    /// Creates a new mutable syntax value by copying an existing syntax snapshot.
     public init(copying other: Syntax) {
         self.rawSyntax = other.rawSyntax
     }
@@ -33,9 +27,7 @@ public struct Syntax: Sendable {
         Syntax(rawSyntax: rawValue.pointee)
     }
 
-    /**
-     Predefined syntax objects
-     */
+    /// Built-in syntax presets provided by Oniguruma.
     public static var asis: Syntax { snapshot(OnigCGlobals.asis) }
     public static var posixBasic: Syntax { snapshot(OnigCGlobals.posixBasic) }
     public static var posixExtended: Syntax { snapshot(OnigCGlobals.posixExtended) }
@@ -65,9 +57,7 @@ public struct Syntax: Sendable {
         return try body(pointer)
     }
 
-    /**
-     Syntax operators.
-     */
+    /// The first set of syntax operators enabled for this syntax.
     public var operators: Operators {
         get {
             Operators(rawValue: UInt64(rawSyntax.op))
@@ -78,9 +68,7 @@ public struct Syntax: Sendable {
         }
     }
 
-    /**
-     Syntax operators 2.
-     */
+    /// The second set of syntax operators enabled for this syntax.
     public var operators2: Operators2 {
         get {
             Operators2(rawValue: UInt64(rawSyntax.op2))
@@ -91,9 +79,7 @@ public struct Syntax: Sendable {
         }
     }
 
-    /**
-     Syntax options.
-     */
+    /// The default compile-time regex options attached to this syntax.
     public var options: Regex.Options {
         get {
             Regex.Options(rawValue: rawSyntax.options)
@@ -104,9 +90,7 @@ public struct Syntax: Sendable {
         }
     }
 
-    /**
-     Syntax behaviors.
-     */
+    /// Additional parser and behavior toggles attached to this syntax.
     public var behaviors: Behaviors {
         get {
             Behaviors(rawValue: rawSyntax.behavior)
@@ -118,10 +102,8 @@ public struct Syntax: Sendable {
     }
 }
 
-/**
- Syntax operators
- */
 extension Syntax {
+    /// Primary syntax operator flags defined by Oniguruma.
     public struct Operators: OptionSet, Sendable {
         public let rawValue: UInt64
 
@@ -162,6 +144,7 @@ extension Syntax {
         public static let escOBraceOctal = Operators(rawValue: UInt64(ONIG_SYN_OP_ESC_O_BRACE_OCTAL))
     }
 
+    /// Secondary syntax operator flags defined by Oniguruma.
     public struct Operators2: OptionSet, Sendable {
         public let rawValue: UInt64
 
@@ -190,6 +173,7 @@ extension Syntax {
         public static let asteriskBraceCallout = Operators2(rawValue: UInt64(ONIG_SYN_OP2_ATMARK_CAPTURE_HISTORY))
     }
 
+    /// Behavior toggles that further refine parser semantics for a syntax.
     public struct Behaviors: OptionSet, Sendable {
         public let rawValue: UInt32
 
@@ -226,6 +210,7 @@ extension Syntax {
         case AnyCharAnytime = 5
     }
 
+    /// A configurable meta-character entry inside a syntax's meta-character table.
     public enum MetaChar: Sendable {
         case Ineffective
         case CodePoint(OnigCodePoint)
@@ -245,6 +230,7 @@ extension Syntax {
         }
     }
 
+    /// The configurable meta-character table for a syntax.
     public struct MetaCharTable: Sendable {
         fileprivate var rawValue: OnigMetaCharTableType
 
