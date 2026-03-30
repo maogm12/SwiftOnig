@@ -16,7 +16,7 @@ private struct TokenRule {
 
 private let sample = """
 struct BuildReport {
-    let title = "SwiftOnig 0.2.0"
+    let title = "SwiftOnig 0.3.0"
     let durationMs = 421
     // Highlight comments, strings, numbers, and keywords.
     func render() -> String { "done" }

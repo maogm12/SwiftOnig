@@ -159,7 +159,7 @@ Reason:
 
 - the async form is not a meaningful capability that users rely on semantically
 - keeping both surfaces would preserve confusion instead of resolving it
-- the package is still pre-1.0 again (`0.2.0`), so cleaning this up now is materially cheaper than carrying dual initialization models forward
+- the package is still pre-1.0 again (`0.3.0`), so cleaning this up now is materially cheaper than carrying dual initialization models forward
 
 ## Risk Notes
 

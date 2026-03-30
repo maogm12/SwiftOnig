@@ -18,7 +18,7 @@ Add SwiftOnig as a dependency in your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/maogm12/SwiftOnig", from: "0.2.0")
+    .package(url: "https://github.com/maogm12/SwiftOnig", from: "0.3.0")
 ]
 ```
 
