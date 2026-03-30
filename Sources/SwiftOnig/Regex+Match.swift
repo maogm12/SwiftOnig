@@ -5,13 +5,20 @@ extension Regex {
         let namedCaptureGroupNumbers: [String: [Int]]
     }
 
+    /// A string-native match result produced from a `String` or `Substring` search.
+    ///
+    /// Capture `0` is always the whole match.
     public struct Match: Sendable, RandomAccessCollection {
         public typealias Index = Int
         public typealias Element = Capture?
 
+        /// A single capture group resolved into Swift string indices.
         public struct Capture: Sendable {
+            /// The numeric capture group index.
             public let groupNumber: Int
+            /// The matched range in the searched string.
             public let range: Range<String.Index>
+            /// The matched substring for this capture group.
             public let substring: Substring
         }
 
@@ -37,18 +44,22 @@ extension Regex {
             }
         }
 
+        /// The start of the capture collection.
         public var startIndex: Int {
             captures.startIndex
         }
 
+        /// The end of the capture collection.
         public var endIndex: Int {
             captures.endIndex
         }
 
+        /// The number of capture slots, including capture `0`.
         public var count: Int {
             captures.count
         }
 
+        /// The range of the whole match.
         public var range: Range<String.Index> {
             precondition(count > 0, "Empty match")
             guard let capture = captures[0] else {
@@ -57,6 +68,7 @@ extension Regex {
             return capture.range
         }
 
+        /// The substring for the whole match.
         public var substring: Substring {
             precondition(count > 0, "Empty match")
             guard let capture = captures[0] else {
@@ -65,10 +77,12 @@ extension Regex {
             return capture.substring
         }
 
+        /// Returns a capture by numeric group index.
         public subscript(position: Int) -> Capture? {
             captures[position]
         }
 
+        /// Returns all captures associated with a named capture group.
         public func captures(named name: String) -> [Capture] {
             metadata.namedCaptureGroupNumbers[name, default: []].compactMap { groupNumber in
                 guard groupNumber >= 0 && groupNumber < captures.count else {
@@ -134,6 +148,7 @@ extension Regex {
         return state.matches
     }
 
+    /// Returns the first string-native match found in a `String`.
     public func firstStringMatch(in input: String, options: SearchOptions = .none) throws -> Match? {
         try withSupportedOnigurumaInput(input, requestedEncoding: self.encoding) { supported in
             guard let region = try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchConfiguration: nil) else {
@@ -144,6 +159,7 @@ extension Regex {
         }
     }
 
+    /// Returns the first string-native match found in a `String`, using a match configuration.
     public func firstStringMatch(in input: String, options: SearchOptions = .none, matchConfiguration: MatchConfiguration) throws -> Match? {
         try withSupportedOnigurumaInput(input, requestedEncoding: self.encoding) { supported in
             guard let region = try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchConfiguration: matchConfiguration) else {
@@ -174,6 +190,7 @@ extension Regex {
         }
     }
 
+    /// Returns a match only when it begins at the start of the searched `String`.
     public func prefixStringMatch(in input: String, options: SearchOptions = .none) throws -> Match? {
         try withSupportedOnigurumaInput(input, requestedEncoding: self.encoding) { supported in
             guard let region = try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchConfiguration: nil),
@@ -218,6 +235,7 @@ extension Regex {
         }
     }
 
+    /// Returns a match only when the regex covers the entire searched `String`.
     public func wholeStringMatch(in input: String, options: SearchOptions = .none) throws -> Match? {
         try withSupportedOnigurumaInput(input, requestedEncoding: self.encoding) { supported in
             guard let region = try _wholeMatch(in: supported, options: options, matchConfiguration: nil) else {

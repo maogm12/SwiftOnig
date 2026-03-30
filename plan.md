@@ -203,3 +203,8 @@ This section tracks the packaging refactor from a system-installed Oniguruma dep
 - [x] Add a `regexEdit` example that supports minimal full-screen terminal editing plus regex search and replace.
 - [x] Add a tiny `sgrep` example that searches a demo corpus or a user-supplied path with highlighted matches.
 - [x] Register the new examples in `Package.swift` and point users to them from the README.
+
+## 22. Documentation Publishing
+
+- [x] Add DocC comments to the core string-native and runtime APIs so generated symbol docs are not empty.
+- [x] Add a GitHub Actions workflow that builds DocC output on macOS and publishes the static site to the `gh-pages` branch.

@@ -1,0 +1,68 @@
+name: Publish Docs
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-docs
+  cancel-in-progress: true
+
+jobs:
+  docc:
+    runs-on: macos-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+        with:
+          submodules: recursive
+
+      - name: Select latest stable Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Show toolchain versions
+        run: |
+          swift --version
+          xcodebuild -version
+
+      - name: Build DocC archive
+        run: |
+          xcodebuild docbuild \
+            -scheme SwiftOnig-Package \
+            -destination 'generic/platform=macOS' \
+            -derivedDataPath .build/DerivedData
+
+      - name: Locate DocC archive
+        id: archive
+        run: |
+          archive_path="$(find .build/DerivedData -name 'SwiftOnig.doccarchive' -print -quit)"
+          if [ -z "$archive_path" ]; then
+            echo "SwiftOnig.doccarchive not found" >&2
+            exit 1
+          fi
+          echo "path=$archive_path" >> "$GITHUB_OUTPUT"
+
+      - name: Convert archive for static hosting
+        run: |
+          rm -rf .build/docc-static
+          xcrun docc process-archive transform-for-static-hosting \
+            "${{ steps.archive.outputs.path }}" \
+            --output-path .build/docc-static \
+            --hosting-base-path SwiftOnig
+          touch .build/docc-static/.nojekyll
+
+      - name: Publish to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .build/docc-static
+          publish_branch: gh-pages
+          force_orphan: true

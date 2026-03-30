@@ -13,9 +13,13 @@ import OnigurumaC
 public struct RegexSet: Sendable {
     internal typealias OnigRegSet = OpaquePointer
 
+    /// A match returned from a `RegexSet` search.
     public struct Match: Sendable {
+        /// The index of the regex that matched within the set.
         public let regexIndex: Int
+        /// The compiled regex that matched.
         public let regex: Regex
+        /// The raw region returned by the matching regex.
         public let region: Region
     }
 
@@ -208,6 +212,7 @@ public struct RegexSet: Sendable {
     /**
      Search string and return the first matching regex/region pair from the set.
      */
+    /// Returns the first regex in the set that matches the provided input.
     public func firstMatch<S>(in str: S,
                               lead: Lead = .positionLead,
                               options: Regex.SearchOptions = .none,
@@ -229,6 +234,7 @@ public struct RegexSet: Sendable {
     /**
      Search a range of string and return the first matching regex/region pair from the set.
      */
+    /// Returns the first regex in the set that matches within a raw byte range.
     public func firstMatch<S, R>(in str: S,
                                  of range: R,
                                  lead: Lead = .positionLead,

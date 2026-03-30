@@ -1,6 +1,7 @@
 import OnigurumaC
 import Foundation
 
+/// A handler that receives Oniguruma runtime warning messages.
 public typealias OnigurumaWarningHandler = @Sendable (String) -> Void
 
 private struct UserUnicodePropertyRange: Sendable, Equatable {
@@ -266,6 +267,7 @@ internal struct OnigCGlobals {
     static var defaultSyntax: UnsafeMutablePointer<OnigSyntaxType> { get_onig_default_syntax() }
 }
 
+/// Namespace for global Oniguruma runtime configuration and advanced integration hooks.
 public enum Oniguruma {
     /**
      Optionally prewarm the shared runtime with specific encodings.
@@ -320,6 +322,7 @@ public enum Oniguruma {
         try OnigurumaRuntimeCoordinator.defineUnicodeProperty(named: name, ranges: ranges)
     }
 
+    /// Registers a named callout that can be referenced from regex patterns.
     public static func registerCallout(
         named name: String,
         encoding: Encoding = .utf8,
@@ -332,44 +335,53 @@ public enum Oniguruma {
                                                         handler: handler)
     }
 
+    /// The upstream Oniguruma version string.
     public static var version: String {
         String(cString: onig_version())
     }
 
+    /// The upstream Oniguruma copyright string.
     public static var copyright: String {
         String(cString: onig_copyright())
     }
 
+    /// The process-wide default encoding used when no explicit encoding is supplied.
     public static var defaultEncoding: Encoding {
         get { Encoding(rawValue: onigenc_get_default_encoding()) }
         set { _ = onigenc_set_default_encoding(newValue.rawValue) }
     }
 
+    /// The process-wide default match stack limit.
     public static var defaultMatchStackLimitSize: UInt {
         get { UInt(onig_get_match_stack_limit_size()) }
         set { onig_set_match_stack_limit_size(OnigUInt(newValue)) }
     }
 
+    /// The process-wide default retry limit used while matching.
     public static var defaultRetryLimitInMatch: UInt {
         get { UInt(onig_get_retry_limit_in_match()) }
         set { onig_set_retry_limit_in_match(OnigULong(newValue)) }
     }
 
+    /// The process-wide default retry limit used while searching.
     public static var defaultRetryLimitInSearch: UInt {
         get { UInt(onig_get_retry_limit_in_search()) }
         set { onig_set_retry_limit_in_search(OnigULong(newValue)) }
     }
 
+    /// The global subexpression call limit used while searching.
     public static var subexpCallLimitInSearch: UInt {
         get { UInt(onig_get_subexp_call_limit_in_search()) }
         set { _ = onig_set_subexp_call_limit_in_search(OnigULong(newValue)) }
     }
 
+    /// The global maximum nesting depth for subexpression calls.
     public static var subexpCallMaxNestLevel: Int {
         get { Int(onig_get_subexp_call_max_nest_level()) }
         set { _ = onig_set_subexp_call_max_nest_level(OnigInt(newValue)) }
     }
 
+    /// The global parser depth limit.
     public static var parseDepthLimit: UInt {
         get { UInt(onig_get_parse_depth_limit()) }
         set { _ = onig_set_parse_depth_limit(OnigUInt(newValue)) }

@@ -18,13 +18,20 @@ internal final class MatchConfigurationCalloutState: @unchecked Sendable {
 }
 
 extension Regex {
+    /// Per-search configuration for advanced matching behavior.
     public struct MatchConfiguration: Sendable {
+        /// Optional stack limit used while performing this match.
         public let matchStackLimitSize: UInt?
+        /// Optional retry limit applied while matching the current branch.
         public let retryLimitInMatch: UInt?
+        /// Optional retry limit applied across the whole search.
         public let retryLimitInSearch: UInt?
+        /// Called when Oniguruma triggers a progress callout during this search.
         public let progressHandler: OnigurumaCalloutHandler?
+        /// Called when Oniguruma triggers a retraction callout during this search.
         public let retractionHandler: OnigurumaCalloutHandler?
 
+        /// Creates a match configuration with optional limits and handlers.
         public init(
             matchStackLimitSize: UInt? = nil,
             retryLimitInMatch: UInt? = nil,
@@ -39,6 +46,7 @@ extension Regex {
             self.retractionHandler = retractionHandler
         }
 
+        /// Returns a copy with a different stack limit.
         public func settingMatchStackLimitSize(_ newLimit: UInt?) -> Self {
             Self(matchStackLimitSize: newLimit,
                  retryLimitInMatch: retryLimitInMatch,
@@ -47,6 +55,7 @@ extension Regex {
                  retractionHandler: retractionHandler)
         }
 
+        /// Returns a copy with a different in-match retry limit.
         public func settingRetryLimitInMatch(_ newLimit: UInt?) -> Self {
             Self(matchStackLimitSize: matchStackLimitSize,
                  retryLimitInMatch: newLimit,
@@ -55,6 +64,7 @@ extension Regex {
                  retractionHandler: retractionHandler)
         }
 
+        /// Returns a copy with a different search retry limit.
         public func settingRetryLimitInSearch(_ newLimit: UInt?) -> Self {
             Self(matchStackLimitSize: matchStackLimitSize,
                  retryLimitInMatch: retryLimitInMatch,
@@ -63,6 +73,7 @@ extension Regex {
                  retractionHandler: retractionHandler)
         }
 
+        /// Returns a copy with a different progress handler.
         public func settingProgressHandler(_ handler: OnigurumaCalloutHandler?) -> Self {
             Self(matchStackLimitSize: matchStackLimitSize,
                  retryLimitInMatch: retryLimitInMatch,
@@ -71,6 +82,7 @@ extension Regex {
                  retractionHandler: retractionHandler)
         }
 
+        /// Returns a copy with a different retraction handler.
         public func settingRetractionHandler(_ handler: OnigurumaCalloutHandler?) -> Self {
             Self(matchStackLimitSize: matchStackLimitSize,
                  retryLimitInMatch: retryLimitInMatch,
