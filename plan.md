@@ -195,3 +195,10 @@ This section tracks the packaging refactor from a system-installed Oniguruma dep
 - [x] Make callout raw-offset naming explicit and continue treating callouts as advanced raw APIs.
 - [x] Rename raw `Region` and `Subregion` ranges to `byteRange`.
 - [x] Revisit Unicode-property public modeling around `Unicode.Scalar` and de-emphasize `OnigCodePoint` in the public surface.
+
+## 21. Interactive Examples Refresh
+
+- [x] Add a `calloutTracer` example that demonstrates named callouts plus progress/retraction tracing.
+- [x] Add a `miniHighlighter` example that tokenizes and colorizes a Swift snippet with `RegexSet`.
+- [x] Add a tiny `sgrep` example that searches a demo corpus or a user-supplied path with highlighted matches.
+- [x] Register the new examples in `Package.swift` and point users to them from the README.

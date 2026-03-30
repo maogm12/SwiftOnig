@@ -155,6 +155,20 @@ For detailed guides and API documentation, build the DocC target:
 swift package generate-documentation --target SwiftOnig
 ```
 
+## Examples
+
+The repository ships a few runnable demos under [`Examples/`](/Users/gmao/code/SwiftOnig/Examples):
+
+```bash
+swift run calloutTracer
+swift run miniHighlighter
+swift run sgrep -- ERROR 'req-\d+'
+```
+
+- `calloutTracer` shows named callouts plus progress/retraction tracing.
+- `miniHighlighter` tokenizes a small Swift snippet with `RegexSet`.
+- `sgrep` is a tiny regex-powered grep clone with ANSI highlighting.
+
 ## Testing
 
 SwiftOnig includes a comprehensive test suite, including a port of the official Oniguruma UTF-8 tests.

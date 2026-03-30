@@ -113,6 +113,18 @@ let package = Package(
             name: "scan",
             dependencies: ["SwiftOnig"],
             path: "Examples/scan"),
+        .executableTarget(
+            name: "calloutTracer",
+            dependencies: ["SwiftOnig"],
+            path: "Examples/calloutTracer"),
+        .executableTarget(
+            name: "miniHighlighter",
+            dependencies: ["SwiftOnig"],
+            path: "Examples/miniHighlighter"),
+        .executableTarget(
+            name: "sgrep",
+            dependencies: ["SwiftOnig"],
+            path: "Examples/sgrep"),
             
         // Benchmarks
         .executableTarget(
