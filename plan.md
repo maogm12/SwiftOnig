@@ -200,5 +200,6 @@ This section tracks the packaging refactor from a system-installed Oniguruma dep
 
 - [x] Add a `calloutTracer` example that demonstrates named callouts plus progress/retraction tracing.
 - [x] Add a `miniHighlighter` example that tokenizes and colorizes a Swift snippet with `RegexSet`.
+- [x] Add a `regexEdit` example that supports minimal full-screen terminal editing plus regex search and replace.
 - [x] Add a tiny `sgrep` example that searches a demo corpus or a user-supplied path with highlighted matches.
 - [x] Register the new examples in `Package.swift` and point users to them from the README.

@@ -125,6 +125,10 @@ let package = Package(
             name: "sgrep",
             dependencies: ["SwiftOnig"],
             path: "Examples/sgrep"),
+        .executableTarget(
+            name: "regexEdit",
+            dependencies: ["SwiftOnig"],
+            path: "Examples/regexEdit"),
             
         // Benchmarks
         .executableTarget(

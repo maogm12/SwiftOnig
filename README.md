@@ -39,7 +39,7 @@ Everything else, including manual runtime lifecycle, non-UTF encodings, and expl
 ```swift
 import SwiftOnig
 
-// Regex creation is asynchronous and thread-safe
+// Regex creation is synchronous and thread-safe
 let regex = try Regex(pattern: #"\d+"#)
 
 let input = "The answer is 42."
@@ -162,11 +162,13 @@ The repository ships a few runnable demos under [`Examples/`](/Users/gmao/code/S
 ```bash
 swift run calloutTracer
 swift run miniHighlighter
+swift run regexEdit README.md
 swift run sgrep -- ERROR 'req-\d+'
 ```
 
 - `calloutTracer` shows named callouts plus progress/retraction tracing.
 - `miniHighlighter` tokenizes a small Swift snippet with `RegexSet`.
+- `regexEdit` is a minimal full-screen TUI editor with `Ctrl-F` regex search, live match preview, and save/quit controls.
 - `sgrep` is a tiny regex-powered grep clone with ANSI highlighting.
 
 ## Testing
