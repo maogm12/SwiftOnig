@@ -303,20 +303,6 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
         }
     }
 
-    @available(*, deprecated, message: "Use input.firstMatch(of:) or regex.firstStringMatch(in:) for String and Substring inputs.")
-    public func firstMatch(in str: String, options: SearchOptions = .none) throws -> Region? {
-        try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchConfiguration: nil)
-        }
-    }
-
-    @available(*, deprecated, message: "Use input.firstMatch(of:) or regex.firstStringMatch(in:) for String and Substring inputs.")
-    public func firstMatch(in str: Substring, options: SearchOptions = .none) throws -> Region? {
-        try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchConfiguration: nil)
-        }
-    }
-
     /// Searches a byte range and applies per-search match configuration.
     ///
     /// Use this overload when you need custom retry limits, stack limits, or per-search
@@ -334,20 +320,6 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
         }
     }
 
-    @available(*, deprecated, message: "Use input.firstMatch(of:matchConfiguration:) or regex.firstStringMatch(in:matchConfiguration:) for String and Substring inputs.")
-    public func firstMatch(in str: String, options: SearchOptions = .none, matchConfiguration: MatchConfiguration) throws -> Region? {
-        try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchConfiguration: matchConfiguration)
-        }
-    }
-
-    @available(*, deprecated, message: "Use input.firstMatch(of:matchConfiguration:) or regex.firstStringMatch(in:matchConfiguration:) for String and Substring inputs.")
-    public func firstMatch(in str: Substring, options: SearchOptions = .none, matchConfiguration: MatchConfiguration) throws -> Region? {
-        try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _firstMatch(in: supported, of: Self.fullByteRange, options: options, matchConfiguration: matchConfiguration)
-        }
-    }
-
     /// Searches the full input and returns a region only when the regex covers the entire input.
     ///
     /// This performs a raw whole-input match in encoded byte space. For string-native whole matches,
@@ -358,38 +330,10 @@ public struct Regex: Sendable, CustomConsumingRegexComponent {
         }
     }
 
-    @available(*, deprecated, message: "Use input.wholeMatch(of:) or regex.wholeStringMatch(in:) for String and Substring inputs.")
-    public func wholeMatch(in str: String, options: SearchOptions = .none) throws -> Region? {
-        try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _wholeMatch(in: supported, options: options, matchConfiguration: nil)
-        }
-    }
-
-    @available(*, deprecated, message: "Use input.wholeMatch(of:) or regex.wholeStringMatch(in:) for String and Substring inputs.")
-    public func wholeMatch(in str: Substring, options: SearchOptions = .none) throws -> Region? {
-        try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _wholeMatch(in: supported, options: options, matchConfiguration: nil)
-        }
-    }
-
     /// Searches the full input and returns a region only when the regex covers the entire input.
     ///
     /// This overload also applies the supplied per-search match configuration.
     public func wholeMatch<S>(in str: S, options: SearchOptions = .none, matchConfiguration: MatchConfiguration) throws -> Region? {
-        try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _wholeMatch(in: supported, options: options, matchConfiguration: matchConfiguration)
-        }
-    }
-
-    @available(*, deprecated, message: "Use input.wholeMatch(of:matchConfiguration:) or regex.wholeStringMatch(in:matchConfiguration:) for String and Substring inputs.")
-    public func wholeMatch(in str: String, options: SearchOptions = .none, matchConfiguration: MatchConfiguration) throws -> Region? {
-        try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
-            try _wholeMatch(in: supported, options: options, matchConfiguration: matchConfiguration)
-        }
-    }
-
-    @available(*, deprecated, message: "Use input.wholeMatch(of:matchConfiguration:) or regex.wholeStringMatch(in:matchConfiguration:) for String and Substring inputs.")
-    public func wholeMatch(in str: Substring, options: SearchOptions = .none, matchConfiguration: MatchConfiguration) throws -> Region? {
         try withSupportedOnigurumaInput(str, requestedEncoding: self.encoding) { supported in
             try _wholeMatch(in: supported, options: options, matchConfiguration: matchConfiguration)
         }

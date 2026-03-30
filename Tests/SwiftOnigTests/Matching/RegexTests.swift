@@ -133,22 +133,32 @@ struct RegexTests {
         #expect(try "bar foo".wholeMatch(of: regex) == nil)
     }
 
-    @Test("Region-returning string overloads still behave correctly")
-    func deprecatedStringRegionOverloads() async throws {
+    @Test("String-native and regex-centric string helpers still behave correctly")
+    func stringHelperOverloads() async throws {
         let regex = try Regex(pattern: #"\d+"#)
         let matchConfiguration = Regex.MatchConfiguration(retryLimitInSearch: 1_000)
         let input = "aa11bb22"
         let slice = input[input.index(input.startIndex, offsetBy: 2)...]
 
-        #expect(try regex.firstMatch(in: input)?.decodedString() == "11")
-        #expect(try regex.firstMatch(in: input, matchConfiguration: matchConfiguration)?.decodedString() == "11")
-        #expect(try regex.firstMatch(in: slice)?.decodedString() == "11")
-        #expect(try regex.firstMatch(in: slice, matchConfiguration: matchConfiguration)?.decodedString() == "11")
+        #expect(try regex.firstStringMatch(in: input)?.substring == "11")
+        #expect(try regex.firstStringMatch(in: input, matchConfiguration: matchConfiguration)?.substring == "11")
+        #expect(try regex.firstStringMatch(in: slice)?.substring == "11")
+        #expect(try regex.firstStringMatch(in: slice, matchConfiguration: matchConfiguration)?.substring == "11")
 
-        #expect(try regex.wholeMatch(in: "11")?.decodedString() == "11")
-        #expect(try regex.wholeMatch(in: "11", matchConfiguration: matchConfiguration)?.decodedString() == "11")
-        #expect(try regex.wholeMatch(in: slice) == nil)
-        #expect(try regex.wholeMatch(in: slice, matchConfiguration: matchConfiguration) == nil)
+        #expect(try input.firstMatch(of: regex)?.substring == "11")
+        #expect(try input.firstMatch(of: regex, matchConfiguration: matchConfiguration)?.substring == "11")
+        #expect(try slice.firstMatch(of: regex)?.substring == "11")
+        #expect(try slice.firstMatch(of: regex, matchConfiguration: matchConfiguration)?.substring == "11")
+
+        #expect(try regex.wholeStringMatch(in: "11")?.substring == "11")
+        #expect(try regex.wholeStringMatch(in: "11", matchConfiguration: matchConfiguration)?.substring == "11")
+        #expect(try regex.wholeStringMatch(in: slice) == nil)
+        #expect(try regex.wholeStringMatch(in: slice, matchConfiguration: matchConfiguration) == nil)
+
+        #expect(try "11".wholeMatch(of: regex)?.substring == "11")
+        #expect(try "11".wholeMatch(of: regex, matchConfiguration: matchConfiguration)?.substring == "11")
+        #expect(try slice.wholeMatch(of: regex) == nil)
+        #expect(try slice.wholeMatch(of: regex, matchConfiguration: matchConfiguration) == nil)
     }
 
     @Test("Generic byte-oriented overloads support ranges and match params")
