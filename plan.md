@@ -227,7 +227,7 @@ This section tracks the packaging refactor from a system-installed Oniguruma dep
 
 ### Code Quality
 
-- [ ] **P3** Semicolons in `Regex.Options` (`Regex.swift:618,621,624,627,650,656`). Unnecessary semicolons, style inconsistency.
+- [x] **P3** Semicolons in `Regex.Options`. Removed 7 unnecessary trailing semicolons.
 - [ ] **P3** O(n) lookup in `builtInEncodingMappings` (`Encoding.swift:170`). Should use dictionary for O(1) lookup.
 - [ ] **P3** `withSupportedOnigurumaInput` uses `Any` type erasure (`StringUtils.swift:171-200`). Could use protocol constraints.
 - [ ] **P3** `Regex.swift` `consuming` method converts `String.Index` to byte offsets using O(n) `distance` (`Regex.swift:130-131`).
