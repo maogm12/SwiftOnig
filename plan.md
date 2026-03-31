@@ -222,7 +222,7 @@ This section tracks the packaging refactor from a system-installed Oniguruma dep
 ### Design Concerns
 
 - [x] **P2** `RegexSet.Storage` deinit cleanup - Not a bug. Oniguruma's `onig_regset_replace` and `onig_regset_free` are infallible cleanup functions. Return values intentionally ignored by design.
-- [ ] **P2** `@unchecked Sendable` on `MatchMetadataBox` with mutable state during initialization (`Regex.swift:90-91`). Safe but subtle.
+- [x] **P2** `@unchecked Sendable` on `MatchMetadataBox` - Safe by design. Mutation only occurs during initialization (synchronous callback), object is immutable afterward. Annotation is correct.
 - [x] **P2** `OnigCGlobals` computed properties recompute on every access. Changed to `nonisolated(unsafe) static let` cached values.
 
 ### Code Quality
