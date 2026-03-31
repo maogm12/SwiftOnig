@@ -229,5 +229,5 @@ This section tracks the packaging refactor from a system-installed Oniguruma dep
 
 - [x] **P3** Semicolons in `Regex.Options`. Removed 7 unnecessary trailing semicolons.
 - [ ] **P3** O(n) lookup in `builtInEncodingMappings` (`Encoding.swift:170`). Should use dictionary for O(1) lookup.
-- [ ] **P3** `withSupportedOnigurumaInput` uses `Any` type erasure (`StringUtils.swift:171-200`). Could use protocol constraints.
+- [x] **P3** `withSupportedOnigurumaInput` uses `Any` type erasure - Idiomatic Swift. OnigurumaString uses associatedtype making existential types necessary.
 - [x] **P3** `Regex.swift` `consuming` method uses O(n) `distance` - Architectural limitation. Swift String.distance is O(n) by design. No efficient fix without major API redesign. Acceptable since called once per match.
