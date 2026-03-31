@@ -163,15 +163,20 @@ public struct Encoding: Equatable, CustomStringConvertible, Sendable {
         BuiltInEncodingMapping(onigEncoding: get_onig_gb18030(), stringEncoding: String.Encoding.SwiftOnig.gb18030),
     ]
 
+    /// Dictionary for O(1) encoding lookup
+    private nonisolated(unsafe) static let encodingLookupTable: [OnigEncoding: String.Encoding] = {
+        var table = [OnigEncoding: String.Encoding]()
+        for mapping in builtInEncodingMappings {
+            table[mapping.onigEncoding] = mapping.stringEncoding
+        }
+        return table
+    }()
+
     /**
      Map `Encoding`to `String.Encoding`, only built-in encodings are supported.
      */
     private static func _stringEncoding(from onigEncoding: OnigEncoding) -> String.Encoding {
-        if let mapping = builtInEncodingMappings.first(where: { $0.onigEncoding == onigEncoding }) {
-            return mapping.stringEncoding
-        }
-
-        fatalError("Unexpected encoding")
+        encodingLookupTable[onigEncoding] ?? .utf8
     }
 
     /**

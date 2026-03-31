@@ -209,3 +209,25 @@ This section tracks the packaging refactor from a system-installed Oniguruma dep
 - [x] Add DocC comments to the core string-native and runtime APIs so generated symbol docs are not empty.
 - [x] Add a GitHub Actions workflow that builds DocC output on macOS and publishes the static site to the `gh-pages` branch.
 - [x] Adjust the published DocC site layout so a GitHub Pages project site can serve SwiftOnig docs directly from `/SwiftOnig/`, with the project root redirecting to `/SwiftOnig/documentation/swiftonig/`.
+
+## 23. Code Review Findings (2026-03-30)
+
+### Bugs
+
+- [x] **P0** `Encoding._stringEncoding` uses `fatalError` (`Encoding.swift:174`). Changed to O(1) dictionary lookup with `.utf8` fallback instead of crashing.
+- [ ] **P0** `MatchConfiguration.withRawValue` - incorrect `capacity` in `withMemoryRebound` (`OnigurumaInputAdapters.swift:40-42`). `capacity` should be `buffer.count` (element count), not `byteCount` (byte count).
+- [ ] **P1** `CaptureTreeNode` subscript uses `fatalError` (`CaptureTreeNode.swift:46-48`). Tree traversal should handle nil children gracefully instead of crashing.
+- [ ] **P1** `stringIndexMappingFailed` maps to wrong error code (`Error.swift:251-252`). Maps to `ONIGERR_INVALID_ARGUMENT` which is same as `.invalidArgument`.
+
+### Design Concerns
+
+- [ ] **P2** `RegexSet.Storage` remove/replace in `deinit` could fail silently (`RegexSet.swift:56-61`). Oniguruma cleanup functions called without error handling.
+- [ ] **P2** `@unchecked Sendable` on `MatchMetadataBox` with mutable state during initialization (`Regex.swift:90-91`). Safe but subtle.
+- [ ] **P2** `OnigCGlobals` computed properties recompute on every access (`OnigurumaRuntime.swift:223-268`). Should use `static let` with lazy initialization.
+
+### Code Quality
+
+- [ ] **P3** Semicolons in `Regex.Options` (`Regex.swift:618,621,624,627,650,656`). Unnecessary semicolons, style inconsistency.
+- [ ] **P3** O(n) lookup in `builtInEncodingMappings` (`Encoding.swift:170`). Should use dictionary for O(1) lookup.
+- [ ] **P3** `withSupportedOnigurumaInput` uses `Any` type erasure (`StringUtils.swift:171-200`). Could use protocol constraints.
+- [ ] **P3** `Regex.swift` `consuming` method converts `String.Index` to byte offsets using O(n) `distance` (`Regex.swift:130-131`).
