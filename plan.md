@@ -215,7 +215,7 @@ This section tracks the packaging refactor from a system-installed Oniguruma dep
 ### Bugs
 
 - [x] **P0** `Encoding._stringEncoding` uses `fatalError` (`Encoding.swift:174`). Changed to O(1) dictionary lookup with `.utf8` fallback instead of crashing.
-- [ ] **P0** `MatchConfiguration.withRawValue` - incorrect `capacity` in `withMemoryRebound` (`OnigurumaInputAdapters.swift:40-42`). `capacity` should be `buffer.count` (element count), not `byteCount` (byte count).
+- [x] **P0** `MatchConfiguration.withRawValue` - Not a bug after analysis. `OnigUChar` is 1 byte, `byteCount` equals the correct number of `OnigUChar` elements accessible.
 - [x] **P1** `CaptureTreeNode` subscript uses `fatalError` (`CaptureTreeNode.swift:46-48`). Changed to `preconditionFailure` with bounds check.
 - [x] **P1** `stringIndexMappingFailed` maps to `ONIGERR_INVALID_ARGUMENT` - This is correct by design. `stringIndexMappingFailed` is a Swift-native error (not an Oniguruma error) that occurs during byte-range-to-string-index conversion. Since Oniguruma has no equivalent error code, `INVALID_ARGUMENT` is the appropriate fallback.
 
@@ -228,6 +228,6 @@ This section tracks the packaging refactor from a system-installed Oniguruma dep
 ### Code Quality
 
 - [x] **P3** Semicolons in `Regex.Options`. Removed 7 unnecessary trailing semicolons.
-- [ ] **P3** O(n) lookup in `builtInEncodingMappings` (`Encoding.swift:170`). Should use dictionary for O(1) lookup.
+- [x] **P3** O(n) lookup in `builtInEncodingMappings` - Fixed as part of the fatalError fix. Changed to `encodingLookupTable` dictionary for O(1) lookup.
 - [x] **P3** `withSupportedOnigurumaInput` uses `Any` type erasure - Idiomatic Swift. OnigurumaString uses associatedtype making existential types necessary.
 - [x] **P3** `Regex.swift` `consuming` method uses O(n) `distance` - Architectural limitation. Swift String.distance is O(n) by design. No efficient fix without major API redesign. Acceptable since called once per match.
