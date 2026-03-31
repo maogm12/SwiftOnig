@@ -216,7 +216,7 @@ This section tracks the packaging refactor from a system-installed Oniguruma dep
 
 - [x] **P0** `Encoding._stringEncoding` uses `fatalError` (`Encoding.swift:174`). Changed to O(1) dictionary lookup with `.utf8` fallback instead of crashing.
 - [ ] **P0** `MatchConfiguration.withRawValue` - incorrect `capacity` in `withMemoryRebound` (`OnigurumaInputAdapters.swift:40-42`). `capacity` should be `buffer.count` (element count), not `byteCount` (byte count).
-- [ ] **P1** `CaptureTreeNode` subscript uses `fatalError` (`CaptureTreeNode.swift:46-48`). Tree traversal should handle nil children gracefully instead of crashing.
+- [x] **P1** `CaptureTreeNode` subscript uses `fatalError` (`CaptureTreeNode.swift:46-48`). Changed to `preconditionFailure` with bounds check.
 - [ ] **P1** `stringIndexMappingFailed` maps to wrong error code (`Error.swift:251-252`). Maps to `ONIGERR_INVALID_ARGUMENT` which is same as `.invalidArgument`.
 
 ### Design Concerns

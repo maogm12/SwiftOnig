@@ -43,8 +43,9 @@ extension CaptureTreeNode {
         }
         
         public subscript(position: Int) -> CaptureTreeNode {
-            guard let child = self.parent.rawValue.childs.advanced(by: position).pointee?.pointee else {
-                fatalError("Nil capture tree node child")
+            guard position >= 0 && position < self.parent.childrenCount,
+                  let child = self.parent.rawValue.childs.advanced(by: position).pointee?.pointee else {
+                preconditionFailure("Capture tree node child at index \(position) is unavailable")
             }
 
             return CaptureTreeNode(rawValue: child)
