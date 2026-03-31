@@ -217,13 +217,13 @@ This section tracks the packaging refactor from a system-installed Oniguruma dep
 - [x] **P0** `Encoding._stringEncoding` uses `fatalError` (`Encoding.swift:174`). Changed to O(1) dictionary lookup with `.utf8` fallback instead of crashing.
 - [ ] **P0** `MatchConfiguration.withRawValue` - incorrect `capacity` in `withMemoryRebound` (`OnigurumaInputAdapters.swift:40-42`). `capacity` should be `buffer.count` (element count), not `byteCount` (byte count).
 - [x] **P1** `CaptureTreeNode` subscript uses `fatalError` (`CaptureTreeNode.swift:46-48`). Changed to `preconditionFailure` with bounds check.
-- [ ] **P1** `stringIndexMappingFailed` maps to wrong error code (`Error.swift:251-252`). Maps to `ONIGERR_INVALID_ARGUMENT` which is same as `.invalidArgument`.
+- [x] **P1** `stringIndexMappingFailed` maps to `ONIGERR_INVALID_ARGUMENT` - This is correct by design. `stringIndexMappingFailed` is a Swift-native error (not an Oniguruma error) that occurs during byte-range-to-string-index conversion. Since Oniguruma has no equivalent error code, `INVALID_ARGUMENT` is the appropriate fallback.
 
 ### Design Concerns
 
 - [ ] **P2** `RegexSet.Storage` remove/replace in `deinit` could fail silently (`RegexSet.swift:56-61`). Oniguruma cleanup functions called without error handling.
 - [ ] **P2** `@unchecked Sendable` on `MatchMetadataBox` with mutable state during initialization (`Regex.swift:90-91`). Safe but subtle.
-- [ ] **P2** `OnigCGlobals` computed properties recompute on every access (`OnigurumaRuntime.swift:223-268`). Should use `static let` with lazy initialization.
+- [x] **P2** `OnigCGlobals` computed properties recompute on every access. Changed to `nonisolated(unsafe) static let` cached values.
 
 ### Code Quality
 
